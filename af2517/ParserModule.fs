@@ -42,7 +42,7 @@ type BuiltInType =
     | IfThenElse  
     
 type AST = 
-    | FuncDefExp of FuncDefExpType 
+    | FuncDefExp of FuncDefExpType:string*AST
     | Lambda of LambdaType: (char list)*Body:AST
     | Var of char list //only valid in lambdas 
     | Funcapp of AST*AST
