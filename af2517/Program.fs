@@ -2,11 +2,11 @@
 
 open System
 
-open Module1
+open ParserModule
 
 
 [<EntryPoint>]
 let main argv =
     printfn "Hello World from F#!"
-    deleteThisSample()
+    test()
     0 // return an integer exit code

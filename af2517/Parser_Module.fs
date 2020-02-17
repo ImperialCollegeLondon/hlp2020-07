@@ -1,3 +1,3 @@
-module Module1
+module ParserModule
 
-let deleteThisSample() = printfn "sample top level function in Module1"
+let test() = printfn "sample top level function in Parser Module" 
