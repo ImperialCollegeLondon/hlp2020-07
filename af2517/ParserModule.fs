@@ -9,9 +9,13 @@ type BuiltInType =
     | Div
     | Test 
     | IntEQ
-    | IntBigger
-    | IntBOE
+    | Bigger
+    | BiggerOrEqual
+    | Smaller 
+    | SmallerOrEqual
     | StringEQ
+    | StringToCharList
+    | CharListToString
 
 type LitType = 
     | Int of int 
@@ -26,6 +30,8 @@ type AST =
     | Null 
     | Literal of LitType 
     | BuiltInFunc of BuiltInType
+    | Param of char list //when a parameter is given for funcapp whose type is unknown bc
+    // it was previously defined 
 //    | Combinator of CombinatorType do later 
 
 //FuncApp(FuncApp(Plus, exp1), exp2) ==> exp1 + exp2
