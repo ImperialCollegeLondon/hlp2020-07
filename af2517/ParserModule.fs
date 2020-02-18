@@ -39,7 +39,7 @@ type AST =
 and LitType = 
     | Int of int 
     | String of char list 
-    | True of AST //make it a named function with Lambda ("A",Lambda ("B",Var "A" ))
+    | True of AST //make it a named function with Lambda("A",Lambda ("B",Var "A" ))
     | False of AST 
 
  //1+2 -> AddMult(JustAppExp(AppExpItem(Literal(Int 1))), JustMultExp(JustAppExp(AppExpItem(Literal(Int 2)))))
@@ -66,16 +66,26 @@ let (|PITEM|_|) (tokLst: Result<Token list, Token list>)  =
     | Error lst -> Error lst
     |> Some
 //one recursive function needed for every precedence level 
-//[Other "f"; Other "x"] -> AppExpExp(f,AppExpItem(x))
-//<applicative-exp> ::= <item> | <item> <applicative-exp>
-let rec PappExp(inp: Result<Token list, Token list>):(AppExp* Result<Token list, Token list>) =
+
+let rec BuildAppExp(inp: Result<Token list, Token list>):(AppExp* Result<Token list, Token list>) =
     match inp with
-    // TWO CASES IF PAPP MATCHES AGAIN THEN APPEXPEXP ELSE APPEXPITEM
     | PITEM (Ok(s, lst)) -> match Ok lst with 
-                                | PITEM (Ok(s', lst')) ->  (AppExpExp(s, fst(PappExp (Ok lst))), snd(PappExp (Ok lst)))
+                                | PITEM (Ok(_, _)) ->  
+                                    let result = BuildAppExp (Ok lst)
+                                    (AppExpExp(s, fst(result)), snd(result))
                                 | _ -> ((AppExpItem s), Ok lst) 
-    | Error msg -> failwithf "What? Can't happen%A" msg
-    | Ok lst ->  failwithf "What? Can't happen%A" lst
+    | PITEM (Error lst) -> failwithf "Lst failed %A " lst
+    | Error msg -> failwithf "What? %A" msg
+    | Ok _ ->  failwithf "What? Can't happen" 
     | _ ->  failwithf "What? Can't happen"
 
+let rec FlattenAST (inp:AppExp) (lst:AST list) = 
+    match inp with 
+    | AppExpExp (hd, tl) -> (FlattenAST tl lst) @ [hd] @ lst
+    | AppExpItem el -> [el] @ lst
 
+let rec ReverseAST (inp: AST list): AppExp = 
+    match inp with 
+    | [el] -> AppExpItem el
+    | hd::tl -> AppExpExp (hd, ReverseAST tl)
+    | [] -> failwithf "What? Can't happen"
