@@ -1,4 +1,4 @@
-# hlp2020-team-n
+# hlp2020-team-7
 
 Sample repo for HLP2020.
 
