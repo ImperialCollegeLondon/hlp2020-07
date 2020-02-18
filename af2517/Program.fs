@@ -8,7 +8,7 @@ let print x = printfn "%A" x
 [<EntryPoint>]
 let main argv =
     printfn "Hello World from F#!"
-    print <| PappExp (Ok [IntToken 33])
+    print <| PappExp (Ok [Other ['f']; Other ['g']; Other['h']])
     test()
     0 // return an integer exit code
 

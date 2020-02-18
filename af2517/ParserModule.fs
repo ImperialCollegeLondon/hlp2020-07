@@ -68,13 +68,14 @@ let (|PITEM|_|) (tokLst: Result<Token list, Token list>)  =
 //one recursive function needed for every precedence level 
 //[Other "f"; Other "x"] -> AppExpExp(f,AppExpItem(x))
 //<applicative-exp> ::= <item> | <item> <applicative-exp>
-let rec (|PAPPEXP|_|)(inp: Result<Token list, Token list>):((AppExp option * Result<Token list, Token list>) option) =
+let rec PappExp(inp: Result<Token list, Token list>):(AppExp* Result<Token list, Token list>) =
     match inp with
     // TWO CASES IF PAPP MATCHES AGAIN THEN APPEXPEXP ELSE APPEXPITEM
-    | PITEM (Ok(s, lst)) -> Some ((Some (AppExpItem s)), Ok lst) 
-    | Error msg -> Some (None, Error msg)
-    //| PMATCH "(" (PBRACKETS(Some ast,PMATCH ")" (inp'))) -> Some ( Some (BRA ast ), inp') don't think I need it here
-    | Ok lst ->  failwithf "What? Can't happen"
+    | PITEM (Ok(s, lst)) -> match Ok lst with 
+                                | PITEM (Ok(s', lst')) ->  (AppExpExp(s, fst(PappExp (Ok lst))), snd(PappExp (Ok lst)))
+                                | _ -> ((AppExpItem s), Ok lst) 
+    | Error msg -> failwithf "What? Can't happen%A" msg
+    | Ok lst ->  failwithf "What? Can't happen%A" lst
     | _ ->  failwithf "What? Can't happen"
 
-let PappExp = (|PAPPEXP|_|)
+
