@@ -40,7 +40,6 @@ and LitType =
     | True of AST //make it a named function with Lambda("A",Lambda ("B",Var "A" ))
     | False of AST 
 
- //1+2 -> AddMult(JustAppExp(AppExpItem(Literal(Int 1))), JustMultExp(JustAppExp(AppExpItem(Literal(Int 2)))))
 type AppExp = AppExpItem of AST | AppExpExp of AST*AppExp
 type MultExp = NoMult of AppExp|MultApp of AppExp*MultExp
 type AddExp = NoSum of MultExp | AddApp of MultExp*AddExp  
