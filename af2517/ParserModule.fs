@@ -1,6 +1,4 @@
 module ParserModule
-
-let test() = printfn "sample top level function in ParserModule" 
 type Bracket = Round |Square 
 type Keyword = LET |RIGHTARROW |Extension of string 
 type Token = 
@@ -44,8 +42,8 @@ and LitType =
 
  //1+2 -> AddMult(JustAppExp(AppExpItem(Literal(Int 1))), JustMultExp(JustAppExp(AppExpItem(Literal(Int 2)))))
 type AppExp = AppExpItem of AST | AppExpExp of AST*AppExp
-type MultExp = JustAppExp of AppExp | MultApp of AppExp*MultExp
-type AddExp = JustMultExp of MultExp | AddMult of MultExp*AddExp  
+type MultExp = NoMult of AppExp|MultApp of AppExp*MultExp
+type AddExp = NoSum of MultExp | AddApp of MultExp*AddExp  
 type ASTBRACKETS = BRA of ASTBRACKETS | EXP of char list
 
 let (|PMATCH|_|) (tok: Token) (tokLst: Result<Token list, Token list>) = 
@@ -65,6 +63,15 @@ let (|PITEM|_|) (tokLst: Result<Token list, Token list>)  =
     | Ok lst -> Error lst
     | Error lst -> Error lst
     |> Some
+
+let (|PMULT|_|) (tokLst: Result<Token list, Token list>) = 
+    match tokLst with
+    | Ok [] -> Error []
+    | Ok (Other ['*'] :: rest) ->  Ok rest
+    | Ok lst -> Error lst
+    | Error lst -> Error lst
+    |> Some
+
 //one recursive function needed for every precedence level 
 
 let rec BuildAppExp(inp: Result<Token list, Token list>):(AppExp* Result<Token list, Token list>) =
@@ -78,10 +85,11 @@ let rec BuildAppExp(inp: Result<Token list, Token list>):(AppExp* Result<Token l
     | Error msg -> failwithf "What? %A" msg
     | Ok _ ->  failwithf "What? Can't happen" 
     | _ ->  failwithf "What? Can't happen"
+        
 
-let rec FlattenAST (inp:AppExp) (lst:AST list) = 
+let rec FlattenAST (lst:AST list) (inp:AppExp)  = 
     match inp with 
-    | AppExpExp (hd, tl) -> (FlattenAST tl lst) @ [hd] @ lst
+    | AppExpExp (hd, tl) -> (FlattenAST lst tl) @ [hd] @ lst
     | AppExpItem el -> [el] @ lst
 
 let rec ReverseAST (inp: AST list): AppExp = 
@@ -89,3 +97,34 @@ let rec ReverseAST (inp: AST list): AppExp =
     | [el] -> AppExpItem el
     | hd::tl -> AppExpExp (hd, ReverseAST tl)
     | [] -> failwithf "What? Can't happen"
+
+let rec BuildMultExp(inp: Result<Token list, Token list>) (acc:Token list):(MultExp) = 
+    match inp with  
+    | Ok (hd::tl) when hd = Other ['*'] -> 
+        let result = BuildAppExp (Ok acc)
+                     |> fst
+                     |> (FlattenAST [])
+                     |> ReverseAST
+        MultApp(result, BuildMultExp (Ok tl) [])
+    | Ok (hd::tl) -> BuildMultExp (Ok tl) (acc @ [hd])
+    | Ok [] -> 
+        let result = BuildAppExp (Ok acc)
+                     |> fst
+                     |> (FlattenAST [])
+                     |> ReverseAST 
+        NoMult result
+    | Error _ -> failwithf "what?"
+
+
+let rec BuildAddExp(inp: Result<Token list, Token list>) (acc:Token list):(AddExp) = 
+    match inp with  
+    | Ok (hd::tl) when hd = Other ['+'] -> 
+        let result = BuildMultExp (Ok acc) []
+        AddApp (result, BuildAddExp (Ok tl) [])
+    | Ok (hd::tl) -> BuildAddExp (Ok tl) (acc @ [hd])
+    | Ok [] -> 
+        let result = BuildMultExp (Ok acc) []
+        NoSum result
+    | Error _ -> failwithf "what?"
+
+
