@@ -17,7 +17,6 @@ let main argv =
     //print <| BuildMultExp (Ok [Other ['f']; Other ['g']; Other['h']; Other['*'];Other ['f']; Other ['g']; Other['h']; Other['*'];Other ['f']; Other ['g']; Other['h']]) []
     //print <| BuildMultExp (Ok [Other ['f']; Other ['g']; Other['h']; Other['*'];Other ['f']; Other ['g']; Other['h']]) []
     print <| BuildAddExp (Ok [Other ['f']; Other['*']; Other['g']; Other['+']; Other['h']; Other['p']]) []
+    print <| BuildAddExp (Ok [Other ['f']; Other ['*']; Other['g']; Other['h']]) []
     0 // return an integer exit code
-
-
-
+    
