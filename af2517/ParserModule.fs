@@ -63,14 +63,6 @@ let (|PITEM|_|) (tokLst: Result<Token list, Token list>)  =
     | Error lst -> Error lst
     |> Some
 
-let (|PMULT|_|) (tokLst: Result<Token list, Token list>) = 
-    match tokLst with
-    | Ok [] -> Error []
-    | Ok (Other ['*'] :: rest) ->  Ok rest
-    | Ok lst -> Error lst
-    | Error lst -> Error lst
-    |> Some
-
 //one recursive function needed for every precedence level 
 
 let rec BuildAppExp(inp: Result<Token list, Token list>):(AppExp* Result<Token list, Token list>) =
@@ -85,7 +77,6 @@ let rec BuildAppExp(inp: Result<Token list, Token list>):(AppExp* Result<Token l
     | Ok _ ->  failwithf "What? Can't happen" 
     | _ ->  failwithf "What? Can't happen"
         
-
 let rec FlattenAST (lst:AST list) (inp:AppExp)  = 
     match inp with 
     | AppExpExp (hd, tl) -> (FlattenAST lst tl) @ [hd] @ lst
@@ -113,7 +104,6 @@ let rec BuildMultExp(inp: Result<Token list, Token list>) (acc:Token list):(Mult
                      |> ReverseAST 
         NoMult result
     | Error _ -> failwithf "what?"
-
 
 let rec BuildAddExp(inp: Result<Token list, Token list>) (acc:Token list):(AddExp) = 
     match inp with  
