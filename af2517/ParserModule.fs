@@ -61,7 +61,7 @@ let rec MakeLeftAppList (inp:AST list) : AST =
 // takes an Fsharp list and makes a left associative FuncApp tree representing the items
     match inp with 
     | [el] ->  el
-    | hd::tl -> Funcapp (hd, MakeLeftAppList tl)
+    | hd::tl -> Funcapp (MakeLeftAppList tl, hd)
     | [] -> failwithf "What? Can't happen"
  
 
