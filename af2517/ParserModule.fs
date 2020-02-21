@@ -14,7 +14,6 @@ type BuiltInType =
     | Mult 
     | Div
     | Mod
-    | Test 
     | Equal //works for strings ints and nulls 
     | Explode 
     | Implode 
@@ -55,7 +54,6 @@ let rec MakeLeftAppList (inp:AST list) : AST =
     | hd::tl -> Funcapp (MakeLeftAppList tl, hd)
     | [] -> failwithf "What? Can't happen"
      
-
 let (|PMATCH|_|) (tok: Token) (tokLst: Result<Token list, Token list>) = 
     match tokLst with
     | _ when tok = Bracket [')'] -> None
@@ -64,8 +62,6 @@ let (|PMATCH|_|) (tok: Token) (tokLst: Result<Token list, Token list>) =
     | Ok lst -> None
     | Error lst -> None
     
-
-
 let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>)  =
     match tokLst with
     | Ok [] -> Error []
@@ -76,7 +72,6 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>)  =
     | Ok lst -> failwithf "Pmatch Not matching properly %A" lst
     | Error lst ->  failwithf "Pmatch Not matching properly %A" lst
     |> Some
-
 
 and BuildAppExp(inp: Result<Token list, Token list>):(AST* Result<Token list, Token list>) =
     match inp with
@@ -137,8 +132,7 @@ and BuildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(AST* Re
 and (|PBUILDADDEXP|_|) (inp: Result<Token list, Token list>) = 
     Some (BuildAddExp [] inp)
 
-
-and BuildLambda inp = 
+let rec BuildLambda inp = 
     match inp with 
     | hd::(hd'::tl) -> match hd,hd' with 
                         | (Other x),(Other y) -> Lambda(x, BuildLambda tl)
@@ -147,17 +141,13 @@ and BuildLambda inp =
                         | _ -> failwithf "Invalid arguments"
     | _ -> failwithf "insufficient expression"
 
-//FunctionDef (("f", Lambda(x, Var"x"+1)), f 3)
-//FunctionDef(("f", Lambda(x,Lambda(y,Var x + Var y)), f 2 3) Buildlambda x BuildLambda
-//function definition consists of let "name" "params" "equals" "exp" "in" "exp (could be another function definition)"
-and ExtractParts inp acc = 
+let rec ExtractParts inp acc = 
     match inp with 
     | hd::tl when hd = Keyword IN -> acc,tl
     | hd::tl -> ExtractParts tl (acc @ [hd])
     | [] -> failwithf "No expression evaluated"
     
-
-and BuildFunctionDef inp  = 
+let rec BuildFunctionDef inp  = 
     match inp with 
     | hd::tl  -> match hd with 
                  | Other x -> 
