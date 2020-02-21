@@ -25,7 +25,7 @@ type BuiltInType =
     | IfThenElse  
     
 type AST = 
-    | FuncDefExp of FuncDefExpType:AST //FuncApp(Lambda("f", x*(f x)),Lambda("x",x+1))
+    | FuncDefExp of FuncDefExpType:AST //FuncApp(Lambda("f", 5*((Var f) 3)),Lambda("x",(Var x)+1)) needed?
     | Lambda of LambdaType:(char list)*Body:AST
     | Var of char list //only valid in lambdas 
     | Funcapp of AST*AST
@@ -40,19 +40,6 @@ and LitType =
     | True of AST //make it a named function with Lambda("A",Lambda ("B",Var "A" ))
     | False of AST 
 
-type AppExp = AppExpItem of AST | AppExpExp of AST*AppExp
-type MultExp = NoMult of AppExp|MultApp of AppExp*MultExp
-type AddExp = NoSum of MultExp | AddApp of MultExp*AddExp  
-type ASTBRACKETS = BRA of ASTBRACKETS | EXP of char list
-
-let (|PMATCH|_|) (tok: Token) (tokLst: Result<Token list, Token list>) = 
-    match tokLst with
-    | Ok []  -> Error []
-    | Ok (s :: rest) when s = tok -> Ok rest
-    | Ok lst -> Error lst
-    | Error lst -> Error lst
-    |> Some
-
 let (|PITEM|_|) (tokLst: Result<Token list, Token list>)  =
     match tokLst with
     | Ok [] -> Error []
@@ -63,57 +50,75 @@ let (|PITEM|_|) (tokLst: Result<Token list, Token list>)  =
     | Error lst -> Error lst
     |> Some
 
-//one recursive function needed for every precedence level 
+let rec ExtractRightAppList (lst:AST list) (inp:AST) : AST list = 
+// extracts the top-level right-associative application list and returns it as an Fsharp list
+    match inp with 
+    | Funcapp (hd, tl) -> lst @ [hd] @ (ExtractRightAppList lst tl)
+    | Var el ->  lst @ [Var el]
+    | _ -> failwithf "What? Shouldn't happen"
 
-let rec BuildAppExp(inp: Result<Token list, Token list>):(AppExp* Result<Token list, Token list>) =
+let rec MakeLeftAppList (inp:AST list) : AST =
+// takes an Fsharp list and makes a left associative FuncApp tree representing the items
+    match inp with 
+    | [el] ->  el
+    | hd::tl -> Funcapp (hd, MakeLeftAppList tl)
+    | [] -> failwithf "What? Can't happen"
+ 
+
+let rec BuildAppExp(inp: Result<Token list, Token list>):(AST* Result<Token list, Token list>) =
     match inp with
     | PITEM (Ok(s, lst)) -> match Ok lst with 
                                 | PITEM (Ok(_, _)) ->  
                                     let result = BuildAppExp (Ok lst)
-                                    (AppExpExp(s, fst(result)), snd(result))
-                                | _ -> ((AppExpItem s), Ok lst) 
+                                    (Funcapp(s, fst(result)), snd(result))
+                                | _ -> (s, Ok lst) 
     | PITEM (Error lst) -> failwithf "Lst failed %A " lst
     | Error msg -> failwithf "What? %A" msg
     | Ok _ ->  failwithf "What? Can't happen" 
     | _ ->  failwithf "What? Can't happen"
-        
-let rec FlattenAST (lst:AST list) (inp:AppExp)  = 
-    match inp with 
-    | AppExpExp (hd, tl) -> (FlattenAST lst tl) @ [hd] @ lst
-    | AppExpItem el -> [el] @ lst
 
-let rec ReverseAST (inp: AST list): AppExp = 
-    match inp with 
-    | [el] -> AppExpItem el
-    | hd::tl -> AppExpExp (hd, ReverseAST tl)
-    | [] -> failwithf "What? Can't happen"
-
-let rec BuildMultExp(inp: Result<Token list, Token list>) (acc:Token list):(MultExp) = 
+let rec BuildMultExp (inp: Result<Token list, Token list>) (acc:Token list):(AST) = 
     match inp with  
     | Ok (hd::tl) when hd = Other ['*'] -> 
         let result = BuildAppExp (Ok acc)
                      |> fst
-                     |> (FlattenAST [])
-                     |> ReverseAST
-        MultApp(result, BuildMultExp (Ok tl) [])
-    | Ok (hd::tl) -> BuildMultExp (Ok tl) (acc @ [hd])
-    | Ok [] -> 
+                     |> ExtractRightAppList []
+                     |> List.rev
+                     |> MakeLeftAppList
+        Funcapp(Funcapp(BuiltInFunc Mult, result), BuildMultExp (Ok tl) [])
+    | Ok (hd::tl) when hd = Other ['/'] -> 
         let result = BuildAppExp (Ok acc)
                      |> fst
-                     |> (FlattenAST [])
-                     |> ReverseAST 
-        NoMult result
+                     |> ExtractRightAppList []
+                     |> List.rev
+                     |> MakeLeftAppList
+        Funcapp(Funcapp(BuiltInFunc Div, result), BuildMultExp (Ok tl) [])
+    | Ok (hd::tl) -> BuildMultExp (Ok tl) (acc @ [hd])
+    | Ok [] -> 
+            BuildAppExp (Ok acc)
+           |> fst
+           |> ExtractRightAppList []
+           |> List.rev
+           |> MakeLeftAppList
     | Error _ -> failwithf "what?"
 
-let rec BuildAddExp(inp: Result<Token list, Token list>) (acc:Token list):(AddExp) = 
+let rec BuildAddExp (inp: Result<Token list, Token list>) (acc:Token list):(AST) = 
     match inp with  
     | Ok (hd::tl) when hd = Other ['+'] -> 
         let result = BuildMultExp (Ok acc) []
-        AddApp (result, BuildAddExp (Ok tl) [])
+        Funcapp(Funcapp(BuiltInFunc Add, result), BuildAddExp (Ok tl) [] )
+    | Ok (hd::tl) when hd = Other ['-'] -> 
+        let result = BuildMultExp (Ok acc) []
+        Funcapp(Funcapp(BuiltInFunc Sub, result), BuildAddExp (Ok tl) [] )
     | Ok (hd::tl) -> BuildAddExp (Ok tl) (acc @ [hd])
     | Ok [] -> 
-        let result = BuildMultExp (Ok acc) []
-        NoSum result
+        BuildMultExp (Ok acc) []
     | Error _ -> failwithf "what?"
 
-
+let (|PMATCH|_|) (tok: Token) (tokLst: Result<Token list, Token list>) = 
+    match tokLst with
+    | Ok []  -> Error []
+    | Ok (s :: rest) when s = tok -> Ok rest
+    | Ok lst -> Error lst
+    | Error lst -> Error lst
+    |> Some
