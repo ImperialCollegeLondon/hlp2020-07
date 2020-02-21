@@ -45,7 +45,7 @@ let rec ExtractRightAppList (lst:AST list) (inp:AST) : AST list =
 // extracts the top-level right-associative application list and returns it as an Fsharp list
     match inp with 
     | Funcapp (hd, tl) -> lst @ [hd] @ (ExtractRightAppList lst tl)
-    | Var el ->  lst @ [Var el]
+    | el ->  lst @ [el]
     | _ -> failwithf "What? Shouldn't happen"
     
 let rec MakeLeftAppList (inp:AST list) : AST =
