@@ -15,9 +15,9 @@ let main argv =
     //print <| MakeLeftAppList b
     //print <| BuildAddExp (Ok [Other ['f']; Other['x']; Other ['y']]) []
     //print <| BuildAddExp (Ok [Other ['f']; Bracket['(']; Other['x']; Other ['y']; Bracket[')']]) []
-    print <| Parse (Ok([Keyword LET; Other ['f']; Other['x']; Keyword EQUAL; Other['x']; Other['+']; IntToken 1; Keyword IN; Keyword LET; Other ['g']; Other['y']; Keyword EQUAL; Other['y']; Other['+']; IntToken 2;Keyword IN; Other ['g']; Other['f'];IntToken 3] ) )
+    //print <| Parse (Ok([Keyword LET; Other ['f']; Other['x']; Keyword EQUAL; Other['x']; Other['+']; IntToken 1; Keyword IN; Keyword LET; Other ['g']; Other['y']; Keyword EQUAL; Other['y']; Other['+']; IntToken 2;Keyword IN; Other ['g']; Other['f'];IntToken 3] ) )
     //problem when putting two arguments
-    print <| Parse (Ok([Keyword LET; Other ['f']; Other['a']; Other['b']; Keyword EQUAL; Other['a']; Other['+']; Other ['b'];Other['/']; Other['a']; Keyword IN; Other ['f']; IntToken 3; IntToken 4] ) )
-    //print <| BuildAddExp (Ok [Other ['f']; Bracket['(']; Other['x']; Other ['y']; ]) []
+    //print <| Parse (Ok([Keyword LET; Other ['f']; Other['a']; Other['b']; Keyword EQUAL; Other['a']; Other['+']; Other ['b'];Other['/']; Other['a']; Keyword IN; Other ['f']; IntToken 3; IntToken 4] ) )
+    print <| Parse (Ok [Other ['f']; Bracket['(']; Other['x']; Other ['y']; Bracket[')']]) 
     0 // return an integer exit code
     

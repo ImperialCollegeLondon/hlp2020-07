@@ -71,6 +71,7 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>)  =
     | Ok (Other s :: rest) ->  Ok (Var s, Ok rest)
     | Ok (IntToken s:: rest) -> Ok (Literal (Int s) ,Ok rest)
     | Ok (StringToken s::rest) -> Ok (Literal (String s), Ok rest)
+    //| Ok (Bracket s::_) when s = [')'] -> Error []
     | PMATCH (Bracket ['(']) (PBUILDADDEXP(ast, PMATCH (Bracket [')']) (inp'))) -> Ok (ast, inp') 
     | Ok lst -> Error lst
     | Error lst ->  Error lst
@@ -79,12 +80,10 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>)  =
 and buildAppExp(inp: Result<Token list, Token list>):(AST* Result<Token list, Token list>) =
     match inp with
     | PITEM (Ok(s, lst)) -> match lst with 
-                            | Ok (hd::tl) ->  
+                            | PITEM (Ok(_, _)) ->  
                                 let result = buildAppExp (lst)
                                 (Funcapp(s, fst(result)), snd(result))
-                            | _ -> (s, lst)   
-
-                                                     
+                            | _ -> (s, lst)                            
     | PITEM (Error lst) -> failwithf "Lst failed %A " lst
     | Error msg -> failwithf "What? %A" msg
     | Ok _ ->  failwithf "What? Can't happen" 
