@@ -104,9 +104,10 @@ let orderTest = FuncDefExp(['f'],ABbody,FBodyOrder)
 // let g a b = a + b*a in let f x = g x x in f 3 
 
 let albertTest = FuncDefExp(['f'],Lambda(['x'],Funcapp(Funcapp(BuiltInFunc Add, Var ['x']),Literal (Int 1))),FuncDefExp(['g'],Lambda(['y'],Funcapp (Funcapp (BuiltInFunc Add, Var ['y']), Literal (Int 2))),(Funcapp(Var ['f'], Funcapp(Var['g'], Literal(Int 3))))))   
-let albertEasy = FuncDefExp(['f'],Lambda(['x'],Funcapp(Funcapp(BuiltInFunc Add, Var ['x']),Literal (Int 1))),Funcapp (Var['f'],(Funcapp (Var ['f'], Literal(Int 3)))))  
+//let f x = x+1 in let g y = y+2 in g (f 3)
 
-//let f x = x+1 in let g y = y+2 in g f 3
+let albertEasy = FuncDefExp(['f'],Lambda(['x'],Funcapp(Funcapp(BuiltInFunc Add, Var ['x']),Literal (Int 1))),Funcapp (Var['f'],(Funcapp (Var ['f'], Literal(Int 3)))))  
+// let f x = x+1 in f (f 3)
 
 let result0 = exec [] simple0
 let result1 = exec [] simple
