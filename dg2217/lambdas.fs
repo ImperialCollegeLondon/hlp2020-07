@@ -64,11 +64,11 @@ let rec exec (env:EnvironmentType) (exp:AST) :AST =
         match o with
         | true -> exec env E
         | false -> E 
-    //printpipe exp
-    //printpipe env
+    printpipe env
+    printpipe exp
     match exp with
-    | FuncDefExp(name,body,E) -> exec ((name,body)::env) (orderExec true env E)
-    | Funcapp(Lambda(name,body),E) -> exec ((name,E)::env) (orderExec true env body)
+    | FuncDefExp(name,body,E) -> exec ((name,body)::env) (orderExec false env E)
+    | Funcapp(Lambda(name,body),E) -> exec ((name,E)::env) (orderExec false env body)
     | Var(name) -> findValue env name  
     | Funcapp(Funcapp(BuiltInFunc(func),Literal(Int(x))),Literal(Int(y))) -> execBuiltIn func x y
     | Funcapp(ast1,ast2) -> Funcapp(exec env ast1, exec env ast2) |> reevaluate env (Funcapp(ast1,ast2))
@@ -103,6 +103,9 @@ let orderTest = FuncDefExp(['f'],ABbody,FBodyOrder)
 //let closureTest = 
 // let g a b = a + b*a in let f x = g x x in f 3 
 
+let albertTest = FuncDefExp(['f'],Lambda(['x'],Funcapp(Funcapp(BuiltInFunc Add, Var ['x']),Literal (Int 1))),FuncDefExp(['g'],Lambda(['y'],Funcapp (Funcapp (BuiltInFunc Add, Var ['y']), Literal (Int 2))),(Funcapp(Var ['f'], Funcapp(Var['g'], Literal(Int 3))))))   
+let albertEasy = FuncDefExp(['f'],Lambda(['x'],Funcapp(Funcapp(BuiltInFunc Add, Var ['x']),Literal (Int 1))),Funcapp (Var['f'],(Funcapp (Var ['f'], Literal(Int 3)))))  
+
 //let f x = x+1 in let g y = y+2 in g f 3
 
 let result0 = exec [] simple0
@@ -111,11 +114,17 @@ let result2 = exec [] ABbody2
 let result3 = exec [] fig1easy
 let result4 = exec [] fig1Test
 let result5 = exec [] orderTest
+let result6 = exec [] albertEasy
+let result7 = exec [] albertTest
+
 //let g a b = a*b*b in let f x y = (g x y)/2 in f 2 5
 
 //let g a b = a+b 
 //let f x = g x
 //f 1
-let f a b = a + b / a // function definition
 
-f 3 4 // 
+let f x = x+1
+f (f 3)
+
+let TRUE = Lambda (['x'],Lambda (['y'],Var ['x']))
+let FALSE = Lambda (['x'],Lambda (['y'],Var ['y']))
