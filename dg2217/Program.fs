@@ -2,11 +2,13 @@
 
 open System
 
-open Module1
+open Lambdas
 
 
 [<EntryPoint>]
 let main argv =
     printfn "Hello World from F#!"
-    deleteThisSample()
+    //let result2 = exec (ABbody2,[])
+    printpipe result4
+    Console.ReadKey() |> ignore // not needed running from Visual Studio
     0 // return an integer exit code
