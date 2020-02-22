@@ -40,18 +40,18 @@ and LitType =
     | False of AST 
 
     
-let rec ExtractRightAppList (lst:AST list) (inp:AST) : AST list = 
+let rec extractRightAppList (lst:AST list) (inp:AST) : AST list = 
 // extracts the top-level right-associative application list and returns it as an Fsharp list
     match inp with 
-    | Funcapp (hd, tl) -> lst @ [hd] @ (ExtractRightAppList lst tl)
+    | Funcapp (hd, tl) -> lst @ [hd] @ (extractRightAppList lst tl)
     | el ->  lst @ [el]
     | _ -> failwithf "What? Shouldn't happen"
     
-let rec MakeLeftAppList (inp:AST list) : AST =
+let rec makeLeftAppList (inp:AST list) : AST =
 // takes an Fsharp list and makes a left associative FuncApp tree representing the items
     match inp with 
     | [el] ->  el
-    | hd::tl -> Funcapp (MakeLeftAppList tl, hd)
+    | hd::tl -> Funcapp (makeLeftAppList tl, hd)
     | [] -> failwithf "What? Can't happen"
      
 let (|PMATCH|_|) (tok: Token) (tokLst: Result<Token list, Token list>) = 
@@ -69,97 +69,96 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>)  =
     | Ok [] -> Error []
     | Ok (Other s::rest) when Map.containsKey s builtInFuncMap -> Ok (builtInFuncMap.[s] , Ok rest )
     | Ok (Other s :: rest) ->  Ok (Var s, Ok rest)
-    | Ok (IntToken s:: rest) -> Ok (Literal (Int s) , Ok rest)
+    | Ok (IntToken s:: rest) -> Ok (Literal (Int s) ,Ok rest)
     | Ok (StringToken s::rest) -> Ok (Literal (String s), Ok rest)
     | PMATCH (Bracket ['(']) (PBUILDADDEXP(ast, PMATCH (Bracket [')']) (inp'))) -> Ok (ast, inp') 
-    | Ok lst -> failwithf "Pmatch Not matching properly %A" lst
-    | Error lst ->  failwithf "Pmatch Not matching properly %A" lst
+    | Ok lst -> Error lst
+    | Error lst ->  Error lst
     |> Some
 
-and BuildAppExp(inp: Result<Token list, Token list>):(AST* Result<Token list, Token list>) =
+and buildAppExp(inp: Result<Token list, Token list>):(AST* Result<Token list, Token list>) =
     match inp with
     | PITEM (Ok(s, lst)) -> match lst with 
-                                  | Ok [] -> (s, lst)
-                                  | Ok _ ->  
-                                      let result = BuildAppExp (lst)
-                                      (Funcapp(s, fst(result)), snd(result))
-                                  | _ -> failwithf "What? Can't happen for now "
-                                 
-                 
+                            | Ok (hd::tl) ->  
+                                let result = buildAppExp (lst)
+                                (Funcapp(s, fst(result)), snd(result))
+                            | _ -> (s, lst)   
+
+                                                     
     | PITEM (Error lst) -> failwithf "Lst failed %A " lst
     | Error msg -> failwithf "What? %A" msg
     | Ok _ ->  failwithf "What? Can't happen" 
     | _ ->  failwithf "What? Can't happen"
 
-and BuildMultExp (inp: Result<Token list, Token list>) (acc:Token list):(AST* Result<Token list, Token list>) = 
+and buildMultExp (inp: Result<Token list, Token list>) (acc:Token list):(AST* Result<Token list, Token list>) = 
     match inp with  
     | Ok (hd::tl) when hd = Other ['*'] -> 
-        let result = BuildAppExp (Ok acc)
+        let result = buildAppExp (Ok acc)
                      |> fst
-                     |> ExtractRightAppList []
+                     |> extractRightAppList []
                      |> List.rev
-                     |> MakeLeftAppList
-        (Funcapp(Funcapp(BuiltInFunc Mult, result), fst(BuildMultExp (Ok tl) [])), snd (BuildAppExp (Ok acc)))
+                     |> makeLeftAppList
+        (Funcapp(Funcapp(BuiltInFunc Mult, result), fst(buildMultExp (Ok tl) [])), snd (buildAppExp (Ok acc)))
     | Ok (hd::tl) when hd = Other ['/'] -> 
-        let result = BuildAppExp (Ok acc)
+        let result = buildAppExp (Ok acc)
                      |> fst
-                     |> ExtractRightAppList []
+                     |> extractRightAppList []
                      |> List.rev
-                     |> MakeLeftAppList
-        (Funcapp(Funcapp(BuiltInFunc Div, result), fst(BuildMultExp (Ok tl) [])), snd (BuildAppExp (Ok acc)))
-    | Ok (hd::tl) -> BuildMultExp (Ok tl) (acc @ [hd])
+                     |> makeLeftAppList
+        (Funcapp(Funcapp(BuiltInFunc Div, result), fst(buildMultExp (Ok tl) [])), snd (buildAppExp (Ok acc)))
+    | Ok (hd::tl) -> buildMultExp (Ok tl) (acc @ [hd])
     | Ok [] -> 
-           let res = BuildAppExp (Ok acc)
+           let res = buildAppExp (Ok acc)
                      |> fst
-                     |> ExtractRightAppList []
+                     |> extractRightAppList []
                      |> List.rev
-                     |> MakeLeftAppList
+                     |> makeLeftAppList
            (res, Ok [])
     | Error _ -> failwithf "what?"
 
-and BuildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(AST* Result<Token list, Token list>) = 
+and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(AST* Result<Token list, Token list>) = 
     match inp with  
     | Ok (hd::tl) when hd = Other ['+'] -> 
-        let MultResult =  BuildMultExp (Ok acc) []
-        let AddResult = BuildAddExp [] (Ok tl)
+        let MultResult =  buildMultExp (Ok acc) []
+        let AddResult = buildAddExp [] (Ok tl)
         (Funcapp(Funcapp(BuiltInFunc Add, fst MultResult), fst AddResult ), snd MultResult )
     | Ok (hd::tl) when hd = Other ['-'] -> 
-        let MultResult =  BuildMultExp (Ok acc) []
-        let AddResult = BuildAddExp [] (Ok tl) 
+        let MultResult =  buildMultExp (Ok acc) []
+        let AddResult = buildAddExp [] (Ok tl) 
         (Funcapp(Funcapp(BuiltInFunc Sub, fst MultResult), fst AddResult), snd MultResult)
-    | Ok (hd::tl) -> BuildAddExp (acc @ [hd]) (Ok tl) 
+    | Ok (hd::tl) -> buildAddExp (acc @ [hd]) (Ok tl) 
     | Ok [] -> 
-        BuildMultExp (Ok acc) []
+        buildMultExp (Ok acc) []
     | Error lst -> failwithf "what %A?" lst
 
 and (|PBUILDADDEXP|_|) (inp: Result<Token list, Token list>) = 
-    Some (BuildAddExp [] inp)
+    Some (buildAddExp [] inp)
 
-let rec BuildLambda inp = 
+let rec buildLambda inp = 
     match inp with 
     | hd::(hd'::tl) -> match hd,hd' with 
-                        | (Other x),(Other y) -> Lambda(x, BuildLambda tl)
-                        | (Other x), (Keyword EQUAL) -> Lambda(x, fst(BuildAddExp [] (Ok tl)))
-                        | (Keyword EQUAL), _ ->  fst(BuildAddExp [] (Ok tl)) //let f = 3 for example
+                        | (Other x),(Other y) -> Lambda(x, buildLambda (hd'::tl))
+                        | (Other x), (Keyword EQUAL) -> Lambda(x, fst(buildAddExp [] (Ok tl)))
+                        | (Keyword EQUAL), _ ->  fst(buildAddExp [] (Ok tl)) //let f = 3 for example
                         | _ -> failwithf "Invalid arguments"
     | _ -> failwithf "insufficient expression"
 
-let rec ExtractParts inp acc = 
+let rec extractParts inp acc = 
     match inp with 
     | hd::tl when hd = Keyword IN -> acc,tl
-    | hd::tl -> ExtractParts tl (acc @ [hd])
+    | hd::tl -> extractParts tl (acc @ [hd])
     | [] -> failwithf "No expression evaluated"
     
-let rec BuildFunctionDef inp  = 
+let rec buildFunctionDef inp  = 
     match inp with 
     | hd::tl  -> match hd with 
                  | Other x -> 
-                    let body,expression = ExtractParts tl []
-                    FuncDefExp ((x, BuildLambda body), CheckForLet (Ok expression))
+                    let body,expression = extractParts tl []
+                    FuncDefExp ((x, buildLambda body), Parse (Ok expression))
                  | _ -> failwithf "Not a valid function name"
     | _ -> failwithf "insufficient expression LET X"
 
-and CheckForLet (inp: Result<Token list, Token list>)  = 
+and Parse (inp: Result<Token list, Token list>)  = 
     match inp with
-    | PMATCH (Keyword LET) (Ok rest) -> BuildFunctionDef (rest) 
-    | _ -> fst(BuildAddExp [] inp)
+    | PMATCH (Keyword LET) (Ok rest) -> buildFunctionDef (rest) 
+    | _ -> fst(buildAddExp [] inp)
