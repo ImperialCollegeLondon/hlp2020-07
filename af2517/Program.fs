@@ -8,7 +8,8 @@ let print x = printfn "%A" x
 [<EntryPoint>]
 let main argv =
     //print <| BuildAddExp (Ok [Other ['f']; Other['x']; Other ['y']]) []
-    print <| CheckForLet (Ok [Other ['2']; Other['*']; Other['3']; Other['+']; Other['4']]) 
+    print <| CheckForLet (Ok [Other ['2']; Other['*']; Other['3']; Other['+']; Other['4']])
+    print <| CheckForLet (Ok [Other ['m';'o';'d']; IntToken 4; IntToken 2])
     //let a = ExtractRightAppList [] (Funcapp(Var ['f'], Funcapp(Var ['x'],Var ['y'])))
    // let b = List.rev a
     //print <| MakeLeftAppList b

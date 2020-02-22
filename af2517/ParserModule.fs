@@ -62,9 +62,12 @@ let (|PMATCH|_|) (tok: Token) (tokLst: Result<Token list, Token list>) =
     | Ok lst -> None
     | Error lst -> None
     
+let builtInFuncMap = [['m';'o';'d'], BuiltInFunc Mod;['e';'q';'u';'a';'l';'s'], BuiltInFunc Equal;['e';'x';'p';'l';'o';'d';'e'], BuiltInFunc Explode;['i';'m';'p';'l';'o';'d';'e'], BuiltInFunc Implode;['p';'a';'i';'r'], BuiltInFunc P;['f';'s';'t'], BuiltInFunc PFst ;['s';'n';'d'], BuiltInFunc PSnd;['i';'s';'p';'a';'i';'r'], BuiltInFunc IsPair] |> Map.ofList
+
 let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>)  =
     match tokLst with
     | Ok [] -> Error []
+    | Ok (Other s::rest) when Map.containsKey s builtInFuncMap -> Ok (builtInFuncMap.[s] , Ok rest )
     | Ok (Other s :: rest) ->  Ok (Var s, Ok rest)
     | Ok (IntToken s:: rest) -> Ok (Literal (Int s) , Ok rest)
     | Ok (StringToken s::rest) -> Ok (Literal (String s), Ok rest)
