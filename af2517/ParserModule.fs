@@ -22,10 +22,11 @@ type BuiltInType =
     | PSnd
     | IsPair
     | IfThenElse  
-    
+ 
+
 type AST = 
-    | FuncDefExp of FuncDefExpType:(char list * AST)*AST 
-    | Lambda of LambdaType:(char list)*Body:AST
+    | FuncDefExp of FuncDefExpType 
+    | Lambda of LambdaType
     | Var of char list //only valid in lambdas 
     | Funcapp of AST*AST
     | Pair of AST*AST 
@@ -33,6 +34,16 @@ type AST =
     | Literal of LitType 
     | BuiltInFunc of BuiltInType
 
+and FuncDefExpType = {
+    Name: char list;
+    Body: AST
+    Expression: AST
+}
+
+and LambdaType = {
+    InputVar: char list
+    Body: AST
+}
 and LitType = 
     | Int of int 
     | String of char list 
@@ -68,6 +79,8 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>)  =
     match tokLst with
     | Ok [] -> Error []
     | Ok (Other s::rest) when Map.containsKey s builtInFuncMap -> Ok (builtInFuncMap.[s] , Ok rest )
+    | Ok (Other s::rest) when s = ['T';'R';'U';'E'] -> Ok (Lambda {InputVar=['x'];Body=Lambda{InputVar=['y']; Body=Var['x']} }, Ok rest)
+    | Ok (Other s::rest) when s = ['F';'A';'L';'S';'E'] -> Ok (Lambda {InputVar=['x'];Body=Lambda{InputVar=['y']; Body=Var['y']} }, Ok rest)
     | Ok (Other s :: rest) ->  Ok (Var s, Ok rest)
     | Ok (IntToken s:: rest) -> Ok (Literal (Int s) ,Ok rest)
     | Ok (StringToken s::rest) -> Ok (Literal (String s), Ok rest)
@@ -136,8 +149,8 @@ and (|PBUILDADDEXP|_|) (inp: Result<Token list, Token list>) =
 let rec buildLambda inp = 
     match inp with 
     | hd::(hd'::tl) -> match hd,hd' with 
-                        | (Other x),(Other y) -> Lambda(x, buildLambda (hd'::tl))
-                        | (Other x), (Keyword EQUAL) -> Lambda(x, fst(buildAddExp [] (Ok tl)))
+                        | (Other x),(Other y) -> Lambda{InputVar=x;Body=buildLambda(hd'::tl)}
+                        | (Other x), (Keyword EQUAL) -> Lambda{InputVar=x;Body=fst(buildAddExp [] (Ok tl))}
                         | (Keyword EQUAL), _ ->  fst(buildAddExp [] (Ok tl)) //let f = 3 for example
                         | _ -> failwithf "Invalid arguments"
     | _ -> failwithf "insufficient expression"
@@ -153,7 +166,7 @@ let rec buildFunctionDef inp  =
     | hd::tl  -> match hd with 
                  | Other x -> 
                     let body,expression = extractParts tl []
-                    FuncDefExp ((x, buildLambda body), Parse (Ok expression))
+                    FuncDefExp {Name=x;Body=buildLambda body; Expression=Parse(Ok expression)}
                  | _ -> failwithf "Not a valid function name"
     | _ -> failwithf "insufficient expression LET X"
 
