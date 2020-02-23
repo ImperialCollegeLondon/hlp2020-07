@@ -50,39 +50,17 @@ let rec findValue (env:EnvironmentType) name=
 let removeEntry env name = 
     env |> List.filter (fun (n,_) -> n<>name)
 
-let concat s1 s2 =
-    match (s1,s2) with
-    | (Literal(String(a)),Literal(String(b))) -> Literal(String(a@b))
-
-let rec implode lst = 
-    match lst with
-    | Null -> Literal(String([]))
-    | Pair(Literal(String([c])),p) -> (Literal(String [c]), (implode p)) ||> concat
-
-let rec explode str =
-    match str with
-    | Literal(String ([])) -> Null
-    | Literal(String s) -> Pair(Literal(String([s.[0]])), explode (Literal(String(s.[1..]))))
-
-concat (Literal(String['a';'b'])) (Literal(String ['c';'d']))
-explode (Literal(String ['a';'b';'c';'d']))
-implode (Pair(Literal (String ['a']),Pair(Literal (String ['b']),Pair (Literal (String ['c']),Pair (Literal (String ['d']),Null)))))
-
-
-let execArithmetic func A B =
-    match (A,B) with 
-    |(Literal (Int valueA),Literal(Int valueB))->
-        match func with
-        //| P -> Pair()
-        | Add -> Literal(Int(valueA+valueB))
-        | Sub -> Literal(Int(valueA-valueB))
-        | Mult -> Literal(Int(valueA*valueB))
-        | Div -> Literal(Int(valueA/valueB))
-        | Mod -> Literal(Int(valueA%valueB))
-        | Equal -> if valueA=valueB then trueAST else falseAST
-        | P -> Pair(Literal(Int valueA),Literal(Int valueB))
-        //| x -> BuiltInFunc(x)
-    | (a,b)->Funcapp(a,b)
+let execArithmetic func valueA valueB = 
+    match func with
+    //| P -> Pair()
+    | Add -> Literal(Int(valueA+valueB))
+    | Sub -> Literal(Int(valueA-valueB))
+    | Mult -> Literal(Int(valueA*valueB))
+    | Div -> Literal(Int(valueA/valueB))
+    | Mod -> Literal(Int(valueA%valueB))
+    | Equal -> if valueA=valueB then trueAST else falseAST
+    | P -> Pair(Literal(Int valueA),Literal(Int valueB))
+    | x -> BuiltInFunc(x)
 
 let execPairOperation func (a,b) =
     match func with
@@ -92,49 +70,35 @@ let execPairOperation func (a,b) =
 let printpipe (x:AST) = printfn "%A" x;x
 
 let rec exec (exp:AST) :AST =
-    let orderExec o E =
+
+    let orderExec o env E =
         match o with
         | true -> exec E
         | false -> E 
 
     let rec betaReduce env exp = 
-        let (|BASICS|_|) exp = 
-            match exp with
-            | FuncDefExp(name,body,E) -> Some(betaReduce ((name,body)::env) (orderExec false E))
-            | Funcapp(Lambda l,E) -> Some(betaReduce ((l.InputVar,E)::env) (orderExec false l.Body))
-            | Var(name) -> Some(findValue env name)    
-            | _ -> None      
-
+        let reevaluate env exp1 exp2 =
+            if exp1=exp2 then
+                exp1
+            else betaReduce env exp2
         match exp with
-        | BASICS result -> result
-        | Funcapp(ast1,ast2) ->
-            match Funcapp(betaReduce env ast1, betaReduce env ast2) with
-            | BASICS result -> result
-            | x -> x
-        | Lambda l -> Lambda {InputVar = l.InputVar; Body = betaReduce env l.Body}
-        | x -> x 
+        | FuncDefExp(name,body,E) -> betaReduce ((name,body)::env) (orderExec false env E)
+        | Funcapp(Lambda l,E) -> betaReduce ((l.InputVar,E)::env) (orderExec false env l.Body)
+        | Var(name) -> findValue env name  
+        | Funcapp(ast1,ast2) -> Funcapp(betaReduce env ast1, betaReduce env ast2) |> reevaluate env (Funcapp(ast1,ast2))
+        | Lambda l -> Lambda {InputVar = l.InputVar; Body = betaReduce env l.Body} |> reevaluate env (Lambda l)
+        | x -> x
 
-    let rec evaluate exp =
-        let (|BASEFUNCS|_|) exp = 
-            match exp with
-            | Funcapp(Funcapp(BuiltInFunc(func),Literal(Int a)),Literal(Int b)) -> 
-                Some ((Literal (Int a),Literal (Int b)) ||> execArithmetic func)
-            | Funcapp(Funcapp(BuiltInFunc(Equal),x),y) -> 
-                if x=y then Some(trueAST) else Some(falseAST)
-            | Funcapp(BuiltInFunc(func),Pair(a,b)) -> 
-                Some(execPairOperation func (a,b))
-            | Funcapp(BuiltInFunc(IsPair),x) -> 
-                match x with | Pair(_) -> Some(trueAST) | _ -> Some(falseAST)
-            | _ -> None  
-        //printpipe exp
+    let rec evaluate exp = 
+        printpipe exp
         match exp with
-        | BASEFUNCS result -> result
-        | Funcapp(a,b) -> 
-            match Funcapp(evaluate a,evaluate b) with 
-            | BASEFUNCS result -> result
-            | x -> x
-        | Lambda l -> Lambda {InputVar = l.InputVar; Body = evaluate l.Body} //|> evaluate//|> reevaluate env (Lambda l)        
-        | x->x
+        | Funcapp(Funcapp(BuiltInFunc(Equal),x),y) -> if x=y then trueAST else falseAST
+        | Funcapp(Funcapp(BuiltInFunc(func),Literal(Int x )),Literal(Int y)) -> execArithmetic func x y
+        | Funcapp(BuiltInFunc(func),Pair(a,b)) -> execPairOperation func (a,b)
+        | Funcapp(BuiltInFunc(IsPair),x) -> match x with | Pair(_) -> trueAST | _ -> falseAST 
+        | Funcapp(ast1,ast2) -> Funcapp(evaluate ast1, evaluate ast2) |> evaluate//|> reevaluate env (Funcapp(ast1,ast2))
+        //| Lambda l -> Lambda {InputVar = l.InputVar; Body = evaluate l.Body} |> evaluate//|> reevaluate env (Lambda l)
+        | x -> x
 
     exp |> betaReduce [] |> evaluate
 
@@ -189,3 +153,4 @@ let result7 = exec albertTest
 
 let f x = x+1
 f (f 3)
+
