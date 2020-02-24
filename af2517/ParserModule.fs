@@ -67,7 +67,6 @@ let rec makeLeftAppList (inp:AST list) : AST =
      
 let (|PMATCH|_|) (tok: Token) (tokLst: Result<Token list, Token list>) = 
     match tokLst with
-    | _ when tok = Bracket [')'] -> None
     | Ok []  -> None
     | Ok (s :: rest) when s = tok -> Some(Ok rest)
     | Ok lst -> None
@@ -78,18 +77,11 @@ let builtInFuncMap = [['m';'o';'d'], BuiltInFunc Mod;['e';'q';'u';'a';'l';'s'], 
 let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>)  =
     match tokLst with
     | Ok [] -> Error (None)
-    | PSITEM (Ok(ast, Ok lst)) -> Ok (ast, Ok lst)
-    | PBRACKETS (ast, Ok inp') -> Ok (ast, Ok inp')
-    | Ok lst -> Error (Some lst)
-    | Error lst ->  Error (Some lst)
+    | PSITEM (Ok(ast, Ok lst)) -> printf "Single item tried: %A\n" ast ; Ok (ast, Ok lst)
+    | PMATCH (Bracket ['(']) (PBUILDADDEXP(ast, PMATCH (Bracket [')']) (inp'))) -> printf "Brackets tried: \n %A\n" ast ; Ok(ast, inp') //failwithf "got this ast %A" ast 
+    | Ok lst -> printf "Ok list %A" lst;Error (Some lst)
+    | Error lst -> printf "Error list %A" lst;Error (Some lst)
     |> Some
-
-and (|PBRACKETS|_|) inp = 
-    match inp with 
-    | PBUILDADDEXP (ast, Ok inp') -> Some (ast, Ok inp')
-    | PMATCH (Bracket ['(']) (PBRACKETS(ast, PMATCH (Bracket [')']) (inp'))) -> Some (ast, inp')
-    | Error msg -> failwithf "Error %A" msg
-    | _ -> failwithf "what?"
 
 and (|PSITEM|_|) tokLst = 
     match tokLst with
@@ -102,20 +94,24 @@ and (|PSITEM|_|) tokLst =
     | _ -> None
 
 and buildAppExp(inp: Result<Token list, Token list>):(AST* Result<Token list, Token list>) =
+    printf "Entered buildAppExp\n"
     match inp with
-    | PITEM (Ok(s, lst)) -> match lst with 
-                            | PITEM (Ok(_, _)) ->  
+    | PITEM (Ok(s, lst)) -> printf "Tried this: %A \n" s
+                            match lst with 
+                            | PITEM (Ok(_, _)) -> 
                                 let result = buildAppExp (lst)
-                                (Funcapp(s, fst(result)), snd(result))
-                            | PITEM (Error (None)) -> (s, lst)   
-                            | PITEM (Error (Some lst')) -> (s, Ok lst')
-                            | _ -> failwithf "What? Shoudln't happen"
-    | PITEM (Error lst) -> failwithf "Lst failed %A " lst
-    | Error msg -> failwithf "What? %A" msg
-    | Ok _ ->  failwithf "What? Can't happen" 
-    | _ ->  failwithf "What? Can't happen"
+                                //failwithf "the result is %A" (fst(result)) //this is triggered first
+                                printf "Matched second PITEM \n"; (Funcapp(s, fst(result)), snd(result))
+                            | PITEM (Error (None)) -> printf "Matched empty list \n"  ;(s, lst) 
+                            | PITEM (Error (Some lst')) -> printf "Matched non-empty error list \n" ; (s, lst)
+                            | _ -> printf "it's impossible" ;failwithf "What? Shoudln't happen"
+    | PITEM (Error lst) -> printf "aaaaa \n" ;failwithf "Lst failed %A " lst
+    | Error msg -> printf "aaaaa \n";failwithf "What? %A" msg
+    | Ok _ -> printf "aaaaa \n"; failwithf "What? Can't happen" 
+    | _ ->  printf "aaaaa \n";failwithf "What? Can't happen"
 
 and buildMultExp (inp: Result<Token list, Token list>) (acc:Token list):(AST* Result<Token list, Token list>) = 
+    printf "Entered Multiplicative \n"
     match inp with  
     | Ok (hd::tl) when hd = Other ['*'] -> 
         let result = buildAppExp (Ok acc)
@@ -138,10 +134,11 @@ and buildMultExp (inp: Result<Token list, Token list>) (acc:Token list):(AST* Re
                      |> extractRightAppList []
                      |> List.rev
                      |> makeLeftAppList
-           (res, Ok [])
+           (res, snd(buildAppExp(Ok acc)))
     | Error _ -> failwithf "what?"
 
-and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(AST* Result<Token list, Token list>) = 
+and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(AST* Result<Token list, Token list>) =
+    printf "Entered Additive \n"
     match inp with  
     | Ok (hd::tl) when hd = Other ['+'] -> 
         let MultResult =  buildMultExp (Ok acc) []
