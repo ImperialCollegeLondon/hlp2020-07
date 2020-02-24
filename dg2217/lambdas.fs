@@ -87,12 +87,12 @@ let rec exec ord (exp:AST) :AST =
         match exp with
         | (Funcapp(BuiltInFunc(func),x)) -> Some (func, x)
         | _ -> None 
-        
+    
     let rec betaReduce env exp = 
         let (|BASICS|_|) exp = 
             match exp with
-            | Funcapp(Funcapp(bool,a),_) when bool = trueAST -> betaReduce env a |> Some
-            | Funcapp(Funcapp(bool,_),b) when bool = falseAST -> betaReduce env b |> Some
+            | Funcapp(Funcapp(churchBool,a),_) when churchBool = trueAST -> betaReduce env a |> Some
+            | Funcapp(Funcapp(churchBool,_),b) when churchBool = falseAST -> betaReduce env b |> Some
             | FuncDefExp(name,body,E) -> 
                 let newEnv = (name,chooseOrder ord body)::env
                 betaReduce newEnv E |> Some
