@@ -33,7 +33,7 @@ let properties =
 let main argv =
     //runTestsInAssembly defaultConfig [||]
     //Tests.runTests defaultConfig properties
-    print <| tokenize "21.2 -> let +"
+    print <| tokenize "21.2 -> let + - / + f"
     0
     
 

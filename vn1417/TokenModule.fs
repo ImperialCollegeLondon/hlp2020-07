@@ -20,6 +20,8 @@ type Token = OpenRoundBracket
             |Add
             |Multiply
             |Other of string
+            |Substract
+            |Div
             |Unexpected
 //Rules
 //------------------------------------------------------------
@@ -97,6 +99,14 @@ let multiplication =
     [
         ['*'],false
     ]
+let div = 
+    [
+        ['/'],false
+    ]
+let substract = 
+    [
+        ['-'],false
+    ]
 let otherCharacters = 
     [
         ['a'..'z'],true
@@ -105,6 +115,7 @@ let otherCharacters =
 //Dict
 //------------------------------------------------------------
 let mdict = [
+             substract
              negIntegerLit
              integerLit
              stringLit
@@ -122,6 +133,7 @@ let mdict = [
              addition
              multiplication
              otherCharacters
+             div
              ]
 //------------------------------------------------------------
 //Returns first occurence of element in list
@@ -187,21 +199,23 @@ let combinedLexers (mstring:string) : ((char list * int) list) =
 let tokenize (mstring:string) : Token list = 
     let flattener (x:char list,y:int) : Token = 
         match y with 
-            | 0 | 1 -> IntegerLit (int (x |> Array.ofList |> String))
-            | 2 -> StringLit (x |> Array.ofList |> String) 
-            | 3 | 4 -> DecimalLit (float (x |> Array.ofList |> String))
-            | 5 -> SpaceLit
-            | 6 -> OpenRoundBracket
-            | 7 -> CloseRoundBracket
-            | 8 -> OpenSquareBracket
-            | 9 -> CloseSquareBracket
-            | 10 -> Let
-            | 11 -> RightArrow
-            | 12 -> Equal
-            | 13 -> HexLit (x |> Array.ofList |> String)
-            | 14 -> Add 
-            | 15 -> Multiply
-            | 16 -> Other (x |> Array.ofList |> String)
+            | 0 -> Substract
+            | 1 | 2 -> IntegerLit (int (x |> Array.ofList |> String))
+            | 3 -> StringLit (x |> Array.ofList |> String) 
+            | 4 | 5 -> DecimalLit (float (x |> Array.ofList |> String))
+            | 6 -> SpaceLit
+            | 7 -> OpenRoundBracket
+            | 8 -> CloseRoundBracket
+            | 9 -> OpenSquareBracket
+            | 10 -> CloseSquareBracket
+            | 11 -> Let
+            | 12 -> RightArrow
+            | 13 -> Equal
+            | 14 -> HexLit (x |> Array.ofList |> String)
+            | 15 -> Add 
+            | 16 -> Multiply
+            | 17 -> Other (x |> Array.ofList |> String)
+            | 18 -> Div
             | _ -> Unexpected
     mstring
     |> combinedLexers
