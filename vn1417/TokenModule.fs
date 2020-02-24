@@ -1,3 +1,6 @@
+module TokenModule 
+
+
 open System
 type Lexer = char list -> (char list * char list) option
 type Token = OpenRoundBracket
@@ -104,7 +107,6 @@ let mdict = [
              ]
 //------------------------------------------------------------
 //Returns first occurence of element in list
-//TODO: Make it more efficient
 let index arr elem =
     let rec find arr elem pos = 
         match arr with 

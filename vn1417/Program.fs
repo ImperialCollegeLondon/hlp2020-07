@@ -1,5 +1,5 @@
 open Expecto
-open TokenizerModule
+open TokenModule
 
 
 let testDescriptions = [
@@ -23,9 +23,6 @@ let properties =
   testList "FsCheck samples" [
     testProperty "Integer Lit works for any integer" <| fun a ->
       tokenize (string a) = [IntegerLit a]
-    //Not ideal for very small integers
-    testProperty "Decimal Lit actually works for any decimal" <| fun a ->
-        tokenize (string a) = [DecimalLit a]
     ]
 
 
