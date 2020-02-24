@@ -72,23 +72,34 @@ let (|PMATCH|_|) (tok: Token) (tokLst: Result<Token list, Token list>) =
     | Ok (s :: rest) when s = tok -> Some(Ok rest)
     | Ok lst -> None
     | Error lst -> None
-    
+
 let builtInFuncMap = [['m';'o';'d'], BuiltInFunc Mod;['e';'q';'u';'a';'l';'s'], BuiltInFunc Equal;['e';'x';'p';'l';'o';'d';'e'], BuiltInFunc Explode;['i';'m';'p';'l';'o';'d';'e'], BuiltInFunc Implode;['p';'a';'i';'r'], BuiltInFunc P;['f';'s';'t'], BuiltInFunc PFst ;['s';'n';'d'], BuiltInFunc PSnd;['i';'s';'p';'a';'i';'r'], BuiltInFunc IsPair] |> Map.ofList
 
 let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>)  =
     match tokLst with
-    | Ok [] -> Error []
-    | Ok (Other s::rest) when Map.containsKey s builtInFuncMap -> Ok (builtInFuncMap.[s] , Ok rest )
-    | Ok (Other s::rest) when s = ['T';'R';'U';'E'] -> Ok (Lambda {InputVar=['x'];Body=Lambda{InputVar=['y']; Body=Var['x']} }, Ok rest)
-    | Ok (Other s::rest) when s = ['F';'A';'L';'S';'E'] -> Ok (Lambda {InputVar=['x'];Body=Lambda{InputVar=['y']; Body=Var['y']} }, Ok rest)
-    | Ok (Other s :: rest) ->  Ok (Var s, Ok rest)
-    | Ok (IntToken s:: rest) -> Ok (Literal (Int s) ,Ok rest)
-    | Ok (StringToken s::rest) -> Ok (Literal (String s), Ok rest)
-    //| Ok (Bracket s::_) when s = [')'] -> Error []
-    | PMATCH (Bracket ['(']) (PBUILDADDEXP(ast, PMATCH (Bracket [')']) (inp'))) -> Ok (ast, inp') 
-    | Ok lst -> Error lst
-    | Error lst ->  Error lst
+    | Ok [] -> Error (None)
+    | PSITEM (Ok(ast, Ok lst)) -> Ok (ast, Ok lst)
+    | PBRACKETS (ast, Ok inp') -> Ok (ast, Ok inp')
+    | Ok lst -> Error (Some lst)
+    | Error lst ->  Error (Some lst)
     |> Some
+
+and (|PBRACKETS|_|) inp = 
+    match inp with 
+    | PBUILDADDEXP (ast, Ok inp') -> Some (ast, Ok inp')
+    | PMATCH (Bracket ['(']) (PBRACKETS(ast, PMATCH (Bracket [')']) (inp'))) -> Some (ast, inp')
+    | Error msg -> failwithf "Error %A" msg
+    | _ -> failwithf "what?"
+
+and (|PSITEM|_|) tokLst = 
+    match tokLst with
+    | Ok (Other s::rest) when Map.containsKey s builtInFuncMap -> Some(Ok (builtInFuncMap.[s] , Ok rest ))
+    | Ok (Other s::rest) when s = ['T';'R';'U';'E'] ->Some( Ok (Lambda {InputVar=['x'];Body=Lambda{InputVar=['y']; Body=Var['x']} }, Ok rest))
+    | Ok (Other s::rest) when s = ['F';'A';'L';'S';'E'] -> Some(Ok (Lambda {InputVar=['x'];Body=Lambda{InputVar=['y']; Body=Var['y']} }, Ok rest))
+    | Ok (Other s :: rest) -> Some( Ok (Var s, Ok rest))
+    | Ok (IntToken s:: rest) ->Some( Ok (Literal (Int s) ,Ok rest))
+    | Ok (StringToken s::rest) ->Some( Ok (Literal (String s), Ok rest))
+    | _ -> None
 
 and buildAppExp(inp: Result<Token list, Token list>):(AST* Result<Token list, Token list>) =
     match inp with
@@ -96,7 +107,9 @@ and buildAppExp(inp: Result<Token list, Token list>):(AST* Result<Token list, To
                             | PITEM (Ok(_, _)) ->  
                                 let result = buildAppExp (lst)
                                 (Funcapp(s, fst(result)), snd(result))
-                            | _ -> (s, lst)                            
+                            | PITEM (Error (None)) -> (s, lst)   
+                            | PITEM (Error (Some lst')) -> (s, Ok lst')
+                            | _ -> failwithf "What? Shoudln't happen"
     | PITEM (Error lst) -> failwithf "Lst failed %A " lst
     | Error msg -> failwithf "What? %A" msg
     | Ok _ ->  failwithf "What? Can't happen" 

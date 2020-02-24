@@ -19,6 +19,7 @@ let main argv =
     //problem when putting two arguments
     //print <| Parse (Ok([Keyword LET; Other ['f']; Other['a']; Other['b']; Keyword EQUAL; Other['a']; Other['+']; Other ['b'];Other['/']; Other['a']; Keyword IN; Other ['f']; IntToken 3; IntToken 4] ) )
     //print <| Parse (Ok [Other ['f']; Bracket['(']; Other['x']; Other ['y']; Bracket[')']]) 
-    print <| Parse (Ok([Keyword LET; Other ['f']; Other['x']; Other['y']; Keyword EQUAL; Other['x']; Keyword IN; Other ['f']; IntToken 3; IntToken 4] ) )
+    print <| Parse (Ok [Other ['f']; Bracket['(']; Other['x']; Other ['y']; Bracket[')']]) 
+    //print <| Parse (Ok([Keyword LET; Other ['f']; Other['x']; Other['y']; Keyword EQUAL; Other['x']; Keyword IN; Other ['f']; IntToken 3; IntToken 4] ) )
     0 // return an integer exit code
     
