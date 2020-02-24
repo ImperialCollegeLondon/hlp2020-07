@@ -31,9 +31,10 @@ let properties =
 
 [<EntryPoint>]
 let main argv =
-    runTestsInAssembly defaultConfig [||]
+    //runTestsInAssembly defaultConfig [||]
     //Tests.runTests defaultConfig properties
-
+    print <| tokenize "21.2 -> let +"
+    0
     
 
     

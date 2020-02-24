@@ -17,7 +17,10 @@ type Token = OpenRoundBracket
             |Equal
             |HexLit of string
             |NegativeInteger of string
-            |Other
+            |Add
+            |Multiply
+            |Other of string
+            |Unexpected
 //Rules
 //------------------------------------------------------------
 let integerLit =
@@ -86,6 +89,18 @@ let binaryLit =
         ['x'],false
         ['A'..'F'] @ ['0'..'9'] @ ['a'..'f'],true
     ]
+let addition = 
+    [
+        ['+'],false
+    ]
+let multiplication = 
+    [
+        ['*'],false
+    ]
+let otherCharacters = 
+    [
+        ['a'..'z'],true
+    ]
 //------------------------------------------------------------
 //Dict
 //------------------------------------------------------------
@@ -104,6 +119,9 @@ let mdict = [
              keywordRightArrow
              keywordEqual
              binaryLit  
+             addition
+             multiplication
+             otherCharacters
              ]
 //------------------------------------------------------------
 //Returns first occurence of element in list
@@ -181,7 +199,10 @@ let tokenize (mstring:string) : Token list =
             | 11 -> RightArrow
             | 12 -> Equal
             | 13 -> HexLit (x |> Array.ofList |> String)
-            | _ -> Other
+            | 14 -> Add 
+            | 15 -> Multiply
+            | 16 -> Other (x |> Array.ofList |> String)
+            | _ -> Unexpected
     mstring
     |> combinedLexers
     |> List.map flattener 
