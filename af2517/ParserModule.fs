@@ -6,14 +6,18 @@ type Token =
     | Bracket of char list
     | Keyword of Keywords
     | IntToken of int  
-    | StringToken of char list 
+    | StringToken of char list
+    
+
+type MathType = 
+   | Add 
+   | Sub
+   | Div
+   | Mult
+   | Mod
 
 type BuiltInType = 
-    | Add 
-    | Sub 
-    | Mult 
-    | Div
-    | Mod
+    | Math of MathType
     | Equal //works for strings ints and nulls 
     | Explode 
     | Implode 
@@ -22,7 +26,7 @@ type BuiltInType =
     | PSnd
     | IsPair
     | IfThenElse  
- 
+
 
 type AST = 
     | FuncDefExp of FuncDefExpType 
@@ -72,7 +76,7 @@ let (|PMATCH|_|) (tok: Token) (tokLst: Result<Token list, Token list>) =
     | Ok lst -> None
     | Error lst -> None
 
-let builtInFuncMap = [['m';'o';'d'], BuiltInFunc Mod;['e';'q';'u';'a';'l';'s'], BuiltInFunc Equal;['e';'x';'p';'l';'o';'d';'e'], BuiltInFunc Explode;['i';'m';'p';'l';'o';'d';'e'], BuiltInFunc Implode;['p';'a';'i';'r'], BuiltInFunc P;['f';'s';'t'], BuiltInFunc PFst ;['s';'n';'d'], BuiltInFunc PSnd;['i';'s';'p';'a';'i';'r'], BuiltInFunc IsPair] |> Map.ofList
+let builtInFuncMap = [['m';'o';'d'], BuiltInFunc(Math Mod);['e';'q';'u';'a';'l';'s'], BuiltInFunc Equal;['e';'x';'p';'l';'o';'d';'e'], BuiltInFunc Explode;['i';'m';'p';'l';'o';'d';'e'], BuiltInFunc Implode;['p';'a';'i';'r'], BuiltInFunc P;['f';'s';'t'], BuiltInFunc PFst ;['s';'n';'d'], BuiltInFunc PSnd;['i';'s';'p';'a';'i';'r'], BuiltInFunc IsPair] |> Map.ofList
 
 let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>)  =
     match tokLst with
@@ -128,14 +132,14 @@ and buildMultExp (inp: Result<Token list, Token list>) (acc:Token list):(AST* Re
                      |> extractRightAppList []
                      |> List.rev
                      |> makeLeftAppList
-        (Funcapp(Funcapp(BuiltInFunc Mult, result), fst(buildMultExp (Ok tl) [])), snd (buildAppExp (Ok acc)))
+        (Funcapp(Funcapp(BuiltInFunc (Math Mult), result), fst(buildMultExp (Ok tl) [])), snd (buildAppExp (Ok acc)))
     | Ok (hd::tl) when hd = Other ['/'] -> 
         let result = buildAppExp (Ok acc)
                      |> fst
                      |> extractRightAppList []
                      |> List.rev
                      |> makeLeftAppList
-        (Funcapp(Funcapp(BuiltInFunc Div, result), fst(buildMultExp (Ok tl) [])), snd (buildAppExp (Ok acc)))
+        (Funcapp(Funcapp(BuiltInFunc (Math Div), result), fst(buildMultExp (Ok tl) [])), snd (buildAppExp (Ok acc)))
     | Ok (hd::tl) -> buildMultExp (Ok tl) (acc @ [hd])
     | Ok [] -> //problem here 
            let res = buildAppExp (Ok acc)
@@ -148,11 +152,11 @@ and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(AST* Re
     | Ok (hd::tl) when hd = Other ['+'] -> 
         let MultResult =  buildMultExp (Ok acc) []
         let AddResult = buildAddExp [] (Ok tl)
-        (Funcapp(Funcapp(BuiltInFunc Add, fst MultResult), fst AddResult ), snd MultResult )
+        (Funcapp(Funcapp(BuiltInFunc (Math Add), fst MultResult), fst AddResult ), snd MultResult )
     | Ok (hd::tl) when hd = Other ['-'] -> 
         let MultResult =  buildMultExp (Ok acc) []
         let AddResult = buildAddExp [] (Ok tl) 
-        (Funcapp(Funcapp(BuiltInFunc Sub, fst MultResult), fst AddResult), snd MultResult)
+        (Funcapp(Funcapp(BuiltInFunc (Math Sub), fst MultResult), fst AddResult), snd MultResult)
     | Ok (hd::tl) -> buildAddExp (acc @ [hd]) (Ok tl) 
     | Ok [] -> 
         buildMultExp (Ok acc) []
@@ -181,7 +185,7 @@ let rec buildFunctionDef inp  =
     | hd::tl  -> match hd with 
                  | Other x -> 
                     let body,expression = extractParts tl []
-                    FuncDefExp {Name=x;Body=buildLambda body; Expression=Parse(Ok expression)}
+                    FuncDefExp {Name=x;Body=buildLambda body; Expression=parse(Ok expression)}
                  | _ -> failwithf "Not a valid function name"
     | _ -> failwithf "insufficient expression LET X"
 

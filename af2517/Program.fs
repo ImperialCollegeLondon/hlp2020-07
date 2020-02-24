@@ -17,7 +17,7 @@ let main argv =
     //print <| BuildAddExp (Ok [Other ['f']; Bracket['(']; Other['x']; Other ['y']; Bracket[')']]) []
     //print <| Parse (Ok([Keyword LET; Other ['f']; Other['x']; Keyword EQUAL; Other['x']; Other['+']; IntToken 1; Keyword IN; Keyword LET; Other ['g']; Other['y']; Keyword EQUAL; Other['y']; Other['+']; IntToken 2;Keyword IN; Other ['g']; Other['f'];IntToken 3] ) )
     //problem when putting two arguments
-    //print <| Parse (Ok([Keyword LET; Other ['f']; Other['a']; Other['b']; Keyword EQUAL; Other['a']; Other['+']; Other ['b'];Other['/']; Other['a']; Keyword IN; Other ['f']; IntToken 3; IntToken 4] ) )
+    print <| parse (Ok([Keyword LET; Other ['f']; Other['a']; Other['b']; Keyword EQUAL; Other['a']; Other['+']; Other ['b'];Other['/']; Other['a']; Keyword IN; Other ['f']; IntToken 3; IntToken 4] ) )
     //print <| Parse (Ok [Other ['f']; IntToken 3; IntToken 4; Other ['*']; Other ['f'];Other['+'];Other['b']]) 
     print <| parse (Ok [Other ['f']; Bracket['(']; Other['x']; Other ['y']; Bracket[')']]) 
     //print <| buildAddExp [] (Ok [Other['x']; Other ['y']]) 
