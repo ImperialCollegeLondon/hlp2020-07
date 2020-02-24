@@ -1,13 +1,19 @@
 module ParserModule
-type Bracket = Round |Square 
-type Keywords = LET |RIGHTARROW |Extension of string |EQUAL |IN
-type Token = 
-    | Other of char list  
-    | Bracket of char list
-    | Keyword of Keywords
-    | IntToken of int  
-    | StringToken of char list
-    
+type Token = OpenRoundBracket
+            |CloseRoundBracket
+            |OpenSquareBracket
+            |CloseSquareBracket
+            |IntegerLit of int
+            |StringLit of string
+            |SpaceLit
+            |DecimalLit of float
+            |Keyword of string
+            |Let
+            |RightArrow
+            |Equal
+            |HexLit of string
+            |NegativeInteger of string
+            |Other of string
 
 type MathType = 
    | Add 
@@ -31,7 +37,7 @@ type BuiltInType =
 type AST = 
     | FuncDefExp of FuncDefExpType 
     | Lambda of LambdaType
-    | Var of char list //only valid in lambdas 
+    | Var of string //only valid in lambdas 
     | Funcapp of AST*AST
     | Pair of AST*AST 
     | Null 
@@ -39,18 +45,18 @@ type AST =
     | BuiltInFunc of BuiltInType
 
 and FuncDefExpType = {
-    Name: char list;
+    Name: string;
     Body: AST
     Expression: AST
 }
 
 and LambdaType = {
-    InputVar: char list
+    InputVar: string
     Body: AST
 }
 and LitType = 
     | Int of int 
-    | String of char list 
+    | String of string
     | True of AST //make it a named function with Lambda("A",Lambda ("B",Var "A" ))
     | False of AST 
 
@@ -76,13 +82,13 @@ let (|PMATCH|_|) (tok: Token) (tokLst: Result<Token list, Token list>) =
     | Ok lst -> None
     | Error lst -> None
 
-let builtInFuncMap = [['m';'o';'d'], BuiltInFunc(Math Mod);['e';'q';'u';'a';'l';'s'], BuiltInFunc Equal;['e';'x';'p';'l';'o';'d';'e'], BuiltInFunc Explode;['i';'m';'p';'l';'o';'d';'e'], BuiltInFunc Implode;['p';'a';'i';'r'], BuiltInFunc P;['f';'s';'t'], BuiltInFunc PFst ;['s';'n';'d'], BuiltInFunc PSnd;['i';'s';'p';'a';'i';'r'], BuiltInFunc IsPair] |> Map.ofList
+let builtInFuncMap = ["mod", BuiltInFunc(Math Mod);"equals", BuiltInFunc Equal;"explode", BuiltInFunc Explode;"implode", BuiltInFunc Implode;"pair", BuiltInFunc P;"fst", BuiltInFunc PFst ;"snd", BuiltInFunc PSnd;"ispair", BuiltInFunc IsPair] |> Map.ofList
 
 let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>)  =
     match tokLst with
     | Ok [] -> Error (None)
     | PSITEM (Ok(ast, Ok lst)) ->  Ok (ast, Ok lst)
-    | PMATCH (Bracket ['(']) (PBUILDADDEXP(ast, PMATCH (Bracket [')']) (inp'))) ->  Ok(ast, inp') //failwithf "got this ast %A" ast 
+    | PMATCH (OpenRoundBracket) (PBUILDADDEXP(ast, PMATCH (CloseRoundBracket) (inp'))) ->  Ok(ast, inp') //failwithf "got this ast %A" ast 
     | Ok lst -> Error (Some lst)
     | Error lst -> Error (Some lst)
     |> Some
@@ -90,11 +96,11 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>)  =
 and (|PSITEM|_|) tokLst = 
     match tokLst with
     | Ok (Other s::rest) when Map.containsKey s builtInFuncMap -> Some(Ok (builtInFuncMap.[s] , Ok rest ))
-    | Ok (Other s::rest) when s = ['T';'R';'U';'E'] ->Some( Ok (Lambda {InputVar=['x'];Body=Lambda{InputVar=['y']; Body=Var['x']} }, Ok rest))
-    | Ok (Other s::rest) when s = ['F';'A';'L';'S';'E'] -> Some(Ok (Lambda {InputVar=['x'];Body=Lambda{InputVar=['y']; Body=Var['y']} }, Ok rest))
+    | Ok (Other s::rest) when s = "TRUE" ->Some( Ok (Lambda {InputVar="x";Body=Lambda{InputVar="y"; Body=Var"x"} }, Ok rest))
+    | Ok (Other s::rest) when s = "FALSE" -> Some(Ok (Lambda {InputVar="x";Body=Lambda{InputVar="y"; Body=Var "y"} }, Ok rest))
     | Ok (Other s :: rest) -> Some( Ok (Var s, Ok rest))
-    | Ok (IntToken s:: rest) ->Some( Ok (Literal (Int s) ,Ok rest))
-    | Ok (StringToken s::rest) ->Some( Ok (Literal (String s), Ok rest))
+    | Ok (IntegerLit s:: rest) ->Some( Ok (Literal (Int s) ,Ok rest))
+    | Ok (StringLit s::rest) ->Some( Ok (Literal (String s), Ok rest))
     | _ -> None
 
 and buildAppExp(inp: Result<Token list, Token list>):(AST* Result<Token list, Token list>) =
@@ -105,7 +111,7 @@ and buildAppExp(inp: Result<Token list, Token list>):(AST* Result<Token list, To
                                // let result = buildAppExp (lst)
                                 //failwithf "the result is %A" (fst(result)) //this is triggered first
                                 //printf "Matched second PITEM \n"; (Funcapp(s, fst(result)), snd(result))
-                            |Ok (hd::tl) when hd <> Bracket [')'] -> 
+                            |Ok (hd::tl) when hd <> CloseRoundBracket -> 
                                                                 let result = buildAppExp (lst)   
                                                                 //(Funcapp(s, fst(result)), snd(result)) 
                                                                 let ast = 
@@ -126,14 +132,14 @@ and buildAppExp(inp: Result<Token list, Token list>):(AST* Result<Token list, To
 
 and buildMultExp (inp: Result<Token list, Token list>) (acc:Token list):(AST* Result<Token list, Token list>) = 
     match inp with  
-    | Ok (hd::tl) when hd = Other ['*'] -> 
+    | Ok (hd::tl) when hd = Other "*" -> 
         let result = buildAppExp (Ok acc)
                      |> fst
                      |> extractRightAppList []
                      |> List.rev
                      |> makeLeftAppList
         (Funcapp(Funcapp(BuiltInFunc (Math Mult), result), fst(buildMultExp (Ok tl) [])), snd (buildAppExp (Ok acc)))
-    | Ok (hd::tl) when hd = Other ['/'] -> 
+    | Ok (hd::tl) when hd = Other "/" -> 
         let result = buildAppExp (Ok acc)
                      |> fst
                      |> extractRightAppList []
@@ -149,11 +155,11 @@ and buildMultExp (inp: Result<Token list, Token list>) (acc:Token list):(AST* Re
 and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(AST* Result<Token list, Token list>) =
   
     match inp with  
-    | Ok (hd::tl) when hd = Other ['+'] -> 
+    | Ok (hd::tl) when hd = Other "+" -> 
         let MultResult =  buildMultExp (Ok acc) []
         let AddResult = buildAddExp [] (Ok tl)
         (Funcapp(Funcapp(BuiltInFunc (Math Add), fst MultResult), fst AddResult ), snd MultResult )
-    | Ok (hd::tl) when hd = Other ['-'] -> 
+    | Ok (hd::tl) when hd = Other "-" -> 
         let MultResult =  buildMultExp (Ok acc) []
         let AddResult = buildAddExp [] (Ok tl) 
         (Funcapp(Funcapp(BuiltInFunc (Math Sub), fst MultResult), fst AddResult), snd MultResult)
@@ -169,14 +175,14 @@ let rec buildLambda inp =
     match inp with 
     | hd::(hd'::tl) -> match hd,hd' with 
                         | (Other x),(Other y) -> Lambda{InputVar=x;Body=buildLambda(hd'::tl)}
-                        | (Other x), (Keyword EQUAL) -> Lambda{InputVar=x;Body=fst(buildAddExp [] (Ok tl))}
-                        | (Keyword EQUAL), _ ->  fst(buildAddExp [] (Ok tl)) //let f = 3 for example
+                        | (Other x), (Keyword "=") -> Lambda{InputVar=x;Body=fst(buildAddExp [] (Ok tl))}
+                        | (Keyword "="), _ ->  fst(buildAddExp [] (Ok tl)) //let f = 3 for example
                         | _ -> failwithf "Invalid arguments"
     | _ -> failwithf "insufficient expression"
 
 let rec extractParts inp acc = 
     match inp with 
-    | hd::tl when hd = Keyword IN -> acc,tl
+    | hd::tl when hd = Keyword "in" -> acc,tl
     | hd::tl -> extractParts tl (acc @ [hd])
     | [] -> failwithf "No expression evaluated"
     
@@ -191,5 +197,5 @@ let rec buildFunctionDef inp  =
 
 and parse (inp: Result<Token list, Token list>)  = 
     match inp with
-    | PMATCH (Keyword LET) (Ok rest) -> buildFunctionDef (rest) 
+    | PMATCH (Keyword "let") (Ok rest) -> buildFunctionDef (rest) 
     | _ -> fst(buildAddExp [] inp)
