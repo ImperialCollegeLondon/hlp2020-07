@@ -72,19 +72,33 @@ execImplode (Pair(Literal (String ['a']),Pair(Literal (String ['b']),Pair (Liter
 
 let printpipe (x:AST) = printfn "%A" x;x
 
-let rec exec order (exp:AST) :AST =
+let rec exec ord (exp:AST) :AST =
     let chooseOrder o E =
-        match order with
-        | Applicative -> exec order E
+        match ord with
+        | Applicative -> exec ord E
         | Normal -> E 
 
+    let (|MATCH2ARG|_|) exp = 
+        match exp with
+        | (Funcapp(Funcapp(BuiltInFunc(func),x),y)) -> Some (func, x, y)
+        | _ -> None
+
+    let (|MATCH1ARG|_|) exp =
+        match exp with
+        | (Funcapp(BuiltInFunc(func),x)) -> Some (func, x)
+        | _ -> None 
+        
     let rec betaReduce env exp = 
         let (|BASICS|_|) exp = 
             match exp with
+            | Funcapp(Funcapp(bool,a),_) when bool = trueAST -> betaReduce env a |> Some
+            | Funcapp(Funcapp(bool,_),b) when bool = falseAST -> betaReduce env b |> Some
             | FuncDefExp(name,body,E) -> 
-                betaReduce ((name,body)::env) (chooseOrder order E) |> Some
+                let newEnv = (name,chooseOrder ord body)::env
+                betaReduce newEnv E |> Some
             | Funcapp(Lambda l,E) -> 
-                betaReduce ((l.InputVar,E)::env) (chooseOrder order l.Body) |> Some
+                let newEnv = (l.InputVar,chooseOrder ord E)::env
+                betaReduce newEnv l.Body |> Some
             | Var name  -> findValue env name |> Some 
             | _ -> None      
 
@@ -96,16 +110,6 @@ let rec exec order (exp:AST) :AST =
             | x -> x
         | Lambda l -> Lambda {InputVar = l.InputVar; Body = betaReduce env l.Body}
         | x -> x 
-
-    let (|MATCH2ARG|_|) exp = 
-        match exp with
-        | (Funcapp(Funcapp(BuiltInFunc(func),x),y)) -> Some (func, x, y)
-        | _ -> None
-
-    let (|MATCH1ARG|_|) exp =
-        match exp with
-        | (Funcapp(BuiltInFunc(func),x)) -> Some (func, x)
-        | _ -> None 
 
     let execEqual x y = 
         match (x,y) with
@@ -202,7 +206,7 @@ let test8 = FuncDefExp(['f'],Lambda{InputVar = ['x'];Body = Funcapp(Funcapp(Buil
 let test9 = FuncDefExp(['f'],Lambda{InputVar = ['x']; Body = Funcapp(Funcapp(BuiltInFunc (Math Add), Var ['x']),Literal (Int 1))},Funcapp (Var['f'],(Funcapp (Var ['f'], Literal(Int 3)))))  
 // let f x = x+1 in f (f 3)
 
-let o = Normal
+let o = Applicative
 
 let result0 = exec o test0
 let result1 = exec o test1
