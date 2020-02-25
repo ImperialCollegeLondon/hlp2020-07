@@ -32,6 +32,7 @@ let main argv =
     //print <| parse ((Ok [ Other "x"; Other "y";Other "z"]))
     //print <| buildAddExp [] (Ok [Other['x']; Other ['y']]) 
     //print <| buildAddExp [] (Ok [Other ['f']; Bracket[')']])
-    //print <| Parse (Ok([Keyword LET; Other ['f']; Other['x']; Other['y']; Keyword EQUAL; Other['x']; Keyword IN; Other ['f']; IntToken 3; IntToken 4] ) )
+    //print <| parse (Ok([Let; Other "f"; Other "x"; Other"y"; EqualToken; Other "x"; Keyword "in"; Other "f"; IntegerLit 3; IntegerLit 4] ) )
+    //print <| parse (Ok([Let; Other "g"; EqualToken; Let; Other "f"; Other "x"; IntegerLit 4] ) )
     0 // return an integer exit code
-    
+   
