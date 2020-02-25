@@ -133,6 +133,10 @@ and buildAppExp(inp: Result<Token list, Token list>):(AST* Result<Token list, To
 
 and buildMultExp (inp: Result<Token list, Token list>) (acc:Token list):(AST* Result<Token list, Token list>) = 
     match inp with  
+    | PMATCH (OpenRoundBracket) (TAKEWHILENOTINBRACKET (inp', acc'))  ->
+                                                                        let acc'' = (acc@[OpenRoundBracket] @acc')
+                                                                        printf "new acc is %A \n" acc''
+                                                                        buildMultExp  inp' (acc'')
     | Ok (hd::tl) when hd = MultToken -> 
         let result = buildAppExp (Ok acc)
                      |> fst
@@ -154,24 +158,29 @@ and buildMultExp (inp: Result<Token list, Token list>) (acc:Token list):(AST* Re
     | Error _ -> failwithf "what?"
 
 //this only works for one bracket not for multiple 
-and takeWhileNotInBracket acc inp  = 
+and takeWhileNotInBracket acc inp count = 
     match inp with 
-    | Ok (hd::tl) when hd = CloseRoundBracket -> (Ok (tl),acc@[hd])
-    | Ok (hd::tl) -> takeWhileNotInBracket  (acc@[hd]) (Ok tl)
+    | Ok (hd::tl) when hd = CloseRoundBracket ->
+                                                let count' = count - 1
+                                                match count' with 
+                                                | 0 -> (Ok (tl),acc@[hd])
+                                                | _ -> takeWhileNotInBracket  (acc@[hd]) (Ok tl) count'
+    | Ok (hd::tl) when hd = OpenRoundBracket -> takeWhileNotInBracket  (acc@[hd]) (Ok tl) (count+1)
+    | Ok (hd::tl) -> takeWhileNotInBracket (acc@[hd]) (Ok tl) count
     | Ok [] -> (Ok [], acc)
     | _ -> failwithf "what?"
 
-and (|TAKEWHILENOTINBRACKET|_|) inp =  Some (takeWhileNotInBracket [] inp)
+and (|TAKEWHILENOTINBRACKET|_|) inp =  Some (takeWhileNotInBracket [] inp 1)
 
 and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(AST* Result<Token list, Token list>) =
     //printf "input to buildadd %A \n" inp 
     match inp with
     | PMATCH (OpenRoundBracket) (TAKEWHILENOTINBRACKET (inp', acc'))  ->
                                                                         let acc'' = (acc@[OpenRoundBracket] @acc')
-                                                                        //printf "new acc is %A \n" acc''
+                                                                        printf "new acc is %A \n" acc''
                                                                         buildAddExp (acc'') inp'
     | Ok (hd::tl) when hd = AddToken -> 
-        //printf "add token found, acc is %A and tl is %A \n" acc tl
+        printf "add token found, acc is %A and tl is %A \n" acc tl
         let MultResult =  buildMultExp (Ok acc) []
         let AddResult = buildAddExp [] (Ok tl)
         (Funcapp(Funcapp(BuiltInFunc (Math Add), fst MultResult), fst AddResult ), snd MultResult )

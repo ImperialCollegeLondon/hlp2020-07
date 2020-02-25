@@ -19,11 +19,12 @@ let main argv =
     //problem when putting two arguments
     //print <| parse (Ok([Keyword "let"; Other "f"; Other "a"; Other "b"; Keyword "="; Other "a"; Other "+"; Other "b";Other "/"; Other "a"; Keyword "in"; Other "f"; IntegerLit 3; IntegerLit 4] ) )
     //print <| Parse (Ok [Other ['f']; IntToken 3; IntToken 4; Other ['*']; Other ['f'];Other['+'];Other['b']]) 
-    print <| parse (Ok [Other "f"; OpenRoundBracket; Other "x";OpenRoundBracket; Other "y";Other "g"; IntegerLit 1; CloseRoundBracket; CloseRoundBracket]) 
-    //print <| parse (Ok [Other "f"; OpenRoundBracket; Other "x"; AddToken; IntegerLit 1; CloseRoundBracket])
+    //print <| parse (Ok [Other "f"; OpenRoundBracket; Other "x"; AddToken;Other "g"; CloseRoundBracket;]) 
+    print <| parse (Ok [Other "f"; OpenRoundBracket; Other "x"; AddToken; IntegerLit 1; CloseRoundBracket])
     //let a = buildAddExp [] (Ok [Other "f"; OpenRoundBracket; Other "x"; Other "y"; Other "z";CloseRoundBracket])
     //print <| extractRightAppList [] (fst(a))
     //print <| parse ((Ok [Other "f"; OpenRoundBracket; Other "x"; Other "y";Other "z"; CloseRoundBracket]))
+   // print <| parse ((Ok [Other "f"; OpenRoundBracket; Other "a"; OpenRoundBracket; Other "f"; Other "d"; CloseRoundBracket; CloseRoundBracket]))
 
 
     //let b = buildAddExp [] (Ok [Other "x"; Other "y"; Other "z"])
