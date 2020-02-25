@@ -115,15 +115,14 @@ let rec exec ord (exp:AST) :AST =
             match exp with
             | Funcapp(Funcapp(churchBool,a),_) when churchBool = trueAST -> betaReduce env a |> Some
             | Funcapp(Funcapp(churchBool,_),b) when churchBool = falseAST -> betaReduce env b |> Some
-            | FuncDefExp(name,body,E) -> betaReduce env (Funcapp(Lambda{InputVar = name; Body = E},body)) |> Some
             | Funcapp(Lambda l,E) -> 
                 let newEnv = (l.InputVar, betaReduce env E)::env
                 betaReduce newEnv l.Body |> Some
-            | Var name  -> findValue env name |> Some 
             | _ -> None      
 
         match exp with
-        | BASICS result -> result
+        | FuncDefExp(name,body,E) -> betaReduce env (Funcapp(Lambda{InputVar = name; Body = E},body))
+        | Var name  -> findValue env name 
         | Funcapp(ast1,ast2) ->
             match Funcapp(betaReduce env ast1, betaReduce env ast2) with
             | BASICS result -> result
@@ -145,15 +144,9 @@ let rec exec ord (exp:AST) :AST =
             | Funcapp(Literal(_), _) ->Null  // printfn "Cannot apply function to literal"
             | _ -> exp  
 
-        //printpipe exp
         match exp with
-        //| BASEFUNCS result -> result
         | Funcapp(a,b) -> Funcapp(evaluate a,evaluate b) |> basicFunctions
-            //match Funcapp(evaluate a,evaluate b) with 
-            //| BASEFUNCS result -> result
-            //| x -> x
-        | Lambda l -> Lambda {InputVar = l.InputVar; Body = evaluate l.Body} //|> evaluate//|> reevaluate env (Lambda l)        
-        //| Var x -> If bound and unbound variables are distinguished, errors can be raised when a non declared variable is used
+        | Lambda l -> Lambda {InputVar = l.InputVar; Body = evaluate l.Body}        
         | x->x
 
     exp |> betaReduce [] |> evaluate
