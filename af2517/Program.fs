@@ -17,9 +17,18 @@ let main argv =
     //print <| BuildAddExp (Ok [Other ['f']; Bracket['(']; Other['x']; Other ['y']; Bracket[')']]) []
     //print <| Parse (Ok([Keyword LET; Other ['f']; Other['x']; Keyword EQUAL; Other['x']; Other['+']; IntToken 1; Keyword IN; Keyword LET; Other ['g']; Other['y']; Keyword EQUAL; Other['y']; Other['+']; IntToken 2;Keyword IN; Other ['g']; Other['f'];IntToken 3] ) )
     //problem when putting two arguments
-    print <| parse (Ok([Keyword "let"; Other "f"; Other "a"; Other "b"; Keyword "="; Other "a"; Other "+"; Other "b";Other "/"; Other "a"; Keyword "in"; Other "f"; IntegerLit 3; IntegerLit 4] ) )
+    //print <| parse (Ok([Keyword "let"; Other "f"; Other "a"; Other "b"; Keyword "="; Other "a"; Other "+"; Other "b";Other "/"; Other "a"; Keyword "in"; Other "f"; IntegerLit 3; IntegerLit 4] ) )
     //print <| Parse (Ok [Other ['f']; IntToken 3; IntToken 4; Other ['*']; Other ['f'];Other['+'];Other['b']]) 
-    print <| parse (Ok [Other "f"; OpenRoundBracket; Other "x"; Other "y"; CloseRoundBracket]) 
+    print <| parse (Ok [Other "f"; OpenRoundBracket; Other "x";OpenRoundBracket; Other "y";Other "g"; IntegerLit 1; CloseRoundBracket; CloseRoundBracket]) 
+    //print <| parse (Ok [Other "f"; OpenRoundBracket; Other "x"; AddToken; IntegerLit 1; CloseRoundBracket])
+    //let a = buildAddExp [] (Ok [Other "f"; OpenRoundBracket; Other "x"; Other "y"; Other "z";CloseRoundBracket])
+    //print <| extractRightAppList [] (fst(a))
+    //print <| parse ((Ok [Other "f"; OpenRoundBracket; Other "x"; Other "y";Other "z"; CloseRoundBracket]))
+
+
+    //let b = buildAddExp [] (Ok [Other "x"; Other "y"; Other "z"])
+    //print <| extractRightAppList [] (fst(b))
+    //print <| parse ((Ok [ Other "x"; Other "y";Other "z"]))
     //print <| buildAddExp [] (Ok [Other['x']; Other ['y']]) 
     //print <| buildAddExp [] (Ok [Other ['f']; Bracket[')']])
     //print <| Parse (Ok([Keyword LET; Other ['f']; Other['x']; Other['y']; Keyword EQUAL; Other['x']; Keyword IN; Other ['f']; IntToken 3; IntToken 4] ) )

@@ -13,7 +13,12 @@ type Token = OpenRoundBracket
             |Equal
             |HexLit of string
             |NegativeInteger of string
+            |AddToken
+            |MultToken
             |Other of string
+            |SubToken
+            |DivToken
+            |Unexpected
 
 type MathType = 
    | Add 
@@ -43,6 +48,7 @@ type AST =
     | Null 
     | Literal of LitType 
     | BuiltInFunc of BuiltInType
+    | Bracket of AST
 
 and FuncDefExpType = {
     Name: string;
@@ -65,13 +71,16 @@ let rec extractRightAppList (lst:AST list) (inp:AST) : AST list =
 // extracts the top-level right-associative application list and returns it as an Fsharp list
     match inp with 
     | Funcapp (hd, tl) -> lst @ [hd] @ (extractRightAppList lst tl)
+    //| Bracket(Funcapp(hd,tl)) -> lst @ [hd] @ (extractRightAppList lst tl) //not working 
     | el ->  lst @ [el]
     | _ -> failwithf "What? Shouldn't happen"
     
 let rec makeLeftAppList (inp:AST list) : AST =
 // takes an Fsharp list and makes a left associative FuncApp tree representing the items
-    match inp with 
-    | [el] ->  el
+    match inp with
+    | [Bracket el]  ->  el
+    | [el] -> el
+    | (Bracket hd)::tl -> Funcapp (makeLeftAppList tl, hd)
     | hd::tl -> Funcapp (makeLeftAppList tl, hd)
     | [] -> failwithf "What? Can't happen"
      
@@ -88,7 +97,13 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>)  =
     match tokLst with
     | Ok [] -> Error (None)
     | PSITEM (Ok(ast, Ok lst)) ->  Ok (ast, Ok lst)
-    | PMATCH (OpenRoundBracket) (PBUILDADDEXP(ast, PMATCH (CloseRoundBracket) (inp'))) ->  Ok(ast, inp') //failwithf "got this ast %A" ast 
+    | PMATCH (OpenRoundBracket) (PBUILDADDEXP(ast, PMATCH (CloseRoundBracket) (inp'))) ->  
+                                                                                         let ast' = ast
+                                                                                                    |> extractRightAppList []
+                                                                                                    |> List.rev
+                                                                                                    |> makeLeftAppList
+                                                                                                    |> Bracket
+                                                                                         Ok(ast', inp') //failwithf "got this ast %A" ast 
     | Ok lst -> Error (Some lst)
     | Error lst -> Error (Some lst)
     |> Some
@@ -104,26 +119,13 @@ and (|PSITEM|_|) tokLst =
     | _ -> None
 
 and buildAppExp(inp: Result<Token list, Token list>):(AST* Result<Token list, Token list>) =
-    match inp with
+   match inp with 
     | PITEM (Ok(s, lst)) -> //printf "Tried this: AST: %A and lst: %A \n" s lst
                             match lst with 
-                            //| PITEM (Ok(_, _)) -> 
-                               // let result = buildAppExp (lst)
-                                //failwithf "the result is %A" (fst(result)) //this is triggered first
-                                //printf "Matched second PITEM \n"; (Funcapp(s, fst(result)), snd(result))
                             |Ok (hd::tl) when hd <> CloseRoundBracket -> 
                                                                 let result = buildAppExp (lst)   
-                                                                //(Funcapp(s, fst(result)), snd(result)) 
-                                                                let ast = 
-                                                                        result
-                                                                        |> fst
-                                                                        |> extractRightAppList []
-                                                                        |> List.rev
-                                                                        |> makeLeftAppList
-                                                                (Funcapp(s, ast), snd(result)) 
+                                                                (Funcapp(s, fst(result)), snd(result)) 
 
-                            //| PITEM (Error (None)) -> printf "Matched empty list \n"  ;(s, lst) 
-                            //| PITEM (Error (Some lst')) -> printf "Matched non-empty error list \n" ; (s, lst)
                             | _ -> (s, lst)
     | PITEM (Error lst) -> printf "aaaaa \n" ;failwithf "Lst failed %A " lst
     | Error msg -> printf "aaaaa \n";failwithf "What? %A" msg
@@ -132,14 +134,14 @@ and buildAppExp(inp: Result<Token list, Token list>):(AST* Result<Token list, To
 
 and buildMultExp (inp: Result<Token list, Token list>) (acc:Token list):(AST* Result<Token list, Token list>) = 
     match inp with  
-    | Ok (hd::tl) when hd = Other "*" -> 
+    | Ok (hd::tl) when hd = MultToken -> 
         let result = buildAppExp (Ok acc)
                      |> fst
                      |> extractRightAppList []
                      |> List.rev
                      |> makeLeftAppList
         (Funcapp(Funcapp(BuiltInFunc (Math Mult), result), fst(buildMultExp (Ok tl) [])), snd (buildAppExp (Ok acc)))
-    | Ok (hd::tl) when hd = Other "/" -> 
+    | Ok (hd::tl) when hd = DivToken -> 
         let result = buildAppExp (Ok acc)
                      |> fst
                      |> extractRightAppList []
@@ -149,17 +151,32 @@ and buildMultExp (inp: Result<Token list, Token list>) (acc:Token list):(AST* Re
     | Ok (hd::tl) -> buildMultExp (Ok tl) (acc @ [hd])
     | Ok [] -> //problem here 
            let res = buildAppExp (Ok acc)
+           //printf "res here is %A \n" res
            (fst(res), snd(res))
     | Error _ -> failwithf "what?"
 
+//this only works for one bracket not for multiple 
+and takeWhileNotInBracket acc inp  = 
+    match inp with 
+    | Ok (hd::tl) when hd = CloseRoundBracket -> (Ok (tl),acc@[hd])
+    | Ok (hd::tl) -> takeWhileNotInBracket  (acc@[hd]) (Ok tl)
+    | Ok [] -> (Ok [], acc)
+    | _ -> failwithf "what?"
+
+and (|TAKEWHILENOTINBRACKET|_|) inp =  Some (takeWhileNotInBracket [] inp)
 and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(AST* Result<Token list, Token list>) =
-  
-    match inp with  
-    | Ok (hd::tl) when hd = Other "+" -> 
+    //printf "input to buildadd %A \n" inp 
+    match inp with
+    | PMATCH (OpenRoundBracket) (TAKEWHILENOTINBRACKET (inp', acc'))  ->
+                                                                        let acc'' = (acc@[OpenRoundBracket] @acc')
+                                                                        //printf "new acc is %A \n" acc''
+                                                                        buildAddExp (acc'') inp'
+    | Ok (hd::tl) when hd = AddToken -> 
+        //printf "add token found, acc is %A and tl is %A \n" acc tl
         let MultResult =  buildMultExp (Ok acc) []
         let AddResult = buildAddExp [] (Ok tl)
         (Funcapp(Funcapp(BuiltInFunc (Math Add), fst MultResult), fst AddResult ), snd MultResult )
-    | Ok (hd::tl) when hd = Other "-" -> 
+    | Ok (hd::tl) when hd = SubToken -> 
         let MultResult =  buildMultExp (Ok acc) []
         let AddResult = buildAddExp [] (Ok tl) 
         (Funcapp(Funcapp(BuiltInFunc (Math Sub), fst MultResult), fst AddResult), snd MultResult)
@@ -175,8 +192,18 @@ let rec buildLambda inp =
     match inp with 
     | hd::(hd'::tl) -> match hd,hd' with 
                         | (Other x),(Other y) -> Lambda{InputVar=x;Body=buildLambda(hd'::tl)}
-                        | (Other x), (Keyword "=") -> Lambda{InputVar=x;Body=fst(buildAddExp [] (Ok tl))}
-                        | (Keyword "="), _ ->  fst(buildAddExp [] (Ok tl)) //let f = 3 for example
+                        | (Other x), (Keyword "=") ->
+                                                        let body = buildAddExp [] (Ok tl)
+                                                                    |> fst
+                                                                    |> extractRightAppList []
+                                                                    |> List.rev
+                                                                    |> makeLeftAppList
+                                                        Lambda{InputVar=x;Body=body}
+                        | (Keyword "="), _ -> buildAddExp [] (Ok tl)
+                                              |> fst
+                                              |> extractRightAppList []
+                                              |> List.rev
+                                              |> makeLeftAppList//let f = 3 for example
                         | _ -> failwithf "Invalid arguments"
     | _ -> failwithf "insufficient expression"
 
@@ -198,4 +225,8 @@ let rec buildFunctionDef inp  =
 and parse (inp: Result<Token list, Token list>)  = 
     match inp with
     | PMATCH (Keyword "let") (Ok rest) -> buildFunctionDef (rest) 
-    | _ -> fst(buildAddExp [] inp)
+    | _ -> buildAddExp [] inp
+            |> fst
+            |> extractRightAppList []
+            |> List.rev
+            |> makeLeftAppList
