@@ -110,8 +110,6 @@ let (|MATCH1ARG|_|) exp =
     | _ -> None 
 
 let rec exec ord (exp:AST) :AST =
-
-
     let rec betaReduce (env:EnvironmentType) exp =  
         let (|BASICS|_|) exp = 
             match exp with
