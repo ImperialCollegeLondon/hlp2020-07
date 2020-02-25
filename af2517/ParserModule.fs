@@ -71,7 +71,6 @@ let rec extractRightAppList (lst:AST list) (inp:AST) : AST list =
 // extracts the top-level right-associative application list and returns it as an Fsharp list
     match inp with 
     | Funcapp (hd, tl) -> lst @ [hd] @ (extractRightAppList lst tl)
-    //| Bracket(Funcapp(hd,tl)) -> lst @ [hd] @ (extractRightAppList lst tl) //not working 
     | el ->  lst @ [el]
     | _ -> failwithf "What? Shouldn't happen"
     
@@ -103,7 +102,7 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>)  =
                                                                                                     |> List.rev
                                                                                                     |> makeLeftAppList
                                                                                                     |> Bracket
-                                                                                         Ok(ast', inp') //failwithf "got this ast %A" ast 
+                                                                                         Ok(ast', inp') 
     | Ok lst -> Error (Some lst)
     | Error lst -> Error (Some lst)
     |> Some
@@ -120,7 +119,7 @@ and (|PSITEM|_|) tokLst =
 
 and buildAppExp(inp: Result<Token list, Token list>):(AST* Result<Token list, Token list>) =
    match inp with 
-    | PITEM (Ok(s, lst)) -> //printf "Tried this: AST: %A and lst: %A \n" s lst
+    | PITEM (Ok(s, lst)) -> 
                             match lst with 
                             |Ok (hd::tl) when hd <> CloseRoundBracket -> 
                                                                 let result = buildAppExp (lst)   
@@ -149,9 +148,8 @@ and buildMultExp (inp: Result<Token list, Token list>) (acc:Token list):(AST* Re
                      |> makeLeftAppList
         (Funcapp(Funcapp(BuiltInFunc (Math Div), result), fst(buildMultExp (Ok tl) [])), snd (buildAppExp (Ok acc)))
     | Ok (hd::tl) -> buildMultExp (Ok tl) (acc @ [hd])
-    | Ok [] -> //problem here 
+    | Ok [] -> 
            let res = buildAppExp (Ok acc)
-           //printf "res here is %A \n" res
            (fst(res), snd(res))
     | Error _ -> failwithf "what?"
 
@@ -164,6 +162,7 @@ and takeWhileNotInBracket acc inp  =
     | _ -> failwithf "what?"
 
 and (|TAKEWHILENOTINBRACKET|_|) inp =  Some (takeWhileNotInBracket [] inp)
+
 and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(AST* Result<Token list, Token list>) =
     //printf "input to buildadd %A \n" inp 
     match inp with
@@ -203,7 +202,7 @@ let rec buildLambda inp =
                                               |> fst
                                               |> extractRightAppList []
                                               |> List.rev
-                                              |> makeLeftAppList//let f = 3 for example
+                                              |> makeLeftAppList
                         | _ -> failwithf "Invalid arguments"
     | _ -> failwithf "insufficient expression"
 
