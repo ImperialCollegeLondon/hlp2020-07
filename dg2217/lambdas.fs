@@ -41,15 +41,6 @@ and EnvironmentType = list<(char list)*AST>
 let trueAST = Lambda {InputVar = ['x']; Body = Lambda {InputVar = ['y'];Body = Var ['x']}}
 let falseAST = Lambda {InputVar = ['x']; Body = Lambda {InputVar = ['y']; Body = Var ['y']}}
 
-let rec findValue (env:EnvironmentType) name=
-    match env with
-    | (n,v)::_ when n=name -> v
-    | _::tl -> findValue tl name
-    | _ -> Var(name)
-
-let removeEntry env name = 
-    env |> List.filter (fun (n,_) -> n<>name)
-
 let concat s1 s2 =
     match (s1,s2) with
     | (Literal(String(a)),Literal(String(b))) -> Literal(String(a@b))
@@ -59,45 +50,76 @@ let rec execImplode lst =
     | Null -> Literal(String([]))
     | Pair(Literal(String([c])),p) -> (Literal(String [c]), (execImplode p)) ||> concat
     | _ -> Null //Error
+
 let rec execExplode (str:AST) =
     match str with
     | Literal (String []) -> Null
-    | Literal (String (hd::tl)) -> Pair(Literal(String([hd])), tl |> String |> Literal |> execExplode)
+    | Literal (String (hd::tl)) -> Pair(Literal(String([hd])), Literal(String tl) |> execExplode)
     | _ -> Null // Error 
 
 concat (Literal(String['a';'b'])) (Literal(String ['c';'d']))
 execExplode (Literal(String ['a';'b';'c';'d']))
 execImplode (Pair(Literal (String ['a']),Pair(Literal (String ['b']),Pair (Literal (String ['c']),Pair (Literal (String ['d']),Null)))))
 
+let rec findValue (env:EnvironmentType) name=
+    match env with
+    | (n,v)::_ when n=name -> v
+    | _::tl -> findValue tl name
+    | _ -> printfn "%A is not defined" (Var name) ; Null//Var(name) 
 
-let printpipe (x:AST) = printfn "%A" x;x
+let execEqual x y = 
+    match (x,y) with
+    | (Literal(Int _),Literal(Int _)) 
+    | (Literal(String _),Literal(String _))
+    | Null,Null -> 
+        if x = y then trueAST else falseAST
+    | _ -> Null //Error
+
+let execMath op x y =
+    match (x,y) with 
+    |Int A,Int B ->
+        match op with
+        | Add -> A+B |> Int |> Literal //Literal(Int(valueA+valueB))
+        | Sub -> A-B |> Int |> Literal
+        | Mult -> A*B |> Int |> Literal
+        | Div -> A/B |> Int |> Literal
+        | Mod -> A%B |> Int |> Literal
+    | _ -> Null//Funcapp(Funcapp(BuiltInFunc(Math op),x),y) //Error
+
+let execPFst x = 
+    match x with
+    | Pair(a,_) -> a
+    | _ -> Null //Error
+
+let execPSnd x = 
+    match x with
+    | Pair(_,b) -> b
+    | _ -> Null //Error
+
+let execIsPair x =
+    match x with | Pair(_) -> trueAST | _ -> falseAST
+
+let (|MATCH2ARG|_|) exp = 
+    match exp with
+    | (Funcapp(Funcapp(BuiltInFunc(func),x),y)) -> Some (func, x, y)
+    | _ -> None
+
+let (|MATCH1ARG|_|) exp =
+    match exp with
+    | (Funcapp(BuiltInFunc(func),x)) -> Some (func, x)
+    | _ -> None 
 
 let rec exec ord (exp:AST) :AST =
-    let chooseOrder o E =
-        match ord with
-        | Applicative -> exec ord E
-        | Normal -> E 
 
-    let (|MATCH2ARG|_|) exp = 
-        match exp with
-        | (Funcapp(Funcapp(BuiltInFunc(func),x),y)) -> Some (func, x, y)
-        | _ -> None
 
-    let (|MATCH1ARG|_|) exp =
-        match exp with
-        | (Funcapp(BuiltInFunc(func),x)) -> Some (func, x)
-        | _ -> None 
-    
-    let rec betaReduce env exp = 
+    let rec betaReduce (env:EnvironmentType) exp =  
         let (|BASICS|_|) exp = 
             match exp with
             | Funcapp(Funcapp(churchBool,a),_) when churchBool = trueAST -> betaReduce env a |> Some
             | Funcapp(Funcapp(churchBool,_),b) when churchBool = falseAST -> betaReduce env b |> Some
-            | FuncDefExp(name,body,E) -> 
-                let newEnv = (name,chooseOrder ord body)::env
-                betaReduce newEnv E |> Some
+            | FuncDefExp(name,body,E) -> betaReduce env (Funcapp(Lambda{InputVar = name; Body = E},body)) |> Some
             | Funcapp(Lambda l,E) -> 
-                let newEnv = (l.InputVar,chooseOrder ord E)::env
+                let newEnv = (l.InputVar, betaReduce env E)::env
                 betaReduce newEnv l.Body |> Some
             | Var name  -> findValue env name |> Some 
             | _ -> None      
@@ -108,63 +130,32 @@ let rec exec ord (exp:AST) :AST =
             match Funcapp(betaReduce env ast1, betaReduce env ast2) with
             | BASICS result -> result
             | x -> x
-        | Lambda l -> Lambda {InputVar = l.InputVar; Body = betaReduce env l.Body}
+        | Lambda l -> Lambda {InputVar = l.InputVar; Body = betaReduce ((l.InputVar,Var l.InputVar)::env) l.Body}
         | x -> x 
 
-    let execEqual x y = 
-        match (x,y) with
-        | (Literal(Int _),Literal(Int _)) 
-        | (Literal(String _),Literal(String _))
-        | Null,Null -> 
-            if x = y then trueAST else falseAST
-        | _ -> Null //Error
-
-    let execMath op x y =
-        match (x,y) with 
-        |Int A,Int B ->
-            match op with
-            | Add -> A+B |> Int |> Literal //Literal(Int(valueA+valueB))
-            | Sub -> A-B |> Int |> Literal
-            | Mult -> A*B |> Int |> Literal
-            | Div -> A/B |> Int |> Literal
-            | Mod -> A%B |> Int |> Literal
-        | _ -> Null//Funcapp(Funcapp(BuiltInFunc(Math op),x),y) //Error
-
-    let execPFst x = 
-        match x with
-        | Pair(a,_) -> a
-        | _ -> Null //Error
-
-    let execPSnd x = 
-        match x with
-        | Pair(_,b) -> b
-        | _ -> Null //Error
-
-    let execIsPair x =
-        match x with | Pair(_) -> trueAST | _ -> falseAST
-
     let rec evaluate exp =
-        let (|BASEFUNCS|_|) exp = 
+        let basicFunctions exp = 
             match exp with 
-            | MATCH2ARG (Equal,arg1,arg2) -> execEqual arg1 arg2 |> Some
-            | MATCH2ARG (P,arg1,arg2)-> Pair(arg1,arg2) |> Some
-            | MATCH2ARG (Math op, Literal x, Literal y) -> execMath op x y |> Some
-            | MATCH1ARG (PFst,arg) -> execPFst arg |> Some
-            | MATCH1ARG (PSnd,arg) -> execPSnd arg |> Some
-            | MATCH1ARG (IsPair,arg) -> execIsPair arg |> Some
-            | MATCH1ARG (Implode,arg) ->  execImplode arg |> Some 
-            | MATCH1ARG (Explode,arg) -> execExplode arg |>Some               
-            | Funcapp(Literal(_), _) ->Null |> Some // printfn "Cannot apply function to literal"
-            | _ -> None  
+            | MATCH2ARG (Equal,arg1,arg2) -> execEqual arg1 arg2 
+            | MATCH2ARG (P,arg1,arg2)-> Pair(arg1,arg2) 
+            | MATCH2ARG (Math op, Literal x, Literal y) -> execMath op x y 
+            | MATCH1ARG (PFst,arg) -> execPFst arg 
+            | MATCH1ARG (PSnd,arg) -> execPSnd arg 
+            | MATCH1ARG (IsPair,arg) -> execIsPair arg 
+            | MATCH1ARG (Implode,arg) ->  execImplode arg  
+            | MATCH1ARG (Explode,arg) -> execExplode arg                
+            | Funcapp(Literal(_), _) ->Null  // printfn "Cannot apply function to literal"
+            | _ -> exp  
 
         //printpipe exp
         match exp with
-        | BASEFUNCS result -> result
-        | Funcapp(a,b) -> 
-            match Funcapp(evaluate a,evaluate b) with 
-            | BASEFUNCS result -> result
-            | x -> x
+        //| BASEFUNCS result -> result
+        | Funcapp(a,b) -> Funcapp(evaluate a,evaluate b) |> basicFunctions
+            //match Funcapp(evaluate a,evaluate b) with 
+            //| BASEFUNCS result -> result
+            //| x -> x
         | Lambda l -> Lambda {InputVar = l.InputVar; Body = evaluate l.Body} //|> evaluate//|> reevaluate env (Lambda l)        
+        //| Var x -> If bound and unbound variables are distinguished, errors can be raised when a non declared variable is used
         | x->x
 
     exp |> betaReduce [] |> evaluate
@@ -193,12 +184,12 @@ let test5 = FuncDefExp(['f'],Literal(Int(5)),test5FBody)
 
 let test6FBody = Funcapp(Funcapp(Var(['f']),Literal(Int(3))),Funcapp(Funcapp(BuiltInFunc(Math Mult),Literal(Int(9))),Literal(Int(9))))
 let test6 = FuncDefExp(['f'],ABbody,test6FBody) 
-// let f a b = a + b/a in f 3 9*9
+// let f a b = a + b/a in f 3 (9*9)
 
 let test7GBody = Lambda{InputVar = ['x'];Body = Funcapp(Var['f'],Var ['x'])}
 let test7FBody =Lambda{InputVar = ['a'];Body = Lambda{InputVar = ['b']; Body = Funcapp(Funcapp(BuiltInFunc (Math Add),Funcapp(Funcapp(BuiltInFunc (Math Mult), Var ['a']),Var['a'])),Var['b'])}} 
-let test7 = FuncDefExp(['f'],test7FBody,FuncDefExp(['g'],test7GBody,(Funcapp(Var ['f'],Literal(Int 3)))))   
-// let g a b = a*a + b in let f x = g x in f 3 
+let test7 = FuncDefExp(['f'],test7FBody,FuncDefExp(['g'],test7GBody,(Funcapp(Var ['g'],Literal(Int 3)))))   
+// let f a b = a*a + b in let g x = f x in g 3 
 
 let test8 = FuncDefExp(['f'],Lambda{InputVar = ['x'];Body = Funcapp(Funcapp(BuiltInFunc (Math Add), Var ['x']),Literal (Int 1))},FuncDefExp(['g'],Lambda{InputVar = ['y']; Body = Funcapp (Funcapp (BuiltInFunc (Math Add), Var ['y']), Literal (Int 2))},(Funcapp(Var ['f'], Funcapp(Var['g'], Literal(Int 3))))))   
 //let f x = x+1 in let g y = y+2 in g (f 3)
