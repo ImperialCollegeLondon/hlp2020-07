@@ -219,35 +219,3 @@ let reductionAST (y:AST) : Result<AST,string> =
         | _ -> Error "RUN-TIME ERROR IN reductionAST 2"
     y |> Ok |> reduceFuncTree |> eval
 
-//works for all the arithmetic and the boolean builtin
-let testFunc =
-    reductionAST (FuncDefExp(['f'], Lambda(['x'],FuncApp( FuncApp( BFunc BFalse, Var['x']), Literal(StringLit "a"))), FuncApp( Var ['f'], Literal(StringLit "aloha"))))
-
-let testFuncPair = 
-    reductionAST (FuncDefExp(['f'], Lambda(['x'],FuncApp( BFunc BExplode, Var['x'])), FuncApp( Var ['f'], Literal( StringLit "aloha"))))
-
-let multipeFunc =
-    reductionAST (
-        FuncDefExp(['f'], Lambda( ['x'], FuncApp( FuncApp( BFunc BPlus, Var ['x']), Literal( IntLit 1))), 
-            FuncDefExp(['g'], Lambda( ['y'], FuncApp( FuncApp( BFunc BPlus, Var ['y']), Literal( IntLit 2))),
-                FuncApp( Var ['g'], FuncApp( Var ['f'], Literal(IntLit 2))))))
-
-let lambdaH = Lambda(['p'], FuncApp( FuncApp(BFunc BTimes, Var ['p']), Var ['p'])) //works 
-let lambdaG = Lambda(['n'], FuncApp( FuncApp(BFunc BTimes, Var ['n']), Literal( IntLit 2))) //works 
-
-let funcabc a b c = FuncApp( FuncApp( BFunc BPlus, FuncApp( FuncApp( BFunc BPlus, a), b)), c)
-let gm = FuncApp( Var ['g'], Var ['m'])
-let lit1 = Literal( IntLit 1)
-let gm1 = FuncApp( Var ['g'], FuncApp( FuncApp( BFunc BPlus, Var ['m']), lit1))
-let hhm = FuncApp(Var ['h'], FuncApp( Var['h'], Var['m']))
-
-let lambdaF = Lambda(['m'], funcabc gm gm1 hhm)
-let fapp = FuncApp( Var ['f'], Literal( IntLit 2))
-let ifthen = FuncApp( FuncApp( FuncApp( BFunc BIfThenElse, (BFunc BFalse)), fapp), lit1)
-
-let expreF = FuncDefExp( ['f'], lambdaF, ifthen)
-let expreG = FuncDefExp( ['g'], lambdaG, expreF)
-let expreH = FuncDefExp( ['h'], lambdaH, expreG)
-
-
-let expreHres = expreH |> reductionAST
