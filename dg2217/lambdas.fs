@@ -95,12 +95,12 @@ let rec execExplode (str:AST) =
     | Literal (String (hd::tl)) -> Pair(Literal(String([hd])), Literal(String tl) |> execExplode)
     | _ -> Null // Error 
 
-let (|MATCH2ARG|_|) exp = 
+let (|TWOARGFUN|_|) exp = 
     match exp with
     | Funcapp(Funcapp(func,x),y) -> Some (func, x, y)
     | _ -> None
 
-let (|MATCH1ARG|_|) exp =
+let (|ONEARGFUN|_|) exp =
     match exp with
     | Funcapp(func,x) -> Some (func, x)
     | _ -> None 
@@ -111,28 +111,28 @@ let rec eval (env:EnvironmentType) exp =
         printf "%A" headResult
         Pair(headResult,eval env b)
         
-    let basicFunctions exp = 
+    let applyFunc exp = 
         match exp with
-        | Funcapp(Lambda l,E) -> 
-            let newEnv = (l.InputVar, eval env E)::env
-            eval newEnv l.Body 
-        | MATCH2ARG (BuiltInFunc(Equal),arg1,arg2) -> execEqual arg1 arg2 
-        | MATCH2ARG (BuiltInFunc(Math op), Literal x, Literal y) -> execMath op x y 
-        | MATCH1ARG (BuiltInFunc(PFst),arg) -> execPFst arg 
-        | MATCH1ARG (BuiltInFunc(PSnd),arg) -> execPSnd arg 
-        | MATCH1ARG (BuiltInFunc(IsPair),arg) -> execIsPair arg 
-        | MATCH1ARG (BuiltInFunc(Implode),arg) -> arg |> eval env |> execImplode  
-        | MATCH1ARG (BuiltInFunc(Explode),arg) -> execExplode arg    
-        | MATCH1ARG ((Literal(_)|Pair(_)|Null), _) -> printfn "The value %A is not a valid function application" exp;Null 
+        | ONEARGFUN (Lambda l,E) ->
+            let updateEnv = (l.InputVar, eval env E)::env
+            eval updateEnv l.Body 
+        | TWOARGFUN (BuiltInFunc(Equal),arg1,arg2) -> execEqual arg1 arg2 
+        | TWOARGFUN (BuiltInFunc(Math op), Literal x, Literal y) -> execMath op x y 
+        | ONEARGFUN (BuiltInFunc(PFst),arg) -> execPFst arg 
+        | ONEARGFUN (BuiltInFunc(PSnd),arg) -> execPSnd arg 
+        | ONEARGFUN (BuiltInFunc(IsPair),arg) -> execIsPair arg 
+        | ONEARGFUN (BuiltInFunc(Implode),arg) -> arg |> eval env |> execImplode  
+        | ONEARGFUN (BuiltInFunc(Explode),arg) -> execExplode arg    
+        | ONEARGFUN ((Literal(_)|Pair(_)|Null), _) -> printfn "Run time error: %A is not a valid function application" exp;Null 
         | _ -> exp //?
 
-    match exp with
+    match exp with  
     | FuncDefExp(name,body,E) -> eval env (Funcapp(Lambda{InputVar = name; Body = E},body))
-    | MATCH2ARG(BuiltInFunc(P),arg1,arg2)-> evalPair env (Pair(arg1,arg2))
-    | MATCH2ARG(chBool,a,_) when chBool = trueAST -> eval env a
-    | MATCH2ARG(chBool,_,b) when chBool = falseAST -> eval env b
+    | TWOARGFUN(BuiltInFunc(P),arg1,arg2)-> evalPair env (Pair(arg1,arg2))
+    | TWOARGFUN(chBool,a,_) when chBool = trueAST -> eval env a
+    | TWOARGFUN(chBool,_,b) when chBool = falseAST -> eval env b
     | Var name  -> findValue env name 
-    | Funcapp(ast1,ast2) -> Funcapp(eval env ast1,eval env ast2) |> basicFunctions
+    | Funcapp(ast1,ast2) -> Funcapp(eval env ast1,eval env ast2) |> applyFunc
     | Lambda l -> Lambda {InputVar = l.InputVar; Body = eval ((l.InputVar,Var l.InputVar)::env) l.Body}
     | Pair(a,b)-> evalPair env (Pair(a,b))
     | Literal(_) | BuiltInFunc(_) | Null -> exp
