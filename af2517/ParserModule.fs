@@ -63,20 +63,16 @@ and LambdaType = {
 and LitType = 
     | Int of int 
     | String of string
-    | True of AST //make it a named function with Lambda("A",Lambda ("B",Var "A" ))
-    | False of AST 
+
 
     
 let rec extractRightAppList (lst:AST list) (inp:AST) : AST list = 
-// extracts the top-level right-associative application list and returns it as an Fsharp list
     match inp with 
-    //| Funcapp (Funcapp (hd,tl), tl') -> extractRightAppList lst (Funcapp ()) 
-    | Funcapp (hd, tl) -> lst @ [hd] @ (extractRightAppList lst tl)
+    | Funcapp (hd, tl) -> lst @ (extractRightAppList [] hd) @ (extractRightAppList [] tl)
     | el ->  lst @ [el]
 
     
 let rec makeLeftAppList (inp:AST list) : AST =
-// takes an Fsharp list and makes a left associative FuncApp tree representing the items
     match inp with
     | [Bracket el]  ->  el
     | [el] -> el

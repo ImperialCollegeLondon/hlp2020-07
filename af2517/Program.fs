@@ -27,7 +27,19 @@ let main argv =
     //print <| extractRightAppList [] a 
 
     //---------------- FIX THIS --------------------------//
+    
     //print <| parse (Ok [OpenRoundBracket; Other"f"; Other "g"; CloseRoundBracket; MultToken; OpenRoundBracket; Other "h"; Other "p"; CloseRoundBracket])
+    //let a = extractRightAppList [] (Funcapp(Funcapp(Var "x", Var "y"), Var "z"))
+    //        |> List.rev
+    //        |> makeLeftAppList
+    //print a
+
+    //let b = [Var "x"; Var "y"; Var "z"]
+    //        |> List.rev
+    //        |> makeLeftAppList
+    //print b
+    print <| parse (Ok [OpenRoundBracket; Other"f"; Other "g"; CloseRoundBracket; MultToken; OpenRoundBracket; Other "h"; Other "p"; CloseRoundBracket])
+    //print <| buildAddExp [] (Ok [Other "x"; Other "y"; Other "z"])
     //---------------------------------------------------//
     
     
@@ -38,9 +50,6 @@ let main argv =
     
 
     //print <| parse (Ok [Keyword "if"; Other "x"; AddToken; IntegerLit 1; Keyword "then"; Other "y";  AddToken; IntegerLit 1; Keyword "else"; Other "z";  AddToken; IntegerLit 1; Keyword "fi"])
-
-
-
    // print <| parse (Ok [OpenRoundBracket; Keyword "fun"; Other "x"; EqualToken; Other "x"; AddToken; IntegerLit 1; CloseRoundBracket])
     
     
