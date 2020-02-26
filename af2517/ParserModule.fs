@@ -70,6 +70,7 @@ and LitType =
 let rec extractRightAppList (lst:AST list) (inp:AST) : AST list = 
 // extracts the top-level right-associative application list and returns it as an Fsharp list
     match inp with 
+    //| Funcapp (Funcapp (hd,tl), tl') -> extractRightAppList lst (Funcapp ()) 
     | Funcapp (hd, tl) -> lst @ [hd] @ (extractRightAppList lst tl)
     | el ->  lst @ [el]
 
@@ -97,12 +98,13 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>)  =
     | Ok [] -> Error (None)
     | PSITEM (Ok(ast, Ok lst)) ->  Ok (ast, Ok lst)
     | PMATCH (OpenRoundBracket) (PBUILDADDEXP(ast, PMATCH (CloseRoundBracket) (inp'))) -> 
-                                                                                           let ast' = ast
-                                                                                                    |> extractRightAppList []
-                                                                                                    |> List.rev
-                                                                                                    |> makeLeftAppList
-                                                                                                    |> Bracket
-                                                                                           Ok(ast', inp') 
+        let ast' = ast
+                |> extractRightAppList []
+                |> List.rev
+                |> makeLeftAppList
+                |> Bracket
+        Ok(ast', inp')
+    | Ok (hd::tl) when hd = Keyword "if" ->  buildIfThenElse (Ok(hd::tl)) []                                            
     | Ok lst -> Error (Some lst)
     | Error lst -> Error (Some lst)
     |> Some
@@ -118,7 +120,6 @@ and (|PSITEM|_|) tokLst =
     | _ -> None
 
 and buildAppExp(inp: Result<Token list, Token list>):(AST* Result<Token list, Token list>) =
-   printf "entered appexp with %A \n" inp
    match inp with
     | PITEM (Ok(s, lst)) -> 
                             match lst with 
@@ -170,6 +171,7 @@ and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(AST* Re
     | PMATCH (OpenRoundBracket) (TAKEWHILENOTINBRACKET (inp', acc'))  ->
                                                                         let acc'' = (acc@[OpenRoundBracket] @acc')
                                                                         buildAddExp (acc'') inp'
+    //prevent add from breaking inside if statements 
     | Ok (hd::tl) when hd = AddToken -> 
         let multResult =  buildMultExp (Ok acc) []
         let addResult = buildAddExp [] (Ok tl)
@@ -186,7 +188,7 @@ and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(AST* Re
 and (|PBUILDADDEXP|_|) (inp: Result<Token list, Token list>) = 
     Some (buildAddExp [] inp)
 
-let rec buildLambda inp = 
+and buildLambda inp = 
     match inp with 
     | hd::(hd'::tl) -> match hd,hd' with 
                         | (Other x),(Other y) -> Lambda{InputVar=x;Body=buildLambda(hd'::tl)}
@@ -215,10 +217,39 @@ and  buildFunctionDef inp  =
 and parse (inp: Result<Token list, Token list>)  = 
     match inp with
     | PMATCH (Let) (Ok rest) -> buildFunctionDef (rest) 
-    | _ -> buildAddExp [] inp
+    | _ -> 
+            buildAddExp [] inp
             |> fst
             |> extractRightAppList []
             |> List.rev
             |> makeLeftAppList
 
-
+and keywordList = [ Keyword "if"; Keyword "then"; Keyword"else" ; Keyword "fi" ]
+and takeWhileNotIf acc inp = 
+    match inp with 
+    | Ok(hd::tl) when List.contains hd keywordList -> (Ok ([hd]@tl),acc)
+    | Ok (hd::tl) -> takeWhileNotIf (acc@[hd]) (Ok tl) 
+    | Ok [] -> (Ok [], acc)
+    | _ -> failwithf "list was error"
+and (|TAKEWHILENOTIF|_|) inp = Some(takeWhileNotIf [] inp)
+// change here acc' pbuildadd to something that returns the right thing
+and buildIfThenElse inp acc = 
+    match inp with 
+    | PMATCH (Keyword "if") (TAKEWHILENOTIF ((PMATCH (Keyword "then") (Ok inp')),acc' )) ->
+        let a = acc@[OpenRoundBracket]@acc'@[CloseRoundBracket]
+        printf "After if then is %A \n" a  
+        buildIfThenElse (Ok ([Keyword "then"]@inp')) (acc@[OpenRoundBracket]@acc'@[CloseRoundBracket])
+    | PMATCH (Keyword "then") (TAKEWHILENOTIF ((PMATCH (Keyword "else") (Ok inp')),acc' )) ->
+        buildIfThenElse (Ok ([Keyword "else"]@inp')) (acc@[OpenRoundBracket]@acc'@[CloseRoundBracket])
+    | PMATCH (Keyword "else") (TAKEWHILENOTIF ((PMATCH (Keyword "fi") (Ok inp')),acc' )) ->
+        let ifParsed = acc@[OpenRoundBracket]@acc'@[CloseRoundBracket]
+        printf "IF parsed is %A \n" ifParsed
+        let result = buildAddExp [] (Ok (acc@[OpenRoundBracket]@acc'@[CloseRoundBracket]))
+        let ast = result
+                  |> fst
+                  |> extractRightAppList []
+                  |> List.rev
+                  |> makeLeftAppList
+                  |> Bracket
+        Ok (ast, Ok inp')
+    | _ -> failwithf "Not a valid if statement"

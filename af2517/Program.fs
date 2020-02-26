@@ -20,8 +20,19 @@ let main argv =
     //print <| parse (Ok([Keyword "let"; Other "f"; Other "a"; Other "b"; Keyword "="; Other "a"; Other "+"; Other "b";Other "/"; Other "a"; Keyword "in"; Other "f"; IntegerLit 3; IntegerLit 4] ) )
     //print <| Parse (Ok [Other ['f']; IntToken 3; IntToken 4; Other ['*']; Other ['f'];Other['+'];Other['b']]) 
     //print <| parse (Ok [Other "f"; OpenRoundBracket; Other "x"; AddToken;Other "g"; CloseRoundBracket;]) 
-    print <| parse (Ok [Other "f"; OpenRoundBracket; Other "x"; AddToken; IntegerLit 1; CloseRoundBracket])
+    //print <| parse (Ok [Other "f"; OpenRoundBracket; Other "x"; AddToken; IntegerLit 1; CloseRoundBracket])
+    //print <| parse (Ok [Let; Other "f"; Other"a"; EqualToken; Other "a"; Keyword "in"; Let; Other "g"; Other "b"; EqualToken; Other"b"; Keyword "in"; OpenRoundBracket; Other "f"; IntegerLit 3; CloseRoundBracket; MultToken; OpenRoundBracket; Other "g"; IntegerLit 2; CloseRoundBracket ])
     //let a = buildAddExp [] (Ok [Other "f"; OpenRoundBracket; Other "x"; Other "y"; Other "z";CloseRoundBracket])
+    //let a = fst(buildAddExp [] (Ok [OpenRoundBracket; Other"f"; Other "g"; CloseRoundBracket; MultToken; OpenRoundBracket; Other "h"; Other "p"; CloseRoundBracket]))
+    //print <| extractRightAppList [] a 
+
+    //---------------- FIX THIS --------------------------//
+    //print <| parse (Ok [OpenRoundBracket; Other"f"; Other "g"; CloseRoundBracket; MultToken; OpenRoundBracket; Other "h"; Other "p"; CloseRoundBracket])
+    //---------------------------------------------------//
+    
+    
+    //print <| parse (Ok [Other"h";Keyword "if"; Other "x"; Keyword "then"; Other "y";  Keyword "else"; Other "z";  Keyword "fi"; Other"f"])
+    print <| parse (Ok [Keyword "if"; Other "x"; AddToken; IntegerLit 1; Keyword "then"; Other "y";  AddToken; IntegerLit 1; Keyword "else"; Other "z";  AddToken; IntegerLit 1; Keyword "fi"])
     //print <| extractRightAppList [] (fst(a))
     //print <| parse ((Ok [Other "f"; OpenRoundBracket; Other "x"; Other "y";Other "z"; CloseRoundBracket]))
    // print <| parse ((Ok [Other "f"; OpenRoundBracket; Other "a"; OpenRoundBracket; Other "f"; Other "d"; CloseRoundBracket; CloseRoundBracket]))
