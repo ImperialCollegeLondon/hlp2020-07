@@ -38,7 +38,7 @@ let main argv =
     //        |> List.rev
     //        |> makeLeftAppList
     //print b
-    print <| parse (Ok [OpenRoundBracket; Other"f"; Other "g"; CloseRoundBracket; MultToken; OpenRoundBracket; Other "h"; Other "p"; CloseRoundBracket])
+    //print <| parse (Ok [OpenRoundBracket; Other"f"; Other "g"; CloseRoundBracket; MultToken; OpenRoundBracket; Other "h"; Other "p"; CloseRoundBracket])
     //print <| buildAddExp [] (Ok [Other "x"; Other "y"; Other "z"])
     //---------------------------------------------------//
     
@@ -48,18 +48,19 @@ let main argv =
     
     
     
+    //-------------------------FIX THIS -------------------------
+    print <| parse (Ok [Keyword "if"; Other "x"; AddToken; IntegerLit 1; Keyword "then"; Other "y";  AddToken; IntegerLit 1; Keyword "else"; Other "z";  AddToken; IntegerLit 1; Keyword "fi"])
+    print <| parse (Ok [OpenSquareBracket; IntegerLit 1; Keyword ";"; IntegerLit 2; Keyword ";"; IntegerLit 3; CloseSquareBracket])
+    //-----------------------------------------------------------
 
-    //print <| parse (Ok [Keyword "if"; Other "x"; AddToken; IntegerLit 1; Keyword "then"; Other "y";  AddToken; IntegerLit 1; Keyword "else"; Other "z";  AddToken; IntegerLit 1; Keyword "fi"])
-   // print <| parse (Ok [OpenRoundBracket; Keyword "fun"; Other "x"; EqualToken; Other "x"; AddToken; IntegerLit 1; CloseRoundBracket])
-    
-    
-    
-    
+
+    // print <| parse (Ok [OpenRoundBracket; Keyword "fun"; Other "x"; EqualToken; Other "x"; AddToken; IntegerLit 1; CloseRoundBracket])
     //print <| extractRightAppList [] (fst(a))
     //print <| parse ((Ok [Other "f"; OpenRoundBracket; Other "x"; Other "y";Other "z"; CloseRoundBracket]))
    // print <| parse ((Ok [Other "f"; OpenRoundBracket; Other "a"; OpenRoundBracket; Other "f"; Other "d"; CloseRoundBracket; CloseRoundBracket]))
 
-
+    //let a = [1+2]
+    //print a 
     //let b = buildAddExp [] (Ok [Other "x"; Other "y"; Other "z"])
     //print <| extractRightAppList [] (fst(b))
     //print <| parse ((Ok [ Other "x"; Other "y";Other "z"]))

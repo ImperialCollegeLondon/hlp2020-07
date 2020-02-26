@@ -134,8 +134,11 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>)  =
         let ast' = leftAssociate ast
                    |> Bracket
         Ok(ast', inp')
-    
-    | Ok (hd::tl) when hd = Keyword "if" ->  buildIfThenElse (Ok(hd::tl)) []                                            
+
+    | PMATCH (Keyword "if") (PBUILDADDEXP (ast, (PMATCH (Keyword "then") (PBUILDADDEXP (ast', (PMATCH (Keyword "else") (PBUILDADDEXP (ast'', (PMATCH (Keyword "fi") (inp')))))))))) ->
+         Ok (Funcapp(Funcapp(ast, ast'), ast''), inp')
+
+    | PMATCH (OpenSquareBracket) (BUILDLIST (ast, (PMATCH (CloseSquareBracket) (inp')))) -> Ok (ast, inp')
     | Ok lst -> Error (Some lst)
     | Error lst -> Error (Some lst)
     |> Some
@@ -268,36 +271,12 @@ and parse (inp: Result<Token list, Token list>):(AST*Result<Token list, Token li
                     |>leftAssociate
           (ast, snd(res))
 
+and buildList inp = 
+    match inp with
+    | PBUILDADDEXP (ast, (PMATCH (Keyword ";") (inp'))) -> 
+        let result = buildList inp'
+        (Pair (ast, fst(result)), snd(result))
+    | PBUILDADDEXP (ast, Ok inp') -> (ast, Ok inp')
+    | _ -> failwithf "Invalid input"
 
-and keywordList = [ Keyword "if"; Keyword "then"; Keyword"else" ; Keyword "fi" ]
-
-and takeBetweenIf acc inp = 
-    match inp with 
-    | Ok(hd::tl) when List.contains hd keywordList -> (Ok ([hd]@tl),acc)
-    | Ok (hd::tl) -> takeBetweenIf (acc@[hd]) (Ok tl) 
-    | Ok [] -> (Ok [], acc)
-    | _ -> failwithf "list was error"
-and (|TAKEBETWEENIF|_|) inp = Some(takeBetweenIf [] inp)
-
-
-
-and buildIfThenElse inp acc = 
-    match inp with 
-    | PMATCH (Keyword "if") (TAKEBETWEENIF ((PMATCH (Keyword "then") (Ok inp')),acc' )) ->
-        let a = acc@[OpenRoundBracket]@acc'@[CloseRoundBracket]
-        buildIfThenElse (Ok ([Keyword "then"]@inp')) (acc@[OpenRoundBracket]@acc'@[CloseRoundBracket])
-    
-    | PMATCH (Keyword "then") (TAKEBETWEENIF ((PMATCH (Keyword "else") (Ok inp')),acc' )) ->
-        buildIfThenElse (Ok ([Keyword "else"]@inp')) (acc@[OpenRoundBracket]@acc'@[CloseRoundBracket])
-    
-    | PMATCH (Keyword "else") (TAKEBETWEENIF ((PMATCH (Keyword "fi") (Ok inp')),acc' )) ->
-        let ifParsed = acc@[OpenRoundBracket]@acc'@[CloseRoundBracket]
-        let result = buildAddExp [] (Ok (acc@[OpenRoundBracket]@acc'@[CloseRoundBracket]))
-        let ast = result
-                  |> fst
-                  |> leftAssociate
-                  |> Bracket
-        Ok (ast, Ok inp')
-    
-    | _ -> failwithf "Not a valid if statement"
-
+and (|BUILDLIST|_|) inp = Some(buildList inp)
