@@ -1,140 +1,8 @@
 module TokenModule 
-
-
 open System
-type Lexer = char list -> (char list * char list) option
-type Token = OpenRoundBracket
-            |CloseRoundBracket
-            |OpenSquareBracket
-            |CloseSquareBracket
-            |IntegerLit of int
-            |StringLit of string
-            |SpaceLit
-            |DecimalLit of float
-            |Keyword of string
-            |Let
-            |RightArrow
-            |Equal
-            |HexLit of string
-            |NegativeInteger of string
-            |Add
-            |Multiply
-            |Other of string
-            |Substract
-            |Div
-            |Unexpected
-//Rules
-//------------------------------------------------------------
-let integerLit =
-    [['0'..'9'],true]
-let negIntegerLit =
-    [
-        ['-'],false
-        ['0'..'9'],true
+open Definitions
 
-    ]
-let stringLit =
-    [['\"'],false
-     ['0'..'9']@['a'..'z']@['A'..'Z']@[' '],true
-     ['\"'],false]
-let decimalLit =
-    [
-        ['0'..'9'],true
-        ['.';','],false
-        ['0'..'9'],true
-    ]
-let negDecimalLit =
-    [
-        ['-'],false
-        ['0'..'9'],true
-        ['.';','],false
-        ['0'..'9'],true
-    ]
-let spaceLit = 
-    [
-        [' '],true
-    ]
-let openRoundBracketLit = 
-    [
-        ['('],false
-    ]
-let closeRoundBracketLit = 
-    [
-        [')'],false
-    ]
-let openSquareBracketLit = 
-    [
-        ['['],false
-    ]
-let closeSquareBracketLit = 
-    [
-        [']'],false
-    ]
-let keywordLet = 
-    [
-        ['l'],false
-        ['e'],false
-        ['t'],false
-    ]
-let keywordRightArrow = 
-    [
-        ['-'],false
-        ['>'],false
-    ]
-let keywordEqual = 
-    [
-        ['='],false
-    ]
-let binaryLit = 
-    [
-        ['0'],false
-        ['x'],false
-        ['A'..'F'] @ ['0'..'9'] @ ['a'..'f'],true
-    ]
-let addition = 
-    [
-        ['+'],false
-    ]
-let multiplication = 
-    [
-        ['*'],false
-    ]
-let div = 
-    [
-        ['/'],false
-    ]
-let substract = 
-    [
-        ['-'],false
-    ]
-let otherCharacters = 
-    [
-        ['a'..'z'],true
-    ]
-//------------------------------------------------------------
-//Dict
-//------------------------------------------------------------
-let mdict = [
-             substract
-             negIntegerLit
-             integerLit
-             stringLit
-             decimalLit
-             negDecimalLit
-             spaceLit
-             openRoundBracketLit
-             closeRoundBracketLit 
-             openSquareBracketLit
-             closeSquareBracketLit
-             keywordLet
-             keywordRightArrow
-             keywordEqual
-             binaryLit  
-             addition
-             multiplication
-             otherCharacters
-             div
-             ]
+
 //------------------------------------------------------------
 //Returns first occurence of element in list
 let index arr elem =
@@ -145,11 +13,7 @@ let index arr elem =
             |[] -> failwithf "Couldn't find element"
     find arr elem 0
 
-
-   
-let print x = 
-    printfn "%A" x
-let lexNGram (ngram: ((char list * bool) list)   ) (cLst: char list) : (char list * char list) option =
+let lexNGram (ngram: Rule   ) (cLst: char list) : (char list * char list) option =
     //a single character belongs to this rule
     let takeIfInChars chars (acc,lst) : (char list * char list) option =
         match lst with
@@ -175,48 +39,62 @@ let lexNGram (ngram: ((char list * bool) list)   ) (cLst: char list) : (char lis
         |None -> None
     //Remember if you do it this way then it's interpreted as folding over ngram
     ((Some ([],cLst)) , ngram) ||> List.fold tryMatch
-//Must incorporate some error reporting/checking
-let combinedLexers (mstring:string) : ((char list * int) list) = 
-    //be worth safeguarding against rules that have not been added somehow
-    let tryRule (rule:(char list * bool) list) (look: char list) : ((char list * int) * char list) option = 
+    
+let combinedLexers (mstring:string) : (MappedRule list) = 
+
+    //will throw an error if the rule is not in the dictionary    
+    let tryRule (rule: Rule) (look: char list) : AccumulatedMappedRule = 
         match lexNGram rule look with
-            |Some (acc,left) -> Some ( (acc, index mdict rule),left )
+            |Some (acc,left) -> Some ( (acc, index mdict rule),left ) //might throw error here
             |None -> None
-    let tryAllRules  (look:char list) :  ((char list * int) * char list) option = 
-        let miniFolder state (rule : (char list * bool) list) =
+            
+    //Note how it'll return the result of the last rule that matched - by design
+    //Must ensure dict contains the most specific rule last
+    //i.e Token '->' should come after Token '-'  
+    let tryAllRules  (look:char list) :  AccumulatedMappedRule = 
+        let ruleFolder (state:AccumulatedMappedRule) (rule : Rule) : AccumulatedMappedRule =
             match tryRule rule look with 
                 | None -> state // it failed try the next one
-                | Some x -> x 
-        Some (((([],-1),[]), mdict) ||> List.fold miniFolder) 
+                | x -> x
+        //mdict contains all the rules
+        (None, mdict) ||> List.fold ruleFolder
 
 
-    let rec consume (acc: (char list * int) list) (look:char list) : ((char list * int) list) =
+    let rec consume (acc: MappedRule list) (look:char list) : (MappedRule list) =
         match tryAllRules look with 
             |Some ( x,y ) when y <> [] ->  consume (acc @ [x]) y
             |Some (x,y) when List.isEmpty y -> acc @ [x]
-            |_ -> failwithf "What? A rule must've not matched"
+            |_ ->  acc @ [(look),-1]
+            
+            
+    print <| Seq.toList mstring
     consume [] (Seq.toList mstring)
+    
+    
+    
+    
 let tokenize (mstring:string) : Token list = 
-    let flattener (x:char list,y:int) : Token = 
-        match y with 
-            | 0 -> Substract
-            | 1 | 2 -> IntegerLit (int (x |> Array.ofList |> String))
-            | 3 -> StringLit (x |> Array.ofList |> String) 
-            | 4 | 5 -> DecimalLit (float (x |> Array.ofList |> String))
-            | 6 -> SpaceLit
-            | 7 -> OpenRoundBracket
-            | 8 -> CloseRoundBracket
-            | 9 -> OpenSquareBracket
-            | 10 -> CloseSquareBracket
-            | 11 -> Let
-            | 12 -> RightArrow
-            | 13 -> Equal
-            | 14 -> HexLit (x |> Array.ofList |> String)
-            | 15 -> Add 
-            | 16 -> Multiply
-            | 17 -> Other (x |> Array.ofList |> String)
+    let flattener ((x:char list,y:int) : MappedRule) : Token =
+        let xString = (x |> Array.ofList |> String)
+        match y with
+            | 0 -> Other xString
+            | 1 -> Substract
+            | 2 | 3 -> IntegerLit (int xString)
+            | 4 -> StringLit xString
+            | 5 | 6 -> DecimalLit (float xString)
+            | 7 -> SpaceLit
+            | 8 -> OpenRoundBracket
+            | 9 -> CloseRoundBracket
+            | 10 -> OpenSquareBracket
+            | 11 -> CloseSquareBracket
+            | 12 -> Let
+            | 13 -> RightArrow
+            | 14 -> Equal
+            | 15 -> HexLit xString
+            | 16 -> Add 
+            | 17 -> Multiply
             | 18 -> Div
-            | _ -> Unexpected
+            | _ -> Unexpected xString
     mstring
     |> combinedLexers
     |> List.map flattener 
