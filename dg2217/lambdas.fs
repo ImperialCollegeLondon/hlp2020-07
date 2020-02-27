@@ -205,10 +205,25 @@ let test11 = Funcapp(Funcapp(Funcapp(Funcapp(BuiltInFunc(Equal),Literal(Int 2)),
 // if 2=2 then test9 else test8
 
 let elseBody12 = Funcapp(Funcapp(BuiltInFunc(Math Mult),Var ['n']),Funcapp(Var ['f'], Funcapp(Funcapp(BuiltInFunc(Math Sub),Var ['n']),Literal(Int 1))))
-let ifStatement12 = Funcapp(Funcapp(Funcapp(Funcapp(BuiltInFunc Equal,Var ['n']),Literal(Int 0)),Literal(Int 1)),Lazy(elseBody12))
+let ifStatement12 = Funcapp(Funcapp(Funcapp(Funcapp(BuiltInFunc Equal,Var ['n']),Literal(Int 0)),Lazy(Literal(Int 1))),Lazy(elseBody12))
 let fBody12 = Lambda{InputVar = ['f']; Body = Lambda{InputVar = ['n']; Body = ifStatement12}}
-let test12 = FuncDefExp{Name = ['f';'''];Body = fBody12;Expression = Funcapp(Funcapp(Var ['f';'''],Lazy(Funcapp(Y,Var['f';''']))),Literal(Int 5))}
+let test12 = FuncDefExp{Name = ['f'];Body = fBody12;Expression = Funcapp(Funcapp(Var ['f'],Lazy(Funcapp(Y,Var['f']))),Literal(Int 5))}
 // let rec f n = if n = 0 then 1 else n*f(n-1) in f 2 SAME AS let f' f n = if n = 0 then 1 else n*f(n-1) in f' (Y h) 2 
+
+let fminus1 = Funcapp(Var ['f'], Funcapp(Funcapp(BuiltInFunc (Math Sub), Var ['a']),Literal (Int 1)))
+let fminus2 = Funcapp(Var ['f'], Funcapp(Funcapp(BuiltInFunc (Math Sub), Var ['a']),Literal (Int 2)))
+let recBody = Funcapp(Funcapp(BuiltInFunc (Math Add), fminus1),fminus2)
+let eqBody1 = Funcapp(Funcapp(BuiltInFunc Equal, Var ['a']), Literal(Int 1))
+let eqBody0 = Funcapp(Funcapp(BuiltInFunc Equal, Var ['a']), Literal(Int 0))
+let ifelseBody13 = Funcapp(Funcapp(eqBody0,Lazy(Literal(Int 0))),Lazy(Funcapp(Funcapp(eqBody1,Lazy(Literal(Int 1))),Lazy(recBody)))) 
+let test13 = 
+    FuncDefExp{
+        Name = ['f'];
+        Body = Lambda{InputVar = ['f']; Body = Lambda {InputVar = ['a']; Body = ifelseBody13}};
+        Expression = Funcapp(Funcapp(Var ['f'],Lazy(Funcapp(Y,Var['f']))),Literal(Int 25))} 
+//fibonacci
+//let rec f a = if a = 0 then 0 else if a = 1 then 1 else f(a-1) + f(a-2) in f 10
+
 let o = Applicative
 
 let result0 = exec test0
@@ -224,7 +239,7 @@ let result9 = exec test9
 let result10 = exec test10
 let result11 = exec test11
 let result12 = exec test12
-
+let result13 = exec test13
 (*let vladT = (FuncDefExp
    { Name = ['f']
      Body =
