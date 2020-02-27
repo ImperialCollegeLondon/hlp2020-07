@@ -93,9 +93,13 @@ let tokenize (mstring:string) : Token list =
             | 16 -> AddToken
             | 17 -> MultToken
             | 18 -> DivToken
+            | 19 -> Newline
+            | 20 -> Keyword "match"
+            | 21 -> if xString = "" then NoInput else Keyword  ";"
             | _ -> Unexpected xString
+                
     mstring
     |> combinedLexers
     |> List.map flattener
-    |> List.filter (fun x -> x <> SpaceLit)
+    |> List.filter (fun x -> x <> SpaceLit && x <> Newline)
 

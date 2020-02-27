@@ -15,13 +15,12 @@ type BuiltInType =
     | IsPair
     | IfThenElse  
 
-
 type AST = 
     | Y 
     | Lazy of AST
     | FuncDefExp of FuncDefExpType//:char list*AST*AST 
     | Lambda of LambdaType
-    | Var of char list //only valid in lambdas 
+    | Var of char list 
     | Funcapp of AST*AST
     | Pair of AST*AST 
     | Null 
@@ -42,8 +41,6 @@ and FuncDefExpType = {
 and LitType = 
     | Int of int 
     | String of char list 
-    | True of AST //make it a named function with Lambda("A",Lambda ("B",Var "A" ))
-    | False of AST 
 
 and EnvironmentType = list<(char list)*AST>
 
@@ -64,7 +61,7 @@ let rec findValue (env:EnvironmentType) name=
     match env with
     | (n,v)::_ when n=name -> v
     | _::tl -> findValue tl name
-    | _ -> printfn "Run-time error: %A is not defined" (Var name) ; Var(name)//Var(name) 
+    | _ -> printfn "Run-time error: %A is not defined" (Var name) ; Var(name)
 
 let execEqual x y = 
     match (x,y) with
@@ -72,7 +69,8 @@ let execEqual x y =
     | (Literal(String _),Literal(String _))
     | Null,Null -> 
         if x = y then trueAST else falseAST
-    | _ -> printfn "Run-time error: %A = %A , is not a valid expression" x y;Funcapp(Funcapp(BuiltInFunc Equal,x),y) //Error
+    | (Var _,_)| (_,Var _) -> Funcapp(Funcapp(BuiltInFunc Equal,x),y)
+    | _ -> printfn "Run-time error: Equal(%A , %A) is not a valid expression" x y;Null //Error
 
 let execMath op x y =
     match (x,y) with 
@@ -85,74 +83,86 @@ let execMath op x y =
         | Mod when B<>0 -> A%B |> Int |> Literal
         | Div | Mod when B = 0 -> printfn "cannot divide by 0!"; Null
         | _ -> printf "What? Shouldn't happen" ; Null
-    | _ -> printfn "Run-time error: %A%A%A , is not a valid expression" x op y;Null//Funcapp(Funcapp(BuiltInFunc(Math op),x),y) //Error
+    | _ -> printfn "Run-time error: %A(%A,%A) , is not a valid expression" op x y;Null//Funcapp(Funcapp(BuiltInFunc(Math op),x),y) //Error
 
 let execPFst p = 
     match p with
     | Pair(a,_) -> a
-    | _ -> printfn "Run-time error: %A was expected to be a pair" p; Null //Error
+    | _ -> printfn "Run-time error: PFst(%A) is not a valid expression" p; Null //Error
 
 let execPSnd p = 
     match p with
     | Pair(_,b) -> b
-    | _ -> printfn "Run-time error: %A was expected to be a pair" p; Null //Error
+    | _ -> printfn "Run-time error: PSnd(%A) is not a valid expression" p; Null //Error
 
 let execIsPair x =
-    match x with | Pair(_) -> trueAST | _ -> falseAST
+    match x with 
+    | Pair(_) -> trueAST 
+    | _ -> falseAST
 
 let concat s1 s2 =
     match (s1,s2) with
     | (Literal(String(a)),Literal(String(b))) -> Literal(String(a@b))
+    | _ -> printfn "Run-time error: concatenate(%A,%A) is not a valid expression" s1 s2 ; Null
 
 let rec execImplode lst = 
     match lst with
     | Null -> Literal(String([]))
     | Pair(Literal(String([c])),p) -> (Literal(String [c]), (execImplode p)) ||> concat
-    | _ -> printfn "Run-time error: %A is not a valid list" lst; Null //Error
+    | _ -> printfn "Run-time error: %A is not a valid list" lst; lst //Error
 
 let rec execExplode (str:AST) =
     match str with
     | Literal (String []) -> Null
     | Literal (String (hd::tl)) -> Pair(Literal(String([hd])), Literal(String tl) |> execExplode)
-    | _ -> printfn "Run-time error: %A is not a valid string" str; Null // Error 
+    | _ -> printfn "Run-time error: %A is not a valid string" str; str // Error 
 
-let rec eval (env:EnvironmentType) exp =
-    let evalPair env (Pair(a,b)) =
-        let headResult = eval env a
-        printf "%A" headResult
-        Pair(headResult,eval env b)    
-    let applyFunc exp = 
-        match exp with
-        | ONEARGFUN (Y,f) -> eval env (Funcapp(f,Lazy(Funcapp(Y,f))))
-        | ONEARGFUN (Lambda l,arg) ->
-            let updatedEnv = (l.InputVar, arg)::env
-            eval updatedEnv l.Body
-        | TWOARGFUN (BuiltInFunc(Equal),arg1,arg2) -> execEqual arg1 arg2 
-        | TWOARGFUN (BuiltInFunc(Math op), Literal x, Literal y) -> execMath op x y 
-        | ONEARGFUN (BuiltInFunc(PFst),arg) -> execPFst arg 
-        | ONEARGFUN (BuiltInFunc(PSnd),arg) -> execPSnd arg 
-        | ONEARGFUN (BuiltInFunc(IsPair),arg) -> execIsPair arg 
-        | ONEARGFUN (BuiltInFunc(Implode),arg) -> arg |> eval env |> execImplode  
-        | ONEARGFUN (BuiltInFunc(Explode),arg) -> execExplode arg    
-        | ONEARGFUN ((Literal(_)|Pair(_)|Null), _) -> printfn "Run time error: %A is not a valid function application" exp;Null 
-        | _ -> exp //?
-
+/////////EXEC THIS IS THE MAIN RUNTIME BODY
+let rec exec exp =
     match exp with 
-    | FuncDefExp(fde) -> eval env (Funcapp(Lambda{InputVar = fde.Name; Body = fde.Expression},fde.Body))
-    | TWOARGFUN(BuiltInFunc(P),arg1,arg2)-> evalPair env (Pair(arg1,arg2))
-    | Var name -> 
-        let value = findValue env name
-        match value with
-        | Lazy(e) -> eval env e
-        | _ -> value
-    | Funcapp (func,Lazy(arg)) -> Funcapp(eval env func, Lazy(arg)) |> applyFunc
-    | Funcapp(func,arg) -> Funcapp(eval env func,eval env arg) |> applyFunc
-    | Lambda l -> Lambda {InputVar = l.InputVar; Body = eval ((l.InputVar,Var l.InputVar)::env) l.Body}
-    | Pair(a,b)-> evalPair env (Pair(a,b))
-    | Literal(_) | BuiltInFunc(_) | Null | Lazy(_) | Y -> exp
-    //| x -> x 
+    | FuncDefExp(fde) -> exec (Funcapp(Lambda{InputVar = fde.Name; Body = fde.Expression},fde.Body))
+    | TWOARGFUN(BuiltInFunc(P),arg1,arg2)-> evalPair (Pair(arg1,arg2))
+    | Lazy(e) -> exec e
+    | Funcapp (func,Lazy(arg)) -> Funcapp(exec func, Lazy arg) |> applyFunc
+    | Funcapp(func,arg) -> Funcapp(exec func,exec arg) |> applyFunc
+    | Pair(a,b)-> evalPair (Pair(a,b))
+    | Literal _ | BuiltInFunc _ | Null | Y | Var _ | Lambda _ -> exp
 
-let exec = eval [] //|> evaluate
+and applyFunc exp = 
+    match exp with
+    | ONEARGFUN (Y,f) -> 
+        exec (Funcapp(f,Lazy(Funcapp(Y,f))))
+    | ONEARGFUN (Lambda l,arg) ->
+        lookUp [(l.InputVar, arg)] l.Body |> exec 
+    | TWOARGFUN (BuiltInFunc(Equal),arg1,arg2) -> execEqual arg1 arg2 
+    | TWOARGFUN (BuiltInFunc(Math op), Literal x, Literal y) -> execMath op x y 
+    | ONEARGFUN (BuiltInFunc(PFst),arg) -> execPFst arg 
+    | ONEARGFUN (BuiltInFunc(PSnd),arg) -> execPSnd arg 
+    | ONEARGFUN (BuiltInFunc(IsPair),arg) -> execIsPair arg 
+    | ONEARGFUN (BuiltInFunc(Implode),arg) -> arg |> exec |> execImplode  
+    | ONEARGFUN (BuiltInFunc(Explode),arg) -> execExplode arg    
+    | ONEARGFUN ((Literal(_)|Pair(_)|Null), _) -> printfn "Run time error: %A is not a valid function application" exp; exp 
+    | ONEARGFUN (BuiltInFunc _, _) -> exp
+    | _ -> printfn "Should NEVER happen"; Null 
+
+and lookUp env exp = 
+    match exp with
+    | FuncDefExp fde -> lookUp env (Funcapp(Lambda{InputVar = fde.Name; Body = fde.Expression},fde.Body))
+    | Funcapp(a,b) -> Funcapp(lookUp env a, lookUp env b)
+    | Var name -> findValue env name
+    | Lazy(e) -> Lazy(lookUp env e)
+    | Pair(a,b) -> Pair(lookUp env a, lookUp env b)
+    | Lambda l -> 
+        let updatedEnv = (l.InputVar,Var l.InputVar)::env
+        Lambda{InputVar = l.InputVar;Body = lookUp updatedEnv l.Body}
+    | Literal _ | BuiltInFunc _ | Null | Y -> exp
+
+and evalPair (Pair(a,b)) =
+    let headResult = exec a
+    printf "%A" headResult
+    Pair(headResult,exec b)
+
+
 
 //let f a b = a+b/a in f 3.0 4.0
 let test0 = Funcapp (Funcapp (BuiltInFunc (Math Add),Literal (Int 2)),Literal (Int 1))
@@ -197,10 +207,25 @@ let test11 = Funcapp(Funcapp(Funcapp(Funcapp(BuiltInFunc(Equal),Literal(Int 2)),
 // if 2=2 then test9 else test8
 
 let elseBody12 = Funcapp(Funcapp(BuiltInFunc(Math Mult),Var ['n']),Funcapp(Var ['f'], Funcapp(Funcapp(BuiltInFunc(Math Sub),Var ['n']),Literal(Int 1))))
-let ifStatement12 = Funcapp(Funcapp(Funcapp(Funcapp(BuiltInFunc Equal,Var ['n']),Literal(Int 0)),Literal(Int 1)),Lazy(elseBody12))
+let ifStatement12 = Funcapp(Funcapp(Funcapp(Funcapp(BuiltInFunc Equal,Var ['n']),Literal(Int 0)),Lazy(Literal(Int 1))),Lazy(elseBody12))
 let fBody12 = Lambda{InputVar = ['f']; Body = Lambda{InputVar = ['n']; Body = ifStatement12}}
-let test12 = FuncDefExp{Name = ['f';'''];Body = fBody12;Expression = Funcapp(Funcapp(Var ['f';'''],Lazy(Funcapp(Y,Var['f';''']))),Literal(Int 5))}
+let test12 = FuncDefExp{Name = ['f'];Body = fBody12;Expression = Funcapp(Funcapp(Var ['f'],Lazy(Funcapp(Y,Var['f']))),Literal(Int 5))}
 // let rec f n = if n = 0 then 1 else n*f(n-1) in f 2 SAME AS let f' f n = if n = 0 then 1 else n*f(n-1) in f' (Y h) 2 
+
+let fminus1 = Funcapp(Var ['f'], Funcapp(Funcapp(BuiltInFunc (Math Sub), Var ['a']),Literal (Int 1)))
+let fminus2 = Funcapp(Var ['f'], Funcapp(Funcapp(BuiltInFunc (Math Sub), Var ['a']),Literal (Int 2)))
+let recBody = Funcapp(Funcapp(BuiltInFunc (Math Add), fminus1),fminus2)
+let eqBody1 = Funcapp(Funcapp(BuiltInFunc Equal, Var ['a']), Literal(Int 1))
+let eqBody0 = Funcapp(Funcapp(BuiltInFunc Equal, Var ['a']), Literal(Int 0))
+let ifelseBody13 = Funcapp(Funcapp(eqBody0,Lazy(Literal(Int 0))),Lazy(Funcapp(Funcapp(eqBody1,Lazy(Literal(Int 1))),Lazy(recBody)))) 
+let test13 = 
+    FuncDefExp{
+        Name = ['f'];
+        Body = Lambda{InputVar = ['f']; Body = Lambda {InputVar = ['a']; Body = ifelseBody13}};
+        Expression = Funcapp(Funcapp(Var ['f'],Lazy(Funcapp(Y,Var['f']))),Literal(Int 25))} 
+//fibonacci
+//let rec f a = if a = 0 then 0 else if a = 1 then 1 else f(a-1) + f(a-2) in f 10
+
 let o = Applicative
 
 let result0 = exec test0
@@ -216,6 +241,22 @@ let result9 = exec test9
 let result10 = exec test10
 let result11 = exec test11
 let result12 = exec test12
+let result13 = exec test13
+(*let vladT = (FuncDefExp
+   { Name = ['f']
+     Body =
+           Lambda
+             { InputVar = ['x']
+               Body =
+                     Funcapp
+                       (Funcapp (BuiltInFunc (Math Mult),Var ['x']),
+                        Literal (Int 2)) }
+     Expression = Funcapp (Var ['f'],Literal (Int 2)) })
+let result13 = exec vladT*)
+
+//let f x y = x * y * 2 + 1 in let g y = y in f 2 (g 5)
+
+//let result14 = exec test14
 
 concat (Literal(String['a';'b'])) (Literal(String ['c';'d']))
 execExplode (Literal(String ['a';'b';'c';'d']))

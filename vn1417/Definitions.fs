@@ -1,4 +1,5 @@
 module Definitions
+open System
 
 type Lexer = char list -> (char list * char list) option
 type MappedRule = (char list * int)
@@ -30,6 +31,8 @@ type Token = OpenRoundBracket
             |SubToken
             |DivToken
             |Unexpected of string
+            |Newline
+            |NoInput
 //Rules
 //------------------------------------------------------------
 let integerLit =
@@ -118,6 +121,23 @@ let otherCharacters =
     [
         ['a'..'z'],true
     ]
+let keywordColon =
+    [
+        [';'],false
+    ]
+let newlineLit =
+    [
+        Seq.toList <| Environment.NewLine,false
+    ]
+    
+let keywordMatch =
+    [
+        ['m'],false
+        ['a'],false
+        ['t'],false
+        ['c'],false
+        ['h'],false
+    ]
     
 
 //------------------------------------------------------------
@@ -143,6 +163,9 @@ let mdict: Rule list = [
              addition
              multiplication
              div
+             newlineLit
+             keywordMatch
+             keywordColon
              ]
 
 
