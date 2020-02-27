@@ -43,7 +43,7 @@ let main argv =
     //---------------------------------------------------//
     
     
-    //print <| parse (Ok [Other"h";Keyword "if"; Other "x"; Keyword "then"; Other "y";  Keyword "else"; Other "z";  Keyword "fi"; Other"f"])
+    print <| parse (Ok [Other"h";Keyword "if"; Other "x"; Keyword "then"; Other "y";  Keyword "else"; Other "z";  Keyword "fi"; Other"f"])
     
     
     
@@ -51,11 +51,19 @@ let main argv =
     //-------------------------FIX OPERATORS IN IFS AND LISTS -------------------------
     
     //print <| parse (Ok [OpenRoundBracket; OpenRoundBracket; Other "x"; AddToken; IntegerLit 1; CloseRoundBracket; MultToken; IntegerLit 3; CloseRoundBracket])
-   // print <| parse (Ok [Keyword "if"; Other "x";  IntegerLit 1; Keyword "then"; Other "y"; IntegerLit 1; Keyword "else"; Other "z"; IntegerLit 1; Keyword "fi"])
-    //print <| parse (Ok [OpenSquareBracket; Other "x"; AddToken; IntegerLit 1; Keyword ";"; Other "y"; MultToken; IntegerLit 2; Keyword ";"; Other "z"; SubToken; IntegerLit 3; CloseSquareBracket ])
+    // print <| parse (Ok [Keyword "if"; Other "x";  IntegerLit 1; Keyword "then"; Other "y"; IntegerLit 1; Keyword "else"; Other "z"; IntegerLit 1; Keyword "fi"])
+    
+    
+    
+    //print <| parse (Ok [OpenSquareBracket; Other "x"; AddToken; IntegerLit 1; Keyword ";"; Other "y"; MultToken; IntegerLit 2; CloseSquareBracket ])
+    //print <| parse (Ok [OpenSquareBracket; Other "x"; IntegerLit 1; Keyword ";"; Other "y"; IntegerLit 2; CloseSquareBracket ])
+
+
+
+
     //print <| parse (Ok [OpenSquareBracket; Other "x";  IntegerLit 1; Keyword ";"; Other "y"; IntegerLit 2; Keyword ";"; Other "z"; IntegerLit 3; CloseSquareBracket ])'
-    print <| parse (Ok [Let; Other "f"; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2;
-    Other "in"; Other "f"; IntegerLit 2])
+    // print <| parse (Ok [Let; Other "f"; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2;
+    //Other "in"; Other "f"; IntegerLit 2])
     //-----------------------------------------------------------
 
     //print <| parse (Ok [Let; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2; Keyword "in"; Other "x"; IntegerLit 5])
