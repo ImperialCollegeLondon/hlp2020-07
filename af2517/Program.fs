@@ -49,11 +49,11 @@ let main argv =
     
     
     //-------------------------FIX THIS -------------------------
-    print <| parse (Ok [Keyword "if"; Other "x"; AddToken; IntegerLit 1; Keyword "then"; Other "y";  AddToken; IntegerLit 1; Keyword "else"; Other "z";  AddToken; IntegerLit 1; Keyword "fi"])
-    print <| parse (Ok [OpenSquareBracket; IntegerLit 1; Keyword ";"; IntegerLit 2; Keyword ";"; IntegerLit 3; CloseSquareBracket])
+    //print <| parse (Ok [Keyword "if"; Other "x"; AddToken; IntegerLit 1; Keyword "then"; Other "y";  AddToken; IntegerLit 1; Keyword "else"; Other "z";  AddToken; IntegerLit 1; Keyword "fi"])
+    //print <| parse (Ok [OpenSquareBracket; IntegerLit 1; Keyword ";"; IntegerLit 2; Keyword ";"; IntegerLit 3; CloseSquareBracket])
     //-----------------------------------------------------------
 
-
+    print <| parse (Ok [Let; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2; Keyword "in"; Other "x"; IntegerLit 5])
     // print <| parse (Ok [OpenRoundBracket; Keyword "fun"; Other "x"; EqualToken; Other "x"; AddToken; IntegerLit 1; CloseRoundBracket])
     //print <| extractRightAppList [] (fst(a))
     //print <| parse ((Ok [Other "f"; OpenRoundBracket; Other "x"; Other "y";Other "z"; CloseRoundBracket]))

@@ -136,7 +136,7 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>)  =
         Ok(ast', inp')
 
     | PMATCH (Keyword "if") (PBUILDADDEXP (ast, (PMATCH (Keyword "then") (PBUILDADDEXP (ast', (PMATCH (Keyword "else") (PBUILDADDEXP (ast'', (PMATCH (Keyword "fi") (inp')))))))))) ->
-         Ok (Funcapp(Funcapp(ast, ast'), ast''), inp')
+         Ok (Bracket(Funcapp(Funcapp(ast, ast'), ast'')), inp')
 
     | PMATCH (OpenSquareBracket) (BUILDLIST (ast, (PMATCH (CloseSquareBracket) (inp')))) -> Ok (ast, inp')
     | Ok lst -> Error (Some lst)
@@ -236,7 +236,7 @@ and buildLambda (inp:Result<Token list, Token list>):(AST*Result<Token list, Tok
             let body = parse (Ok tl)
             (Lambda{InputVar=x;Body=fst(body)}, snd(body))
 
-        | (EqualToken), _ -> parse (Ok tl)
+        | (EqualToken), _ -> parse (Ok (hd'::tl))
         | _ -> failwithf "Invalid arguments"
     | _ -> failwithf "insufficient expression"
 
@@ -254,7 +254,10 @@ and  buildFunctionDef inp  =
         match hd with 
             | Other x -> 
                 let body,expression = extractParts tl []
+                printf "Body is %A \n" body
+                printf "Expression is %A \n" expression
                 let expression = parse(Ok expression)
+                printf "Parsed expression is %A \n" expression
                 (FuncDefExp {Name=x;Body=fst(buildLambda (Ok body)); Expression=fst(expression)},snd(expression))
             
             | _ -> failwithf "Not a valid function name"
