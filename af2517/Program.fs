@@ -48,12 +48,17 @@ let main argv =
     
     
     
-    //-------------------------FIX THIS -------------------------
-    //print <| parse (Ok [Keyword "if"; Other "x"; AddToken; IntegerLit 1; Keyword "then"; Other "y";  AddToken; IntegerLit 1; Keyword "else"; Other "z";  AddToken; IntegerLit 1; Keyword "fi"])
-    //print <| parse (Ok [OpenSquareBracket; IntegerLit 1; Keyword ";"; IntegerLit 2; Keyword ";"; IntegerLit 3; CloseSquareBracket])
+    //-------------------------FIX OPERATORS IN IFS AND LISTS -------------------------
+    
+    //print <| parse (Ok [OpenRoundBracket; OpenRoundBracket; Other "x"; AddToken; IntegerLit 1; CloseRoundBracket; MultToken; IntegerLit 3; CloseRoundBracket])
+   // print <| parse (Ok [Keyword "if"; Other "x";  IntegerLit 1; Keyword "then"; Other "y"; IntegerLit 1; Keyword "else"; Other "z"; IntegerLit 1; Keyword "fi"])
+    //print <| parse (Ok [OpenSquareBracket; Other "x"; AddToken; IntegerLit 1; Keyword ";"; Other "y"; MultToken; IntegerLit 2; Keyword ";"; Other "z"; SubToken; IntegerLit 3; CloseSquareBracket ])
+    //print <| parse (Ok [OpenSquareBracket; Other "x";  IntegerLit 1; Keyword ";"; Other "y"; IntegerLit 2; Keyword ";"; Other "z"; IntegerLit 3; CloseSquareBracket ])'
+    print <| parse (Ok [Let; Other "f"; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2;
+    Other "in"; Other "f"; IntegerLit 2])
     //-----------------------------------------------------------
 
-    print <| parse (Ok [Let; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2; Keyword "in"; Other "x"; IntegerLit 5])
+    //print <| parse (Ok [Let; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2; Keyword "in"; Other "x"; IntegerLit 5])
     // print <| parse (Ok [OpenRoundBracket; Keyword "fun"; Other "x"; EqualToken; Other "x"; AddToken; IntegerLit 1; CloseRoundBracket])
     //print <| extractRightAppList [] (fst(a))
     //print <| parse ((Ok [Other "f"; OpenRoundBracket; Other "x"; Other "y";Other "z"; CloseRoundBracket]))

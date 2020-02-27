@@ -51,7 +51,7 @@ type AST =
     | Bracket of AST
 
 and FuncDefExpType = {
-    Name: string;
+    Name: char list;
     Body: AST
     Expression: AST
 }
@@ -153,11 +153,12 @@ and (|PNOTEXPITEM|_|) tokLst =
     | Ok (StringLit s::rest) ->Some( Ok (Literal (String s), Ok rest))
     | _ -> None
 
+and endKeyWordsList = [CloseRoundBracket; CloseSquareBracket; Keyword "then"; Keyword "else"; Keyword "fi"; Keyword ";"]
 and buildAppExp(inp: Result<Token list, Token list>):(AST* Result<Token list, Token list>) =
    match inp with
    | PITEM (Ok(s, lst)) -> 
         match lst with 
-        |Ok (hd::tl) when hd <> CloseRoundBracket -> 
+        |Ok (hd::tl) when not (List.contains hd endKeyWordsList) -> 
             let result = buildAppExp (lst) 
             (Funcapp(s, fst(result)), snd(result)) 
 
@@ -244,7 +245,7 @@ and (|BUILDLAMBDA|_|) inp = Some (buildLambda inp)
 
 and extractParts inp acc = 
     match inp with 
-    | hd::tl when hd = Keyword "in" -> acc,tl
+    | hd::tl when hd = Other "in" -> acc,tl
     | hd::tl -> extractParts tl (acc @ [hd])
     | [] -> failwithf "No expression evaluated"
     
@@ -258,7 +259,7 @@ and  buildFunctionDef inp  =
                 printf "Expression is %A \n" expression
                 let expression = parse(Ok expression)
                 printf "Parsed expression is %A \n" expression
-                (FuncDefExp {Name=x;Body=fst(buildLambda (Ok body)); Expression=fst(expression)},snd(expression))
+                (FuncDefExp {Name=Seq.toList x;Body=fst(buildLambda (Ok body)); Expression=fst(expression)},snd(expression))
             
             | _ -> failwithf "Not a valid function name"
 
