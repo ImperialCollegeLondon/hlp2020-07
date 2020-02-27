@@ -12,6 +12,7 @@ let tokenize_parse (x:string) =
 
 [<EntryPoint>]  
 let main argv =
-    print <| tokenize_parse "f x y"
+    print <| tokenize "let f x = x * 2 in f 2"
+    print <| tokenize_parse "let f x = x * 2 in f 2"
     
     0

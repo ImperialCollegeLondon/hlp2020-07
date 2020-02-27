@@ -1,6 +1,5 @@
 module ParserModule
 open Definitions
-
 type MathType = 
    | Add 
    | Sub
@@ -32,7 +31,7 @@ type AST =
     | Bracket of AST
 
 and FuncDefExpType = {
-    Name: string;
+    Name: char list;
     Body: AST
     Expression: AST
 }
@@ -117,7 +116,7 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>)  =
         Ok(ast', inp')
 
     | PMATCH (Keyword "if") (PBUILDADDEXP (ast, (PMATCH (Keyword "then") (PBUILDADDEXP (ast', (PMATCH (Keyword "else") (PBUILDADDEXP (ast'', (PMATCH (Keyword "fi") (inp')))))))))) ->
-         Ok (Funcapp(Funcapp(ast, ast'), ast''), inp')
+         Ok (Bracket(Funcapp(Funcapp(ast, ast'), ast'')), inp')
 
     | PMATCH (OpenSquareBracket) (BUILDLIST (ast, (PMATCH (CloseSquareBracket) (inp')))) -> Ok (ast, inp')
     | Ok lst -> Error (Some lst)
@@ -134,11 +133,12 @@ and (|PNOTEXPITEM|_|) tokLst =
     | Ok (StringLit s::rest) ->Some( Ok (Literal (String s), Ok rest))
     | _ -> None
 
+and endKeyWordsList = [CloseRoundBracket; CloseSquareBracket; Keyword "then"; Keyword "else"; Keyword "fi"; Keyword ";"]
 and buildAppExp(inp: Result<Token list, Token list>):(AST* Result<Token list, Token list>) =
    match inp with
    | PITEM (Ok(s, lst)) -> 
         match lst with 
-        |Ok (hd::tl) when hd <> CloseRoundBracket -> 
+        |Ok (hd::tl) when not (List.contains hd endKeyWordsList) -> 
             let result = buildAppExp (lst) 
             (Funcapp(s, fst(result)), snd(result)) 
 
@@ -217,7 +217,7 @@ and buildLambda (inp:Result<Token list, Token list>):(AST*Result<Token list, Tok
             let body = parse (Ok tl)
             (Lambda{InputVar=x;Body=fst(body)}, snd(body))
 
-        | (EqualToken), _ -> parse (Ok tl)
+        | (EqualToken), _ -> parse (Ok (hd'::tl))
         | _ -> failwithf "Invalid arguments"
     | _ -> failwithf "insufficient expression"
 
@@ -225,7 +225,7 @@ and (|BUILDLAMBDA|_|) inp = Some (buildLambda inp)
 
 and extractParts inp acc = 
     match inp with 
-    | hd::tl when hd = Keyword "in" -> acc,tl
+    | hd::tl when hd = Other "in" -> acc,tl
     | hd::tl -> extractParts tl (acc @ [hd])
     | [] -> failwithf "No expression evaluated"
     
@@ -235,8 +235,11 @@ and  buildFunctionDef inp  =
         match hd with 
             | Other x -> 
                 let body,expression = extractParts tl []
+                printf "Body is %A \n" body
+                printf "Expression is %A \n" expression
                 let expression = parse(Ok expression)
-                (FuncDefExp {Name=x;Body=fst(buildLambda (Ok body)); Expression=fst(expression)},snd(expression))
+                printf "Parsed expression is %A \n" expression
+                (FuncDefExp {Name=Seq.toList x;Body=fst(buildLambda (Ok body)); Expression=fst(expression)},snd(expression))
             
             | _ -> failwithf "Not a valid function name"
 

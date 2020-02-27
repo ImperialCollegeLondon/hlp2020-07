@@ -67,7 +67,6 @@ let combinedLexers (mstring:string) : (MappedRule list) =
             |_ ->  acc @ [(look),-1]
             
             
-    print <| Seq.toList mstring
     consume [] (Seq.toList mstring)
     
     
@@ -98,5 +97,5 @@ let tokenize (mstring:string) : Token list =
     mstring
     |> combinedLexers
     |> List.map flattener
-    |> List.filter (fun x -> if x = SpaceLit then false else true)
+    |> List.filter (fun x -> x <> SpaceLit)
 
