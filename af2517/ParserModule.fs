@@ -70,7 +70,8 @@ and LitType =
     
 let rec extractRightAppList (lst:AST list) (inp:AST) : AST list = 
     match inp with 
-    | Funcapp (hd, tl) -> lst @ (extractRightAppList [] hd) @ (extractRightAppList [] tl)
+    | Funcapp (hd, tl) -> 
+        lst @ (extractRightAppList [] hd) @ (extractRightAppList [] tl)
     | el ->  lst @ [el]
 
     
@@ -148,7 +149,7 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,
         Ok (lamb, inp')
     
     | PMATCH (OpenRoundBracket) (PBUILDADDEXP(Ok ast, PMATCH (CloseRoundBracket) (inp'))) -> 
-        let ast' = leftAssociate ast
+        let ast' = ast//leftAssociate ast
                    |> Bracket
         Ok(Ok(ast'), inp')
 
@@ -179,7 +180,8 @@ and buildAppExp(inp: Result<Token list, Token list>):(Result<AST,string>*Result<
         | Ok (hd::tl) when not (List.contains hd endKeyWordsList) -> 
             let result = buildAppExp (lst)
             match result with 
-            | (Ok ast, rest) -> (Ok(Funcapp(s, ast)), rest) 
+            | (Ok ast, rest) -> 
+                (Ok(Funcapp(s, ast)), rest) 
             | (Error msg, rest) -> (Error msg, rest)
         | _ -> (Ok s, lst)
     
@@ -208,7 +210,9 @@ and buildMultExp (acc:Token list) (inp: Result<Token list, Token list>) :(Result
         let appResult = buildAppExp (Ok acc)
         let multResult = buildMultExp  [] (Ok tl)
         match appResult,multResult with 
-        | ((Ok appAST, _),(Ok multAST, rest)) -> (Ok (Funcapp(Funcapp(BuiltInFunc (Math Mult), appAST), multAST )), rest )
+        | ((Ok appAST, _),(Ok multAST, rest)) -> 
+            let appAST' = leftAssociate appAST
+            (Ok (Funcapp(Funcapp(BuiltInFunc (Math Mult), appAST'), multAST )), rest )
         | (Error msg, rest),_ -> (Error msg, rest)
         | _,(Error msg, rest) -> (Error msg, rest)
     
@@ -216,13 +220,20 @@ and buildMultExp (acc:Token list) (inp: Result<Token list, Token list>) :(Result
         let appResult = buildAppExp (Ok acc)
         let multResult = buildMultExp  [] (Ok tl)
         match appResult,multResult with 
-        | ((Ok appAST, _),(Ok multAST, rest)) -> (Ok (Funcapp(Funcapp(BuiltInFunc (Math Div), appAST), multAST )), rest )
+        | ((Ok appAST, _),(Ok multAST, rest)) -> 
+             let appAST' = leftAssociate appAST
+             (Ok (Funcapp(Funcapp(BuiltInFunc (Math Div), appAST'), multAST )), rest )
         | (Error msg, rest),_ -> (Error msg, rest)
         | _,(Error msg, rest) -> (Error msg, rest)
     
     | Ok (hd::tl) -> buildMultExp  (acc @ [hd]) (Ok tl)
     | Ok [] -> 
-         buildAppExp (Ok acc)
+         let res = buildAppExp (Ok acc)
+         match res with 
+         | (Ok appAST, rest) -> 
+             let appAST' = leftAssociate appAST
+             (Ok appAST', rest )
+         | (Error msg, rest) -> (Error msg, rest)
    
     | Error _ -> failwithf "what?"
 
@@ -308,7 +319,6 @@ and  buildFunctionDef inp:(Result<AST,string>*Result<Token list, Token list>)  =
                     |((Ok body, _),(Ok expression, rest))  -> (Ok (FuncDefExp {Name=Seq.toList x;Body=body; Expression=expression}),rest)
                     | ((Error msg, rest), _) -> (Error msg, rest)
                     | (_, (Error msg, rest)) -> (Error msg, rest)
-                    | _ -> failwithf "What? Shouldn't happen"
 
                 | Error msg -> (Error msg, Error inp)
             
@@ -318,16 +328,23 @@ and  buildFunctionDef inp:(Result<AST,string>*Result<Token list, Token list>)  =
 
 and parse (inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token list, Token list>)  = 
     match inp with
-    | PMATCH (Let) (Ok rest) -> buildFunctionDef (rest) 
+    | PMATCH (Let) (Ok rest) -> 
+        let result = buildFunctionDef (rest)
+        match result with 
+        | (Ok ast, Ok []) -> result
+        | (Ok ast, rest) -> (Error "Ilegal expression at the end", rest )
+        | (Error msg, rest) -> (Error msg,  rest)
     | _ -> 
           let res = buildAddExp [] inp
           match res with 
-          | (Ok ast, rest) -> 
-            let ast' = ast |> leftAssociate
-            (Ok ast', rest)
+          | (Ok ast, Ok []) -> 
+            //let ast' = ast |> leftAssociate
+            (Ok ast, Ok [])
+
+          | (Ok ast, rest ) -> (Error "Ilegal expression at the end", rest )
           
           | (Error msg, rest) -> (Error msg, rest)
-          | _ -> failwithf "What? Shouldn't happen"
+
 
 and buildList inp :(Result<AST,string>*Result<Token list, Token list>) = 
     match inp with

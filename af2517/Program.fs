@@ -43,11 +43,16 @@ let main argv =
     //---------------------------------------------------//
     
     
-    print <| parse (Ok [Other"h";Keyword "if"; Other "x"; Keyword "then"; Other "y";  Keyword "else"; Other "z";  Keyword "fi"; Other"f"])
+    //print <| parse (Ok [Other"h";Keyword "if"; Other "x"; Keyword "then"; Other "y";  Keyword "else"; Other "z";  Keyword "fi"; Other"f"])
     
     
     
-    
+    print <| parse (Ok [Other "f";MultToken; Other "g";MultToken; Other "h";AddToken; IntegerLit 1])
+    print <| buildAddExp [] (Ok [Other "f";MultToken; Other "g";MultToken; Other "h";AddToken; IntegerLit 1 ])
+
+    print <| parse (Ok [Other "f"; Other "y"; Other "z"])
+
+    print <| parse (Ok [Other "f"; OpenRoundBracket; Other "g"; OpenRoundBracket; Other "h"; Other "i";CloseRoundBracket;CloseRoundBracket])
     //-------------------------FIX OPERATORS IN IFS AND LISTS -------------------------
     
     //print <| parse (Ok [OpenRoundBracket; OpenRoundBracket; Other "x"; AddToken; IntegerLit 1; CloseRoundBracket; MultToken; IntegerLit 3; CloseRoundBracket])
