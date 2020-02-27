@@ -1,46 +1,5 @@
 module ParserModule
-type Token = OpenRoundBracket
-            |CloseRoundBracket
-            |OpenSquareBracket
-            |CloseSquareBracket
-            |IntegerLit of int
-            |StringLit of string
-            |SpaceLit
-            |DecimalLit of float
-            |Keyword of string
-            |Let
-            |RightArrow
-            |EqualToken
-            |HexLit of string
-            |AddToken
-            |MultToken
-            |Other of string
-            |SubToken
-            |DivToken
-            |Unexpected
-
-(*            
-type Token = OpenRoundBracket
-            |CloseRoundBracket
-            |OpenSquareBracket
-            |CloseSquareBracket
-            |IntegerLit of int
-            |StringLit of string
-            |SpaceLit
-            |DecimalLit of float
-            |Keyword of string
-            |Let
-            |RightArrow
-            |Equal
-            |HexLit of string
-            |Add
-            |Multiply
-            |Other of string
-            |Substract
-            |Div
-            |Unexpected of string
-            |Newline
-*)
+open Definitions
 
 type MathType = 
    | Add 

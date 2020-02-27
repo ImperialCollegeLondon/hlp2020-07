@@ -97,5 +97,6 @@ let tokenize (mstring:string) : Token list =
             | _ -> Unexpected xString
     mstring
     |> combinedLexers
-    |> List.map flattener 
+    |> List.map flattener
+    |> List.filter (fun x -> if x = SpaceLit then false else true)
 

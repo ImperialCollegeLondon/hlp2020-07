@@ -12,11 +12,12 @@ let main argv =
     //print <| a
     //print <| b
     //print <| ReverseAST b
+    //print <| parse ((Ok [ Other "x"; Other "y";Other "z"]))
 
     //print <| BuildMultExp (Ok [Other ['f']; Other ['g']; Other['h']]) []
     //print <| BuildMultExp (Ok [Other ['f']; Other ['g']; Other['h']; Other['*'];Other ['f']; Other ['g']; Other['h']; Other['*'];Other ['f']; Other ['g']; Other['h']]) []
     //print <| BuildMultExp (Ok [Other ['f']; Other ['g']; Other['h']; Other['*'];Other ['f']; Other ['g']; Other['h']]) []
-    print <| BuildAddExp (Ok [Other ['f']; Other['*']; Other['g']; Other['+']; Other['h']; Other['p']]) []
+    print <| parse (Ok([Let; Other "g"; EqualToken; Let; Other "f"; Other "x"; IntegerLit 4] ) )
     0 // return an integer exit code
 
 

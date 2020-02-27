@@ -1,5 +1,6 @@
 open Expecto
 open TokenModule
+open Definitions
 open System.IO
 
 
@@ -7,26 +8,26 @@ let print x =
     printfn "%A" x
 
 let testDescriptions = [
-    ("Newline lit",tokenize "\n",[Newline],"tokenize \\n -> newlineLit")
+    //("Newline lit",tokenize "\n",[Ne],"tokenize \\n -> newlineLit")
     ("Single Integer Lit",tokenize "21", [IntegerLit 21] ,"tokenize 21 -> IntegerLit 21");
     ("Single Decimal Lit",tokenize "21.2",[DecimalLit 21.2],"tokenize 21.2 -> DecimalList 21.2")
     ("Zero integer", tokenize "0", [IntegerLit 0], "tokenize 0 -> IntegerLit 0")
     ("Zero Decimal Lit", tokenize "0.0", [DecimalLit 0.0], "tokenize 0.0 -> DecimalLit 0.0")
     ("Zero negative integer", tokenize "-0", [IntegerLit 0], "tokenize -0 -> IntegerLit 0")
     ("Zero negative Decimal Lit", tokenize "-0.0", [DecimalLit 0.0], "tokenize -0.0 -> DecimalLit 0.0")
-    ("Single Div symbol",tokenize "/",[Div],"tokenize / -> Div")
+    ("Single Div symbol",tokenize "/",[DivToken],"tokenize / -> Div")
     ("Single Other",tokenize "other",[Other "other"],"tokenize other -> Other \"other\"")
     ("All symbols", tokenize "-> - / * + let ( ) [ ] 21.2 -21.2 21 -21 = 0xffaa other \"Hello There \"",
                                                 [
                                                     RightArrow
                                                     SpaceLit
-                                                    Substract
+                                                    SubToken
                                                     SpaceLit
-                                                    Div
+                                                    DivToken
                                                     SpaceLit
-                                                    Multiply
+                                                    MultToken
                                                     SpaceLit
-                                                    Add
+                                                    AddToken
                                                     SpaceLit
                                                     Let
                                                     SpaceLit
@@ -46,7 +47,7 @@ let testDescriptions = [
                                                     SpaceLit
                                                     IntegerLit -21
                                                     SpaceLit
-                                                    Equal
+                                                    EqualToken
                                                     SpaceLit
                                                     HexLit "0xffaa"
                                                     SpaceLit
