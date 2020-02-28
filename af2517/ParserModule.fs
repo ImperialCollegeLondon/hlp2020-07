@@ -141,10 +141,8 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,
          | (Ok ast, Ok []),(Ok ast', Ok []),(Ok ast'', Ok []) -> Ok (Ok(Bracket(FuncApp(FuncApp(ast, Lazy (ast')), Lazy (ast'')))), inp')
          | _ -> Error "Couldn't parse one of the expressions in this if statement"
 
-    | PMATCH (OpenSquareBracket) (BUILDLIST (result, (PMATCH (CloseSquareBracket) (inp')))) -> 
-        match result with 
-        | Ok ast -> Ok (Ok (Bracket ast), inp')
-        | Error msg -> Error msg
+    | PMATCH (OpenSquareBracket) (inp') -> buildList tokLst
+
  
     | Ok (hd::tl) -> Error (sprintf "Couldn't parse item %A" hd)
     | Error lst -> Error "Input list was invalid"
@@ -246,10 +244,6 @@ and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(Result<
         let acc'' = (acc@[OpenSquareBracket] @acc')
         buildAddExp (acc'') inp' 
     
-    //| PMATCH (Keyword "if") (TAKEINSIDEIF (Ok(inp', acc'))) ->
-    //    let acc'' = (acc@[Keyword "if"] @acc')
-    //    buildAddExp (acc'') inp'
-
     | PMATCH (Keyword "if") (PTAKEINSIDETOKENS (Keyword "if") (Keyword "fi") (result)) ->
         match result with 
         | Ok (acc', inp') ->
@@ -337,21 +331,51 @@ and parse (inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token
         | (Ok _, Ok []) -> result
         | (Ok _, rest) -> (Error "Ilegal expression at the end", rest )
         | (Error msg, rest) -> (Error msg,  rest)
-    | _ -> buildAddExp [] inp
-
-
-and buildList inp :(Result<AST,string>*Result<Token list, Token list>) = 
-    match inp with
-    | PBUILDADDEXP (Ok ast, (PMATCH (Keyword ";") (inp'))) -> 
-        let result = buildList inp'
+    | _ -> 
+        let result = buildAddExp [] inp
         match result with 
-        | (Ok ast', rest) ->  (Ok(Pair (ast, ast')), rest)
-        | (Error msg, rest) -> (Error msg, rest)
-    | PBUILDADDEXP (Ok ast, rest) -> (Ok ast, rest)
-    | PBUILDADDEXP (Error msg, rest) -> (Error msg, rest)
-    | _ -> failwithf "What? Can't happen PBUILDADDEXP always matches"
+        | (Ok _, Ok []) -> result
+        | (Ok _, rest) -> (Error "Ilegal expression at the end", rest )
+        | (Error msg, rest) -> (Error msg,  rest)
 
-and (|BUILDLIST|_|) inp:(Result<AST,string>*Result<Token list, Token list>) option = Some(buildList inp)
+and buildList inp :(Result<Result<AST,string>*Result<Token list, Token list>,string>) = 
+    match inp with
+    | PMATCH (OpenSquareBracket) (PMATCH (CloseSquareBracket) (inp')) -> Ok (Ok (Pair(Null, Null)), inp')
+    | PMATCH (OpenSquareBracket) (PTAKEINSIDETOKENS (OpenSquareBracket) (Keyword ";") ( Ok (acc, inp'))) ->
+        let res = parse (Ok acc)
+        let res' = buildList inp'
+        match res, res' with 
+        | (Ok ast, lst),Ok(Ok ast', lst') -> Ok (Ok (Pair (ast, ast')), lst')
+        | (Error msg, lst), _ -> Error msg
+        | _,Error msg -> Error msg
+        | _ -> failwithf "What? Shouldn't happen"
+    
+    | PMATCH (Keyword ";") (PTAKEINSIDETOKENS (Keyword ";") (Keyword ";") (Ok (acc, inp'))) ->
+        let res = parse (Ok acc)
+        let res' = buildList inp'
+        match res, res' with 
+        | (Ok ast, lst),Ok(Ok ast', lst') -> Ok(Ok (Pair (ast, ast')), lst')
+        | (Error msg, lst), _ -> Error msg
+        | _,Error msg ->Error msg
+        | _ -> failwithf "What? Shouldn't happen"
+
+
+    | PMATCH (Keyword ";") (PTAKEINSIDETOKENS (Keyword ";") (CloseSquareBracket) (Ok (acc, inp'))) ->
+        let res = parse (Ok acc)
+        match res,inp' with 
+        | (Ok ast, inp''),Ok(hd::tl) -> Ok (Ok ast, Ok tl)
+        | (Error msg, lst),_ ->Error msg
+        | _ -> failwithf "What? Shouldn't happen"
+
+    | PMATCH (OpenSquareBracket) (PTAKEINSIDETOKENS (OpenSquareBracket) (CloseSquareBracket) (Ok (acc, inp'))) ->
+        let res = parse (Ok acc)
+        match res, inp' with 
+        | (Ok ast, inp''),Ok(hd::tl) -> Ok (Ok(Pair (ast, Null )), Ok tl)
+        | (Error msg, lst),_ ->Error msg
+        | _ ->  failwithf "What? Can't happen"
+
+    | _ -> Error (sprintf "List is not valid")
+
 
 let makeTests (name, instr, outI) =
     test name {
