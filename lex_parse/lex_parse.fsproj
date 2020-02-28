@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -6,7 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Module1.fs" />
+    <Compile Include="Definitions.fs" />
+    <Compile Include="ParserModule.fs" />
+    <Compile Include="TokenModule.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

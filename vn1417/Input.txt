@@ -1,0 +1,5 @@
+let f x = x + 1 in f 3
+    let g = ( fun x = 2 * x ) in g 5
+let f = if TRUE then 0 else 1 fi
+( g + 1 * 2 ) + ( f * 2 + 3 ) * ( h + 1 )
+( f ( g 3 ) ) 4
