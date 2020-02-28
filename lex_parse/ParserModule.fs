@@ -2,14 +2,11 @@ module ParserModule
 open Definitions
 
 let split (at:Token) (x:Token list)  : (Token list list * Token list) =
-
     let smartSplitFolder ((state,acc):(Token list list * Token list) ) (elem:Token) : (Token list list * Token list) = 
-        
         if elem = at then
             if List.isEmpty state then [acc],[] else state @ [acc], []
         else
             state,acc @ [elem]
-    
     let res = ((([],[]),x) ||> List.fold smartSplitFolder)
     fst res,snd res
 
@@ -173,10 +170,12 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,
     | PMATCH (Keyword "if") (PBUILDADDEXP (Ok ast, (PMATCH (Keyword "then") (PBUILDADDEXP (Ok ast', (PMATCH (Keyword "else") (PBUILDADDEXP (Ok ast'', (PMATCH (Keyword "fi") (inp')))))))))) ->
          Ok (Ok(Bracket(Funcapp(Funcapp(ast, Lazy ast'), Lazy ast''))), inp')
 
-    | PMATCH (Keyword "match") (PBUILDMATCHCASES(ast, PMATCH (Keyword "endmatch") (inp')))  ->
+    | PMATCH (Keyword "match") (PBUILDMATCHCASES(astList, PMATCH (Keyword "endmatch") (inp')))  ->
         //print ast
         
-        let res = List.map (function |Ok x -> x |_ ->failwithf "One of the cases failed") ast
+        let res = List.map (function |Ok x -> x |_ ->failwithf "One of the cases failed") astList
+        //Assumes at least one
+        //Not dealt with errors yet
         Ok(Ok (MatchDef{Condition = res.Head; Cases = res.Tail}),inp')
     //ADD HERE
     
