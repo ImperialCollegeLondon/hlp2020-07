@@ -173,46 +173,25 @@ let rec eval (x:Result<AST,string>) : Result<AST,string> =
         BuiltMathBool func' a' b'
     | Ok (Literal _ ) | Ok (Pair(_,_)) | Ok Null | Ok (BFunc _) -> reduceSKI
     | _ -> sprintf "RUN-TIME ERROR : EXPECTED SKI AST BUT USED %A" reduceSKI |> Error
-
-let rec substitudeVarWithExpression (f: char list) (e1: AST) (e2: Result<AST,string>) : Result<AST,string> =
-    match e2 with
-    | Ok (Pair(A,B)) ->
-        let a = substitudeVarWithExpression f e1 (Ok A)
-        let b = substitudeVarWithExpression f e1 (Ok B)
-        match a, b with
-        | Error r, _ | _, Error r -> Error r
-        | Ok a', Ok b' -> Pair(a',b') |> Ok
-    | Ok (FuncApp( e21, e22)) ->
-        let e21' = substitudeVarWithExpression f e1 (Ok e21)
-        let e22' = substitudeVarWithExpression f e1 (Ok e22)
-        match e21', e22' with
-        | Error r, _ | _, Error r -> Error r
-        | Ok e21, Ok e22 ->
-            if e21 = Var f
-            then FuncApp( e1, e22) |> Ok
-            else FuncApp( e21, e22) |> Ok
-    | Ok E ->
-        if E = Var f
-        then e1 |> Ok
-        else 
-            match E with
-            | Var _ | Literal _ | BFunc _ | Null ->  Ok E
-            | _ -> sprintf "RUN-TIME ERROR : EXPECTED A SIGNLE ELEMENT BUT USED %A" E |> Error
-    | _ -> Error "RUN-TIME ERROR : COULD NOT SUBSTITUE THE FUNCTION NAME WITH THE VARIABLE CORRECTLY "
-
+    
 let Reduce (y:AST) : Result<AST,string> =
     let rec reduceFuncTree (x:Result<AST,string>) : Result<AST,string> =
         match x with
-        | Error r -> x
+        | Error _ -> x
         | Ok (FuncDefExp{Name =  f; Body = E1; Expression = E2}) ->
-            let evalE1 = E1 |> Ok |> reduceFuncTree
-            let evalE2 = E2 |> Ok |> reduceFuncTree
-            match evalE1 with 
-            | Ok evalE1' -> 
-                substitudeVarWithExpression f evalE1' evalE2
-            | _ -> sprintf "RUN-TIME ERROR : EXPECTED A RESULT<AST,STRING> BUT USED %A"  x |> Error
+            let reduceE1 = E1 |> Ok |> reduceFuncTree
+            let reduceE2 = E2 |> Ok |> reduceFuncTree
+            match reduceE2 with 
+            | Error _ -> reduceE2
+            | Ok E2 ->
+                let reducef = Lambda{InputVar = f; Body = E2} |> Ok |> reduceFuncTree
+                match reduceE1,reducef with
+                | Error r, _ | _, Error r -> Error r
+                | Ok E1, Ok Ef -> FuncApp(Ef,E1) |> Ok |> reduceFuncTree
         | Ok (Lambda{InputVar = x; Body = E1}) ->
             (Lambda{InputVar = x; Body = E1}) |> Ok |> Abstract
         | Ok (FuncApp(E1,E2)) -> Ok (FuncApp(E1,E2))
-        | _ -> sprintf "RUN-TIME ERROR : EXPECTED A RESULT<AST,STRING> BUT USED %A"  x |> Error
+        | Ok (Literal _ ) | Ok (Pair(_,_)) | Ok Null | Ok (BFunc _) -> x
+        | _ -> sprintf "RUN-TIME ERROR : EXPECTED A RESULT<AST,STRING> BUT GOT %A"  x |> Error
     y |> Ok |> reduceFuncTree |> eval
+
