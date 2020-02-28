@@ -1,4 +1,4 @@
-Parser description:
+Parser information:
 
 There is only one module for the parser named ParserModule. The only function that interfaces the other modules is "parse". This is the function that is called after tokenizing the input and returns the appropriate AST that will then be passed to the Runtimes. 
 
