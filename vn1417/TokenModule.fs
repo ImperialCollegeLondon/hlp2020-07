@@ -95,7 +95,9 @@ let tokenize (mstring:string) : Token list =
             | 18 -> DivToken
             | 19 -> Newline
             | 20 -> Keyword "match"
-            | 21 -> if xString = "" then NoInput else Keyword  ";"
+            | 21 -> Keyword "endmatch"
+            | 22 -> Keyword "endcase"
+            | 23 -> if xString = "" then NoInput else Keyword  ";"
             | _ -> Unexpected xString
                 
     mstring

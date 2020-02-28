@@ -8,6 +8,7 @@ let print x =
     printfn "%A" x
 
 let testDescriptions = [
+    ("match end match with semicolon inside",tokenize "match ; \n endmatch",[Keyword "match";SpaceLit;Keyword ";";SpaceLit;Newline;SpaceLit;Keyword "endmatch"],"tokenize match ; \\n endmatch")
     ("match",tokenize "\n match other \n",[Newline;SpaceLit;Keyword "match";SpaceLit;Other "other";SpaceLit;Newline],"tokenize '\\n match other \\n' -> [Newline;SpaceLit;Keyword \"match\";SpaceLit;Other \"other\";SpaceLit;Newline]")
     ("No Input",tokenize "", [NoInput],"tokenize \"\" -> NoInput")
     ("Single new line lit",tokenize "\n",[Newline],"tokenize \\n -> Newline")

@@ -1,5 +1,19 @@
 module ParserModule
 open Definitions
+
+let split (at:Token) (x:Token list)  : (Token list list * Token list) =
+
+    let smartSplitFolder ((state,acc):(Token list list * Token list) ) (elem:Token) : (Token list list * Token list) = 
+        
+        if elem = at then
+            if List.isEmpty state then [acc],[] else state @ [acc], []
+        else
+            state,acc @ [elem]
+    
+    let res = ((([],[]),x) ||> List.fold smartSplitFolder)
+    fst res,snd res
+
+
 type MathType = 
    | Add 
    | Sub
@@ -20,12 +34,14 @@ type BuiltInType =
 
 
 type AST = 
-    | FuncDefExp of FuncDefExpType 
+    | FuncDefExp of FuncDefExpType
+    | MatchDef of MatchDefType
     | Lambda of LambdaType
     | Var of char list //only valid in lambdas 
     | Funcapp of AST*AST
     | Pair of AST*AST 
-    | Null 
+    | Null
+    | Match of (AST list)
     | Literal of LitType 
     | BuiltInFunc of BuiltInType
     | Bracket of AST
@@ -36,6 +52,11 @@ and FuncDefExpType = {
     Name: char list;
     Body: AST
     Expression: AST
+}
+
+and MatchDefType = {
+    Condition: AST
+    Cases: AST list
 }
 
 and LambdaType = {
@@ -110,7 +131,23 @@ let rec takeInsideIf acc inp count =
     | Ok [] -> Error "invalid if statement"
     | _ -> failwithf "what?"
 
+
+let rec takeInsideMatch acc inp count : Result<(Result<Token list,'b> * Token list),string> =
+    match inp with
+    //assume this one doesn't see anything
+    | Ok (hd::tl) when hd = Keyword "endmatch" ->
+        let count' = count - 1
+        match count' with
+        | 0 ->  (Ok(Ok (tl), acc@[hd]))
+        | _ -> takeInsideMatch (acc@[hd]) (Ok tl) count'
+    | Ok (hd::tl) when hd = Keyword "match" -> takeInsideMatch (acc@[hd]) (Ok tl) (count + 1)
+    | Ok (hd::tl) -> takeInsideMatch (acc@[hd]) (Ok tl) count
+    | Ok [] -> Error "invalid match statement"
+    | _ -> failwithf "What?"
+    
 let (|TAKEINSIDEIF|_|) inp = Some (takeInsideIf [] inp 1)
+
+let (|TAKEINSIDEMATCH|_|) inp = Some(takeInsideMatch [] inp 1)
 
 let (|PMATCH|_|) (tok: Token) (tokLst: Result<Token list, Token list>) = 
     match tokLst with
@@ -136,6 +173,11 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,
     | PMATCH (Keyword "if") (PBUILDADDEXP (Ok ast, (PMATCH (Keyword "then") (PBUILDADDEXP (Ok ast', (PMATCH (Keyword "else") (PBUILDADDEXP (Ok ast'', (PMATCH (Keyword "fi") (inp')))))))))) ->
          Ok (Ok(Bracket(Funcapp(Funcapp(ast, Lazy ast'), Lazy ast''))), inp')
 
+    | PMATCH (Keyword "match") (PBUILDMATCHCASES(ast, PMATCH (Keyword "endmatch") (inp')))  ->
+        //print ast
+        
+        let res = List.map (function |Ok x -> x |_ ->failwithf "One of the cases failed") ast
+        Ok(Ok (MatchDef{Condition = res.Head; Cases = res.Tail}),inp')
     //ADD HERE
     
     
@@ -154,9 +196,11 @@ and (|PNOTEXPITEM|_|) tokLst =
     | Ok (StringLit s::rest) ->Some( Ok (Ok(Literal (String s)), Ok rest))
     | _ -> None
 
-and endKeyWordsList = [CloseRoundBracket; CloseSquareBracket; Keyword "then"; Keyword "else"; Keyword "fi"; Keyword ";"]
+and endKeyWordsList = [CloseRoundBracket; CloseSquareBracket; Keyword "then"; Keyword "else"; Keyword "fi"; Keyword ";"; Keyword "endmatch"; Keyword "case"]
 
 and buildAppExp(inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token list, Token list>) =
+   //print "B"
+   //print inp
    match inp with
    | PITEM (Ok(Ok s, lst)) -> 
         match lst with 
@@ -182,7 +226,11 @@ and buildMultExp (acc:Token list) (inp: Result<Token list, Token list>) :(Result
     
     | PMATCH (OpenSquareBracket) (TAKEINSIDESQBRACKET (Ok(inp', acc')))  ->
         let acc'' = (acc@[OpenSquareBracket] @acc')
-        buildMultExp (acc'') inp' 
+        buildMultExp (acc'') inp'
+        
+    | PMATCH (Keyword "match") (TAKEINSIDEMATCH (Ok(inp', acc'))) ->
+        let acc'' = (acc@[Keyword "match"] @ acc')
+        buildMultExp (acc'') inp'
 
 
     | PMATCH (Keyword "if") (TAKEINSIDEIF (Ok(inp', acc'))) ->
@@ -221,6 +269,25 @@ and buildMultExp (acc:Token list) (inp: Result<Token list, Token list>) :(Result
     | Error _ -> failwithf "what?"
 
 
+//and (|PBUILDADDEXP|_|) (inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token list, Token list>)option = 
+
+//and (|PBUILDADDEXP|_|) (inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token list, Token list>)option = 
+and (|PBUILDMATCHCASES|_|) (inp: Result<Token list, Token list>) : ( (Result<AST,string> list) * Result<Token list, Token list>) option =
+    Some <| buildMatchCases inp
+
+and buildMatchCases (inp: Result<Token list, Token list>):(Result<AST,string> list *Result<Token list, Token list>) =
+    
+    match inp with
+        | Ok cases ->   let (apply,rest) = cases |> split (Keyword "case")
+                        apply
+                        |> List.map ( fst << (function |Some x -> x | _ -> failwithf "One case couldn't parse"   )  << ((|PBUILDADDEXP|_|) << Ok)),Ok rest
+        | _ -> failwithf "Cases failed"
+    
+    
+    //Not sure why this fails
+    //Option.defaultValue (failwithf "One of the cases couldn't parse")
+    
+ 
 
 and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token list, Token list>) =
     match inp with
@@ -235,6 +302,10 @@ and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(Result<
     
     | PMATCH (Keyword "if") (TAKEINSIDEIF (Ok(inp', acc'))) ->
         let acc'' = (acc@[Keyword "if"] @acc')
+        buildAddExp (acc'') inp'
+        
+    | PMATCH (Keyword "match") (TAKEINSIDEMATCH (Ok(inp', acc'))) ->
+        let acc'' = (acc@[Keyword "match"] @ acc')
         buildAddExp (acc'') inp'
     
     | Ok (hd::tl) when hd = AddToken -> 
@@ -259,6 +330,7 @@ and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(Result<
 
 and (|PBUILDADDEXP|_|) (inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token list, Token list>)option = 
     Some (buildAddExp [] inp)
+
 
 and buildLambda (inp:Result<Token list, Token list>):(Result<AST,string>*Result<Token list, Token list>) = 
     match inp with 
