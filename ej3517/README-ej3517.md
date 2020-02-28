@@ -4,11 +4,13 @@ This sample project contains a single F# sample module with uninspiring name `Co
 
 It uses `Dotnet Core 3.1`, with dependency on `Expecto.Fscheck`.
 
-My login is `tomcl` and it is used:
+My login is `ej3517` and it is used:
 
 * In `ej3517` directory under which this project is put
 * As project (and solution) `ej3515.fsproj`, `ej3517.sol`
 * As second part of `README-ej3517` name
+
+Individual Statement
 
 * The CombinatorRuntimeModule will be used to reduce the Parsed AST to a single expression
 * Because this is the final module of the language implementation none of the code have been written for other people
