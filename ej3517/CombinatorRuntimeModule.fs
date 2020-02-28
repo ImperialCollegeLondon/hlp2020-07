@@ -191,7 +191,7 @@ let Reduce (y:AST) : Result<AST,string> =
         | Ok (Lambda{InputVar = x; Body = E1}) ->
             (Lambda{InputVar = x; Body = E1}) |> Ok |> Abstract
         | Ok (FuncApp(E1,E2)) -> Ok (FuncApp(E1,E2))
-        | Ok (Literal _ ) | Ok (Pair(_,_)) | Ok Null | Ok (BFunc _) -> x
+        | Ok (Literal _ ) | Ok (Pair(_)) | Ok Null | Ok (BFunc _) -> x
         | _ -> sprintf "RUN-TIME ERROR : EXPECTED A RESULT<AST,STRING> BUT GOT %A"  x |> Error
     y |> Ok |> reduceFuncTree |> eval
 
