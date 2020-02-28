@@ -1,4 +1,5 @@
 module ParserModule
+open Expecto
 type Token = OpenRoundBracket
             |CloseRoundBracket
             |OpenSquareBracket
@@ -43,11 +44,11 @@ type AST =
     | FuncDefExp of FuncDefExpType 
     | Lambda of LambdaType
     | Var of char list //only valid in lambdas 
-    | Funcapp of AST*AST
+    | FuncApp of AST*AST
     | Pair of AST*AST 
     | Null 
     | Literal of LitType 
-    | BuiltInFunc of BuiltInType
+    | BFunc of BuiltInType
     | Bracket of AST
     | Y
     | Lazy of AST
@@ -70,7 +71,7 @@ and LitType =
     
 let rec extractRightAppList (lst:AST list) (inp:AST) : AST list = 
     match inp with 
-    | Funcapp (hd, tl) -> 
+    | FuncApp (hd, tl) -> 
         lst @ (extractRightAppList [] hd) @ (extractRightAppList [] tl)
     | el ->  lst @ [el]
 
@@ -79,8 +80,8 @@ let rec makeLeftAppList (inp:AST list) : AST =
     match inp with
     | [Bracket el]  ->  el
     | [el] -> el
-    | (Bracket hd)::tl -> Funcapp (makeLeftAppList tl, hd)
-    | hd::tl -> Funcapp (makeLeftAppList tl, hd)
+    | (Bracket hd)::tl -> FuncApp (makeLeftAppList tl, hd)
+    | hd::tl -> FuncApp (makeLeftAppList tl, hd)
     | [] -> failwithf "What? Can't happen"
 
 let leftAssociate ast = 
@@ -89,48 +90,20 @@ let leftAssociate ast =
     |> List.rev
     |> makeLeftAppList
      
-let rec takeInsideBracket acc inp count = 
+let rec takeInsideTokens openingToken closingToken acc inp count = 
     match inp with 
-    | Ok (hd::tl) when hd = CloseRoundBracket ->
+    | Ok (hd::tl) when hd = closingToken ->
                                                 let count' = count - 1
                                                 match count' with 
-                                                | 0 -> Ok((Ok (tl),acc@[hd]))
-                                                | _ -> takeInsideBracket  (acc@[hd]) (Ok tl) count'
-    | Ok (hd::tl) when hd = OpenRoundBracket -> takeInsideBracket  (acc@[hd]) (Ok tl) (count+1)
-    | Ok (hd::tl) -> takeInsideBracket (acc@[hd]) (Ok tl) count
-    | Ok [] -> Error "Brackets don't match"
+                                                | 0 -> Ok(acc,(Ok ([hd]@tl)))
+                                                | _ -> takeInsideTokens openingToken closingToken (acc@[hd]) (Ok tl) count'
+    | Ok (hd::tl) when hd = openingToken -> takeInsideTokens openingToken closingToken (acc@[hd]) (Ok tl) (count+1)
+    | Ok (hd::tl) -> takeInsideTokens openingToken closingToken (acc@[hd]) (Ok tl) count
+    | Ok [] -> Error "The tokens don't match"
     | _ -> failwithf "What? Can't happen"
 
-let (|TAKEINSIDEBRACKET|_|) inp =  Some (takeInsideBracket [] inp 1)
+let (|PTAKEINSIDETOKENS|_|) openingToken closingToken inp = Some(takeInsideTokens openingToken closingToken [] inp 1)
 
-
-let rec takeInsideSqBracket acc inp count = 
-    match inp with 
-    | Ok (hd::tl) when hd = CloseSquareBracket ->
-                                                let count' = count - 1
-                                                match count' with 
-                                                | 0 -> Ok((Ok (tl),acc@[hd]))
-                                                | _ -> takeInsideSqBracket  (acc@[hd]) (Ok tl) count'
-    | Ok (hd::tl) when hd = OpenSquareBracket -> takeInsideSqBracket  (acc@[hd]) (Ok tl) (count+1)
-    | Ok (hd::tl) -> takeInsideSqBracket (acc@[hd]) (Ok tl) count
-    | Ok [] -> Error "Brackets don't match"
-    | _ -> failwithf "What? Can't happen"
-
-let (|TAKEINSIDESQBRACKET|_|) inp =  Some (takeInsideSqBracket [] inp 1)
-
-let rec takeInsideIf acc inp count = 
-    match inp with 
-    | Ok (hd::tl) when hd = Keyword "fi" ->
-        let count' = count - 1
-        match count' with 
-        | 0 -> (Ok(Ok (tl), acc@[hd]))
-        | _ -> takeInsideIf (acc@[hd]) (Ok tl) count'
-    | Ok (hd::tl) when hd = Keyword "if" -> takeInsideIf (acc@[hd]) (Ok tl) (count + 1)
-    | Ok (hd::tl) -> takeInsideIf (acc@[hd]) (Ok tl) count
-    | Ok [] -> Error "invalid if statement"
-    | _ -> failwithf "what?"
-
-let (|TAKEINSIDEIF|_|) inp = Some (takeInsideIf [] inp 1)
 
 let (|PMATCH|_|) (tok: Token) (tokLst: Result<Token list, Token list>) = 
     match tokLst with
@@ -139,7 +112,12 @@ let (|PMATCH|_|) (tok: Token) (tokLst: Result<Token list, Token list>) =
     | Ok lst -> None
     | Error lst -> None
 
-let builtInFuncMap = ["mod", BuiltInFunc(Math Mod);"equals", BuiltInFunc Equal;"explode", BuiltInFunc Explode;"implode", BuiltInFunc Implode;"pair", BuiltInFunc P;"fst", BuiltInFunc PFst ;"snd", BuiltInFunc PSnd;"ispair", BuiltInFunc IsPair] |> Map.ofList
+
+
+
+
+
+let builtInFuncMap = ["mod", BFunc(Math Mod);"equals", BFunc Equal;"explode", BFunc Explode;"implode", BFunc Implode;"pair", BFunc P;"fst", BFunc PFst ;"snd", BFunc PSnd;"ispair", BFunc IsPair] |> Map.ofList
 
 let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,string>*Result<Token list, Token list>,Token list>) option =
     match tokLst with
@@ -149,12 +127,16 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,
         Ok (lamb, inp')
     
     | PMATCH (OpenRoundBracket) (PBUILDADDEXP(Ok ast, PMATCH (CloseRoundBracket) (inp'))) -> 
-        let ast' = ast//leftAssociate ast
-                   |> Bracket
+        let ast' = Bracket(ast)
         Ok(Ok(ast'), inp')
 
-    | PMATCH (Keyword "if") (PBUILDADDEXP (Ok ast, (PMATCH (Keyword "then") (PBUILDADDEXP (Ok ast', (PMATCH (Keyword "else") (PBUILDADDEXP (Ok ast'', (PMATCH (Keyword "fi") (inp')))))))))) ->
-         Ok (Ok(Bracket(Funcapp(Funcapp(ast, Lazy ast'), Lazy ast''))), inp')
+    | PMATCH (Keyword "if") (PTAKEINSIDETOKENS (Keyword "if") (Keyword "then") (Ok (lst, PMATCH (Keyword "then") (PTAKEINSIDETOKENS (Keyword "then") (Keyword "else") (Ok (lst', PMATCH (Keyword "else") (PTAKEINSIDETOKENS (Keyword "else") (Keyword "fi") (Ok (lst'', PMATCH (Keyword "fi") (inp')) ) )) ) )))) ->
+         let firstItemParsed = parse (Ok lst)
+         let secondItemParsed = parse (Ok lst')
+         let thirditemParsed = parse (Ok lst'')
+         match firstItemParsed,secondItemParsed,thirditemParsed with 
+         | (Ok ast, Ok []),(Ok ast', Ok []),(Ok ast'', Ok []) -> Ok (Ok(Bracket(FuncApp(FuncApp(ast, Lazy (ast')), Lazy (ast'')))), inp')
+         | _ -> Error []
 
     | PMATCH (OpenSquareBracket) (BUILDLIST (ast, (PMATCH (CloseSquareBracket) (inp')))) -> Ok (ast, inp')
     | Ok lst -> Error ( lst)
@@ -174,6 +156,7 @@ and (|PNOTEXPITEM|_|) tokLst =
 and endKeyWordsList = [CloseRoundBracket; CloseSquareBracket; Keyword "then"; Keyword "else"; Keyword "fi"; Keyword ";"]
 
 and buildAppExp(inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token list, Token list>) =
+   printf "Entered BuildAppExp with %A \n" inp
    match inp with
    | PITEM (Ok(Ok s, lst)) -> 
         match lst with 
@@ -181,7 +164,7 @@ and buildAppExp(inp: Result<Token list, Token list>):(Result<AST,string>*Result<
             let result = buildAppExp (lst)
             match result with 
             | (Ok ast, rest) -> 
-                (Ok(Funcapp(s, ast)), rest) 
+                (Ok(FuncApp(s, ast)), rest) 
             | (Error msg, rest) -> (Error msg, rest)
         | _ -> (Ok s, lst)
     
@@ -192,17 +175,18 @@ and buildAppExp(inp: Result<Token list, Token list>):(Result<AST,string>*Result<
 
 
 and buildMultExp (acc:Token list) (inp: Result<Token list, Token list>) :(Result<AST,string>*Result<Token list, Token list>) = 
+    printf "Entered BuildMultExp with %A \n" inp
     match inp with  
-    | PMATCH (OpenRoundBracket) (TAKEINSIDEBRACKET (Ok(inp', acc')))  ->
+    | PMATCH (OpenRoundBracket) (PTAKEINSIDETOKENS (OpenRoundBracket) (CloseRoundBracket) (Ok(acc', inp')))  ->
         let acc'' = (acc@[OpenRoundBracket] @acc')
         buildMultExp (acc'') inp' 
     
-    | PMATCH (OpenSquareBracket) (TAKEINSIDESQBRACKET (Ok(inp', acc')))  ->
+    | PMATCH (OpenSquareBracket) (PTAKEINSIDETOKENS (OpenSquareBracket) (CloseSquareBracket) (Ok(acc', inp')))  ->
         let acc'' = (acc@[OpenSquareBracket] @acc')
         buildMultExp (acc'') inp' 
 
 
-    | PMATCH (Keyword "if") (TAKEINSIDEIF (Ok(inp', acc'))) ->
+    | PMATCH (Keyword "if") (PTAKEINSIDETOKENS (Keyword "if") (Keyword "fi") (Ok(acc', inp'))) ->
         let acc'' = (acc@[Keyword "if"] @acc')
         buildMultExp   (acc'') inp'
 
@@ -211,8 +195,8 @@ and buildMultExp (acc:Token list) (inp: Result<Token list, Token list>) :(Result
         let multResult = buildMultExp  [] (Ok tl)
         match appResult,multResult with 
         | ((Ok appAST, _),(Ok multAST, rest)) -> 
-            let appAST' = leftAssociate appAST
-            (Ok (Funcapp(Funcapp(BuiltInFunc (Math Mult), appAST'), multAST )), rest )
+            (Ok (FuncApp(FuncApp(BFunc (Math Mult), leftAssociate appAST), multAST )), rest )
+
         | (Error msg, rest),_ -> (Error msg, rest)
         | _,(Error msg, rest) -> (Error msg, rest)
     
@@ -222,7 +206,7 @@ and buildMultExp (acc:Token list) (inp: Result<Token list, Token list>) :(Result
         match appResult,multResult with 
         | ((Ok appAST, _),(Ok multAST, rest)) -> 
              let appAST' = leftAssociate appAST
-             (Ok (Funcapp(Funcapp(BuiltInFunc (Math Div), appAST'), multAST )), rest )
+             (Ok (FuncApp(FuncApp(BFunc (Math Div), appAST'), multAST )), rest )
         | (Error msg, rest),_ -> (Error msg, rest)
         | _,(Error msg, rest) -> (Error msg, rest)
     
@@ -240,17 +224,21 @@ and buildMultExp (acc:Token list) (inp: Result<Token list, Token list>) :(Result
 
 
 and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token list, Token list>) =
+    printf "Entered BuildAddExp with %A \n" inp
     match inp with
-    | PMATCH (OpenRoundBracket) (TAKEINSIDEBRACKET (Ok(inp', acc')))  ->
+    | PMATCH (OpenRoundBracket) (PTAKEINSIDETOKENS (OpenRoundBracket) (CloseRoundBracket) (Ok(acc', inp')))  ->
         let acc'' = (acc@[OpenRoundBracket] @acc')
         buildAddExp (acc'') inp'
 
-
-    | PMATCH (OpenSquareBracket) (TAKEINSIDESQBRACKET (Ok(inp', acc')))  ->
+    | PMATCH (OpenSquareBracket) (PTAKEINSIDETOKENS (OpenSquareBracket) (CloseSquareBracket) (Ok(acc', inp')))  ->
         let acc'' = (acc@[OpenSquareBracket] @acc')
         buildAddExp (acc'') inp' 
     
-    | PMATCH (Keyword "if") (TAKEINSIDEIF (Ok(inp', acc'))) ->
+    //| PMATCH (Keyword "if") (TAKEINSIDEIF (Ok(inp', acc'))) ->
+    //    let acc'' = (acc@[Keyword "if"] @acc')
+    //    buildAddExp (acc'') inp'
+
+    | PMATCH (Keyword "if") (PTAKEINSIDETOKENS (Keyword "if") (Keyword "fi") (Ok(acc', inp'))) ->
         let acc'' = (acc@[Keyword "if"] @acc')
         buildAddExp (acc'') inp'
     
@@ -258,7 +246,7 @@ and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(Result<
         let multResult =  buildMultExp [] (Ok acc) 
         let addResult = buildAddExp [] (Ok tl)
         match multResult,addResult with 
-        | ((Ok multAST, _),(Ok addAST, rest)) -> (Ok (Funcapp(Funcapp(BuiltInFunc (Math Add), multAST), addAST )), rest )
+        | ((Ok multAST, _),(Ok addAST, rest)) -> (Ok (FuncApp(FuncApp(BFunc (Math Add), multAST), addAST )), rest )
         | (Error msg, rest),_ -> (Error msg, rest)
         | _,(Error msg, rest) -> (Error msg, rest)
     
@@ -266,7 +254,7 @@ and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(Result<
         let multResult =  buildMultExp [] (Ok acc) 
         let addResult = buildAddExp [] (Ok tl)
         match multResult,addResult with 
-        | ((Ok multAST, _),(Ok addAST, rest)) -> (Ok (Funcapp(Funcapp(BuiltInFunc (Math Sub), multAST), addAST )), rest )
+        | ((Ok multAST, _),(Ok addAST, rest)) -> (Ok (FuncApp(FuncApp(BFunc (Math Sub), multAST), addAST )), rest )
         | (Error msg, rest),_ -> (Error msg, rest)
         | _,(Error msg, rest) -> (Error msg, rest)
     
@@ -331,19 +319,10 @@ and parse (inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token
     | PMATCH (Let) (Ok rest) -> 
         let result = buildFunctionDef (rest)
         match result with 
-        | (Ok ast, Ok []) -> result
-        | (Ok ast, rest) -> (Error "Ilegal expression at the end", rest )
+        | (Ok _, Ok []) -> result
+        | (Ok _, rest) -> (Error "Ilegal expression at the end", rest )
         | (Error msg, rest) -> (Error msg,  rest)
-    | _ -> 
-          let res = buildAddExp [] inp
-          match res with 
-          | (Ok ast, Ok []) -> 
-            //let ast' = ast |> leftAssociate
-            (Ok ast, Ok [])
-
-          | (Ok ast, rest ) -> (Error "Ilegal expression at the end", rest )
-          
-          | (Error msg, rest) -> (Error msg, rest)
+    | _ -> buildAddExp [] inp
 
 
 and buildList inp :(Result<AST,string>*Result<Token list, Token list>) = 
@@ -355,7 +334,24 @@ and buildList inp :(Result<AST,string>*Result<Token list, Token list>) =
         | (Error msg, rest) -> (Error msg, rest)
     | PBUILDADDEXP (Ok ast, rest) -> (Ok ast, rest)
     | PBUILDADDEXP (Error msg, rest) -> (Error msg, rest)
-    | _ -> failwithf "What? PBUILDADDEXP always matches"
+    | _ -> failwithf "What? Can't happen PBUILDADDEXP always matches"
 
 and (|BUILDLIST|_|) inp:(Result<AST,string>*Result<Token list, Token list>) option = Some(buildList inp)
 
+let makeTests (name, instr, outI) =
+    test name {
+        let tokLst = instr
+        match (tokLst |> parse |> fst) with 
+        | Ok ast -> Expect.equal (Ok ast) outI (sprintf "%A" tokLst)
+        | Error msg -> Expect.equal (Error msg) outI (sprintf "%A" tokLst)
+    }
+let testListWithExpecto = 
+    [
+        "first test",(Ok [Other "x"; Other "y"]),(Ok(FuncApp(Var ['x'], Var ['y'])))
+        "second test",(Ok [Keyword "if"; Other "x";  IntegerLit 1; Keyword "then"; Other "y"; IntegerLit 1; Keyword "else"; Other "z"; IntegerLit 1; Keyword "fi"]) ,(Ok(FuncApp(FuncApp(FuncApp (Var ['x'],Literal (Int 1)),Lazy (FuncApp (Var ['y'],Literal (Int 1)))),Lazy (FuncApp (Var ['z'],Literal (Int 1))))))
+    ]
+    |> List.map makeTests
+    |> testList "Set of tests"
+
+let testsWithExpecto() =
+    runTests defaultConfig testListWithExpecto |> ignore

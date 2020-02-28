@@ -7,6 +7,7 @@ let print x = printfn "%A" x
 
 [<EntryPoint>]
 let main argv =
+    //testsWithExpecto() |> ignore
     //print <| BuildAddExp (Ok [Other ['f']; Other['x']; Other ['y']]) []
    // print <| Parse (Ok [Other ['2']; Other['*']; Other['3']; Other['+']; Other['4']])
     //print <| Parse (Ok [Other ['m';'o';'d']; IntToken 4; IntToken 2])
@@ -44,22 +45,24 @@ let main argv =
     
     
     //print <| parse (Ok [Other"h";Keyword "if"; Other "x"; Keyword "then"; Other "y";  Keyword "else"; Other "z";  Keyword "fi"; Other"f"])
+    //print <| parse (Ok [Keyword "if"; Other "x"; Keyword "then"; Keyword "if"; Other "x"; Keyword "then"; Other "y";  Keyword "else"; Other "z";  Keyword "fi";  Keyword "else"; Other "z";  Keyword "fi";])
     
     
-    
-    print <| parse (Ok [Other "f";MultToken; Other "g";MultToken; Other "h";AddToken; IntegerLit 1])
-    print <| buildAddExp [] (Ok [Other "f";MultToken; Other "g";MultToken; Other "h";AddToken; IntegerLit 1 ])
+    //print <| parse (Ok [Other "f";MultToken; Other "g";MultToken; Other "h";AddToken; IntegerLit 1])
+    //print <| buildAddExp [] (Ok [Other "f";MultToken; Other "g";MultToken; Other "h";AddToken; IntegerLit 1 ])
 
-    print <| parse (Ok [Other "f"; Other "y"; Other "z"])
+    //print <| parse (Ok [Other "f"; Other "y"; Other "z"])
 
-    print <| parse (Ok [Other "f"; OpenRoundBracket; Other "g"; OpenRoundBracket; Other "h"; Other "i";CloseRoundBracket;CloseRoundBracket])
+    //print <| parse (Ok [Other "f"; Other "g"; OpenRoundBracket; Other "h"; Other "i";CloseRoundBracket;Other "k"])
+    
     //-------------------------FIX OPERATORS IN IFS AND LISTS -------------------------
     
     //print <| parse (Ok [OpenRoundBracket; OpenRoundBracket; Other "x"; AddToken; IntegerLit 1; CloseRoundBracket; MultToken; IntegerLit 3; CloseRoundBracket])
-    // print <| parse (Ok [Keyword "if"; Other "x";  IntegerLit 1; Keyword "then"; Other "y"; IntegerLit 1; Keyword "else"; Other "z"; IntegerLit 1; Keyword "fi"])
+    //print <| parse (Ok [Keyword "if"; Other "x";AddToken;  IntegerLit 1; Keyword "then"; Other "y";AddToken; IntegerLit 1; Keyword "else"; Other "z";AddToken; IntegerLit 1; Keyword "fi"])
+    //print <| parse (Ok [Keyword "if"; Other "x";AddToken; OpenRoundBracket; IntegerLit 1; AddToken; IntegerLit 2; CloseRoundBracket; Keyword "then"; Other "y";AddToken; OpenRoundBracket; IntegerLit 1; AddToken; IntegerLit 2; CloseRoundBracket; Keyword "else"; Other "z";AddToken; IntegerLit 1; Keyword "fi"])
+    //print <| parse (Ok [OpenRoundBracket; IntegerLit 2; MultToken; IntegerLit 1; CloseRoundBracket; AddToken; OpenRoundBracket; IntegerLit 1; AddToken; OpenRoundBracket; IntegerLit 3; AddToken; IntegerLit 4; CloseRoundBracket; CloseRoundBracket])
     
-    
-    
+    //print <| parse (Ok [OpenRoundBracket; Other "x";AddToken;  IntegerLit 1; OpenRoundBracket; Other "y";AddToken; IntegerLit 1; OpenRoundBracket; Other "z";AddToken; IntegerLit 1; CloseRoundBracket;CloseRoundBracket;CloseRoundBracket])
     //print <| parse (Ok [OpenSquareBracket; Other "x"; AddToken; IntegerLit 1; Keyword ";"; Other "y"; MultToken; IntegerLit 2; CloseSquareBracket ])
     //print <| parse (Ok [OpenSquareBracket; Other "x"; IntegerLit 1; Keyword ";"; Other "y"; IntegerLit 2; CloseSquareBracket ])
 
