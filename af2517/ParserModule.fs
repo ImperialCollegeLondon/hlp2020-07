@@ -99,7 +99,7 @@ let rec takeInsideTokens openingToken closingToken acc inp count =
                                                 | _ -> takeInsideTokens openingToken closingToken (acc@[hd]) (Ok tl) count'
     | Ok (hd::tl) when hd = openingToken -> takeInsideTokens openingToken closingToken (acc@[hd]) (Ok tl) (count+1)
     | Ok (hd::tl) -> takeInsideTokens openingToken closingToken (acc@[hd]) (Ok tl) count
-    | Ok [] -> Error "The tokens don't match"
+    | Ok [] -> Error (sprintf "Missing %A" closingToken)
     | _ -> failwithf "What? Can't happen"
 
 let (|PTAKEINSIDETOKENS|_|) openingToken closingToken inp = Some(takeInsideTokens openingToken closingToken [] inp 1)
@@ -119,28 +119,35 @@ let (|PMATCH|_|) (tok: Token) (tokLst: Result<Token list, Token list>) =
 
 let builtInFuncMap = ["mod", BFunc(Math Mod);"equals", BFunc Equal;"explode", BFunc Explode;"implode", BFunc Implode;"pair", BFunc P;"fst", BFunc PFst ;"snd", BFunc PSnd;"ispair", BFunc IsPair] |> Map.ofList
 
-let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,string>*Result<Token list, Token list>,Token list>) option =
+let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,string>*Result<Token list, Token list>,string>) option =
     match tokLst with
-    | Ok [] -> Error []
+    | Ok [] -> Error "Input expression was empty"
     | PNOTEXPITEM (Ok(ast, Ok lst)) ->  Ok (ast, Ok lst)
     | PMATCH (OpenRoundBracket) (PMATCH (Keyword "fun") (BUILDLAMBDA (lamb, PMATCH (CloseRoundBracket) (inp') ) )) ->
-        Ok (lamb, inp')
+        match lamb with 
+        | Ok ast -> Ok (lamb, inp')      
+        | Error msg -> Error msg
     
-    | PMATCH (OpenRoundBracket) (PBUILDADDEXP(Ok ast, PMATCH (CloseRoundBracket) (inp'))) -> 
-        let ast' = Bracket(ast)
-        Ok(Ok(ast'), inp')
-
+    | PMATCH (OpenRoundBracket) (PBUILDADDEXP(result, PMATCH (CloseRoundBracket) (inp'))) -> 
+        match result with 
+        | Ok ast -> Ok (Ok (Bracket ast), inp')
+        | Error msg -> Error msg
+ 
     | PMATCH (Keyword "if") (PTAKEINSIDETOKENS (Keyword "if") (Keyword "then") (Ok (lst, PMATCH (Keyword "then") (PTAKEINSIDETOKENS (Keyword "then") (Keyword "else") (Ok (lst', PMATCH (Keyword "else") (PTAKEINSIDETOKENS (Keyword "else") (Keyword "fi") (Ok (lst'', PMATCH (Keyword "fi") (inp')) ) )) ) )))) ->
          let firstItemParsed = parse (Ok lst)
          let secondItemParsed = parse (Ok lst')
          let thirditemParsed = parse (Ok lst'')
          match firstItemParsed,secondItemParsed,thirditemParsed with 
          | (Ok ast, Ok []),(Ok ast', Ok []),(Ok ast'', Ok []) -> Ok (Ok(Bracket(FuncApp(FuncApp(ast, Lazy (ast')), Lazy (ast'')))), inp')
-         | _ -> Error []
+         | _ -> Error "Couldn't parse one of the expressions in this if statement"
 
-    | PMATCH (OpenSquareBracket) (BUILDLIST (ast, (PMATCH (CloseSquareBracket) (inp')))) -> Ok (ast, inp')
-    | Ok lst -> Error ( lst)
-    | Error lst -> Error (lst)
+    | PMATCH (OpenSquareBracket) (BUILDLIST (result, (PMATCH (CloseSquareBracket) (inp')))) -> 
+        match result with 
+        | Ok ast -> Ok (Ok (Bracket ast), inp')
+        | Error msg -> Error msg
+ 
+    | Ok (hd::tl) -> Error (sprintf "Couldn't parse item %A" hd)
+    | Error lst -> Error "Input list was invalid"
     |> Some
 
 and (|PNOTEXPITEM|_|) tokLst = 
@@ -156,7 +163,6 @@ and (|PNOTEXPITEM|_|) tokLst =
 and endKeyWordsList = [CloseRoundBracket; CloseSquareBracket; Keyword "then"; Keyword "else"; Keyword "fi"; Keyword ";"]
 
 and buildAppExp(inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token list, Token list>) =
-   printf "Entered BuildAppExp with %A \n" inp
    match inp with
    | PITEM (Ok(Ok s, lst)) -> 
         match lst with 
@@ -168,27 +174,32 @@ and buildAppExp(inp: Result<Token list, Token list>):(Result<AST,string>*Result<
             | (Error msg, rest) -> (Error msg, rest)
         | _ -> (Ok s, lst)
     
-   | PITEM (Error lst) -> (Error "Couldn't parse item", Error lst)
+   | PITEM (Error msg) -> (Error msg, inp)
    | lst -> (Error "Input is not vaid", lst)
 
 
 
 
 and buildMultExp (acc:Token list) (inp: Result<Token list, Token list>) :(Result<AST,string>*Result<Token list, Token list>) = 
-    printf "Entered BuildMultExp with %A \n" inp
     match inp with  
-    | PMATCH (OpenRoundBracket) (PTAKEINSIDETOKENS (OpenRoundBracket) (CloseRoundBracket) (Ok(acc', inp')))  ->
-        let acc'' = (acc@[OpenRoundBracket] @acc')
-        buildMultExp (acc'') inp' 
+    | PMATCH (OpenRoundBracket) (PTAKEINSIDETOKENS (OpenRoundBracket) (CloseRoundBracket) (result)) -> //(Ok(acc', inp')))  ->
+        match result with 
+        | Ok (acc', inp') -> 
+            let acc'' = (acc@[OpenRoundBracket] @acc')
+            buildMultExp (acc'') inp' 
+        | Error msg -> (Error msg, inp)
     
     | PMATCH (OpenSquareBracket) (PTAKEINSIDETOKENS (OpenSquareBracket) (CloseSquareBracket) (Ok(acc', inp')))  ->
         let acc'' = (acc@[OpenSquareBracket] @acc')
         buildMultExp (acc'') inp' 
 
 
-    | PMATCH (Keyword "if") (PTAKEINSIDETOKENS (Keyword "if") (Keyword "fi") (Ok(acc', inp'))) ->
-        let acc'' = (acc@[Keyword "if"] @acc')
-        buildMultExp   (acc'') inp'
+    | PMATCH (Keyword "if") (PTAKEINSIDETOKENS (Keyword "if") (Keyword "fi") (result)) ->
+        match result with 
+        | Ok (acc', inp') ->
+            let acc'' = (acc@[Keyword "if"] @acc')
+            buildMultExp   (acc'') inp'
+        | Error msg -> (Error msg, inp)
 
     | Ok (hd::tl) when hd = MultToken -> 
         let appResult = buildAppExp (Ok acc)
@@ -224,12 +235,13 @@ and buildMultExp (acc:Token list) (inp: Result<Token list, Token list>) :(Result
 
 
 and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token list, Token list>) =
-    printf "Entered BuildAddExp with %A \n" inp
     match inp with
-    | PMATCH (OpenRoundBracket) (PTAKEINSIDETOKENS (OpenRoundBracket) (CloseRoundBracket) (Ok(acc', inp')))  ->
-        let acc'' = (acc@[OpenRoundBracket] @acc')
-        buildAddExp (acc'') inp'
-
+    | PMATCH (OpenRoundBracket) (PTAKEINSIDETOKENS (OpenRoundBracket) (CloseRoundBracket) (result))  ->
+        match result with 
+        | Ok (acc', inp') -> 
+            let acc'' = (acc@[OpenRoundBracket] @acc')
+            buildAddExp (acc'') inp'
+        | Error msg -> (Error msg, inp)
     | PMATCH (OpenSquareBracket) (PTAKEINSIDETOKENS (OpenSquareBracket) (CloseSquareBracket) (Ok(acc', inp')))  ->
         let acc'' = (acc@[OpenSquareBracket] @acc')
         buildAddExp (acc'') inp' 
@@ -238,9 +250,12 @@ and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(Result<
     //    let acc'' = (acc@[Keyword "if"] @acc')
     //    buildAddExp (acc'') inp'
 
-    | PMATCH (Keyword "if") (PTAKEINSIDETOKENS (Keyword "if") (Keyword "fi") (Ok(acc', inp'))) ->
-        let acc'' = (acc@[Keyword "if"] @acc')
-        buildAddExp (acc'') inp'
+    | PMATCH (Keyword "if") (PTAKEINSIDETOKENS (Keyword "if") (Keyword "fi") (result)) ->
+        match result with 
+        | Ok (acc', inp') ->
+            let acc'' = (acc@[Keyword "if"] @acc')
+            buildAddExp (acc'') inp'
+        | Error msg -> (Error msg, inp)
     
     | Ok (hd::tl) when hd = AddToken -> 
         let multResult =  buildMultExp [] (Ok acc) 

@@ -60,8 +60,8 @@ let main argv =
     //print <| parse (Ok [OpenRoundBracket; OpenRoundBracket; Other "x"; AddToken; IntegerLit 1; CloseRoundBracket; MultToken; IntegerLit 3; CloseRoundBracket])
     //print <| parse (Ok [Keyword "if"; Other "x";AddToken;  IntegerLit 1; Keyword "then"; Other "y";AddToken; IntegerLit 1; Keyword "else"; Other "z";AddToken; IntegerLit 1; Keyword "fi"])
     //print <| parse (Ok [Keyword "if"; Other "x";AddToken; OpenRoundBracket; IntegerLit 1; AddToken; IntegerLit 2; CloseRoundBracket; Keyword "then"; Other "y";AddToken; OpenRoundBracket; IntegerLit 1; AddToken; IntegerLit 2; CloseRoundBracket; Keyword "else"; Other "z";AddToken; IntegerLit 1; Keyword "fi"])
-    //print <| parse (Ok [OpenRoundBracket; IntegerLit 2; MultToken; IntegerLit 1; CloseRoundBracket; AddToken; OpenRoundBracket; IntegerLit 1; AddToken; OpenRoundBracket; IntegerLit 3; AddToken; IntegerLit 4; CloseRoundBracket; CloseRoundBracket])
-    
+    print <| parse (Ok [OpenRoundBracket; IntegerLit 2; MultToken; IntegerLit 1; CloseRoundBracket; AddToken; OpenRoundBracket; IntegerLit 1; AddToken; OpenRoundBracket; IntegerLit 3; AddToken; IntegerLit 4; CloseRoundBracket; CloseRoundBracket])
+    print <| parse (Ok [Keyword "fun"; IntegerLit 1])
     //print <| parse (Ok [OpenRoundBracket; Other "x";AddToken;  IntegerLit 1; OpenRoundBracket; Other "y";AddToken; IntegerLit 1; OpenRoundBracket; Other "z";AddToken; IntegerLit 1; CloseRoundBracket;CloseRoundBracket;CloseRoundBracket])
     //print <| parse (Ok [OpenSquareBracket; Other "x"; AddToken; IntegerLit 1; Keyword ";"; Other "y"; MultToken; IntegerLit 2; CloseSquareBracket ])
     //print <| parse (Ok [OpenSquareBracket; Other "x"; IntegerLit 1; Keyword ";"; Other "y"; IntegerLit 2; CloseSquareBracket ])
