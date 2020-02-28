@@ -53,7 +53,6 @@ let finalExpression = FuncDefExp{ Name = ['h']; Body = lambdaH; Expression = exp
 // let expreH = finalExpression |> Some
 // let expreHres = Option.map Reduce expreH
 
-
 let (testDescriptions : list<string * Result<AST,string> * Result<AST,string> * string>) = [
     ("simple addition let f x = x+2 in f 3", Reduce lambdaAddition, Ok (Literal (Int 5)), "f 3 =  Ok (Literal (Int 5))");
     ("Explode let f x = Explode x in f \"aloha\"", Reduce testExplode, Ok(Pair(Literal (String "a"),Pair(Literal (String "l"),Pair(Literal (String "o"),Pair (Literal (String "h"),Pair (Literal (String "a"),Null)))))), "f \"aloha\" =  Ok (['a','l','o','h','a'])");
