@@ -1,15 +1,9 @@
- 
+ My individual work consisted in writinf a the "Lambdas" module. This module has an "exec" function which takes an AST as input from the parser, and executes it. It performs beta reduction and other modifications to the AST, and gives back either an evaluated AST or an error message explaining why the AST cannot be executed. A "Lazy of AST" was added to the AST DU, which is used to delay execution of an AST until it is absolutely necessary. Lazy can be used when calling a function "Funcapp(Lambda l, Lazy(arg))", to delay evaluation of the argument, and therefore allows to choose whether an argument is going to be beta-reduced in an Applicative or a Normal manner. Lazy also prevents If and Else bodies of an IFElse statement from being evaluated before the condition is evaluated, and prevents recursive function definitions from never terminating.   
 
-How will your code be used by team (if all goes well) including what order are modules in your team project compiled?
+15 tests have been written in the Lambdas module. The tests are run with expecto in the Program.fs file. These tests give a good idea of the capabilities of this runtime system: It is capable of executing both named and anonymus functions, handle recursion, and handle lists in the form of nested Pairs. Explode and Implode built-in functions for lists and strings were also written.
 
-Which parts if any are code written for other people?
+Care has been put on optimizing the way ASTs are evaluated, but this runtime system clearly still has some performance issues. Test 13, which handles a fibbonaci recursive function to find Fib(25) clearly takes much longer than F# to execute. Mnemoization will be an interesting thing to add during the team phase of the project.
 
-Which parts if any of code you use is written by others?
+The only part of my code that was written in colaboration with other people have been the types. In order to guarantee minimum frictions when joining the lexer and parser with the runtime, every addition and modification to the AST in order to, for example, handle IF statements using Church Booleans, was always discussed and agreed with other team members.
 
-What help have you obtained/given others debugging or doing code review?
-
-How did you work out (who decided what - how do you revise) the types that interface your code with others?
-
- 
-
-I do not want a report-style statement, just the above info as concisely as possible.
+When the code was nearly finished, it was shared with Vlad (VN1417), who advised on its readability
