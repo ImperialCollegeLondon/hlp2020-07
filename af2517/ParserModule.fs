@@ -42,6 +42,7 @@ type BuiltInType =
 
 type AST = 
     | FuncDefExp of FuncDefExpType 
+    | MatchDef of MatchDefType
     | Lambda of LambdaType
     | Var of char list //only valid in lambdas 
     | FuncApp of AST*AST
@@ -63,11 +64,19 @@ and LambdaType = {
     InputVar: char list
     Body: AST
 }
+
+and MatchDefType = {
+    Condition: AST
+    Cases: AST list
+}
+
 and LitType = 
     | Int of int 
     | String of string
 
 
+    //fst res,snd res
+    
     
 let rec extractRightAppList (lst:AST list) (inp:AST) : AST list = 
     match inp with 
@@ -103,6 +112,40 @@ let rec takeInsideTokens openingToken closingToken acc inp count =
     | _ -> failwithf "What? Can't happen"
 
 let (|PTAKEINSIDETOKENS|_|) openingToken closingToken inp = Some(takeInsideTokens openingToken closingToken [] inp 1)
+
+
+let split (at:Token) (x:Token list)  : (Token list list * Token list) =
+    let rec splitHelper (at:Token) (x:Token list) (acc:Token list) (finalAcc:Token list list) : (Token list list * Token list) =
+        match x with
+        | [] ->  (finalAcc , acc)
+        | hd::tl when hd = Keyword "match"  ->
+            match takeInsideTokens (Keyword "match") (Keyword "endmatch") [] (Ok tl) 1 with
+            | Ok (mstruct,Ok (_::rest) ) ->
+                splitHelper at rest ([hd] @ acc @ mstruct @ [Keyword "endmatch"] ) finalAcc
+            | _ -> failwithf "Error while building nested stucture"
+        | hd::tl when hd <> at -> splitHelper at tl (acc @ [hd]) finalAcc
+        | hd::tl when hd = at ->
+            //must be the first time we actually met a split character so we can just split
+            splitHelper at tl [] (finalAcc @ [acc])
+            | _ -> failwithf "Does this actually happen"
+        
+    splitHelper at x [] [] 
+
+
+let rec takeInsideMatch acc inp count : Result<(Result<Token list,'b> * Token list),string> =
+    match inp with
+    //assume this one doesn't see anything
+    | Ok (hd::tl) when hd = Keyword "endmatch" ->
+        let count' = count - 1
+        match count' with
+        | 0 ->  (Ok(Ok (tl), acc@[hd]))
+        | _ -> takeInsideMatch (acc@[hd]) (Ok tl) count'
+    | Ok (hd::tl) when hd = Keyword "match" -> takeInsideMatch (acc@[hd]) (Ok tl) (count + 1)
+    | Ok (hd::tl) -> takeInsideMatch (acc@[hd]) (Ok tl) count
+    | Ok [] -> Error "invalid match statement"
+    | _ -> failwithf "What?"
+
+let (|TAKEINSIDEMATCH|_|) inp = Some(takeInsideMatch [] inp 1)
 
 
 let (|PMATCH|_|) (tok: Token) (tokLst: Result<Token list, Token list>) = 
@@ -143,7 +186,13 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,
 
     | PMATCH (OpenSquareBracket) (inp') -> buildList tokLst
 
- 
+    | PMATCH (Keyword "match") (PBUILDMATCHCASES(astList, PMATCH (Keyword "endmatch") (inp')))  ->
+        //print ast
+        
+        let res = List.map (function |Ok x -> x |y -> failwithf "One of the cases failed") astList
+        //Assumes at least one
+        //Not dealt with errors yet
+        Ok(Ok (MatchDef{Condition = res.Head; Cases = res.Tail}),inp')
     | Ok (hd::tl) -> Error (sprintf "Couldn't parse item %A" hd)
     | Error lst -> Error "Input list was invalid"
     |> Some
@@ -191,6 +240,10 @@ and buildMultExp (acc:Token list) (inp: Result<Token list, Token list>) :(Result
     | PMATCH (OpenSquareBracket) (PTAKEINSIDETOKENS (OpenSquareBracket) (CloseSquareBracket) (Ok(acc', inp')))  ->
         let acc'' = (acc@[OpenSquareBracket] @acc')
         buildMultExp (acc'') inp' 
+
+    | PMATCH (Keyword "match") (TAKEINSIDEMATCH (Ok(inp', acc'))) ->
+        let acc'' = (acc@[Keyword "match"] @ acc')
+        buildMultExp (acc'') inp'
 
 
     | PMATCH (Keyword "if") (PTAKEINSIDETOKENS (Keyword "if") (Keyword "fi") (result)) ->
@@ -244,6 +297,10 @@ and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(Result<
     | PMATCH (OpenSquareBracket) (PTAKEINSIDETOKENS (OpenSquareBracket) (CloseSquareBracket) (Ok(acc', inp')))  ->
         let acc'' = (acc@[OpenSquareBracket] @acc')
         buildAddExp (acc'') inp' 
+
+    | PMATCH (Keyword "match") (TAKEINSIDEMATCH (Ok(inp', acc'))) ->
+        let acc'' = (acc@[Keyword "match"] @ acc')
+        buildAddExp (acc'') inp'
     
     | PMATCH (Keyword "if") (PTAKEINSIDETOKENS (Keyword "if") (Keyword "fi") (result)) ->
         match result with 
@@ -274,6 +331,20 @@ and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(Result<
 
 and (|PBUILDADDEXP|_|) (inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token list, Token list>)option = 
     Some (buildAddExp [] inp)
+
+and (|PBUILDMATCHCASES|_|) (inp: Result<Token list, Token list>) : ( (Result<AST,string> list) * Result<Token list, Token list>) option =
+    Some <| buildMatchCases inp
+
+and buildMatchCases (inp: Result<Token list, Token list>):(Result<AST,string> list *Result<Token list, Token list>) =
+    match inp with
+        | Ok x  ->
+                       let (cases,res) = split (Keyword "case") x
+                       cases
+                       |> List.map ( fst << (function |Some x -> x | _ -> failwithf "One case couldn't parse"   )  << ((|PBUILDADDEXP|_|) << Ok)),Ok res
+                       //split (Keyword "case") x
+                       //|> List.map ( fst << (function |Some x -> x | _ -> failwithf "One case couldn't parse"   )  << ((|PBUILDADDEXP|_|) << Ok)),res
+                       //failwithf "A"
+        | _ -> failwithf "Cases failed"
 
 and buildLambda (inp:Result<Token list, Token list>):(Result<AST,string>*Result<Token list, Token list>) = 
     match inp with 
