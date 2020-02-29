@@ -3,6 +3,8 @@ How will your code be used by team (if all goes well) including what order are m
 
 My tokenizer converts a string to the tokens it contains. This will be the very first Module compiled. (The Definition.fs and then TokenModule.fs). I've split them such that all the logic is in one place and all the definitions are in another.
 
+I've also written the 'match' code in the parser.
+
 Which parts if any are code written for other people?
 
 The tokenize function. Also I have an added folder in my directory called 'lex_parse'. This was/is being used by the other members to test their code. I've combined the tokenizer and parser such that the runtime people don't need to spell out long ASTs to test their code. 
