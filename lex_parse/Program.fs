@@ -14,13 +14,13 @@ let tokenize_parse (x:string) =
 [<EntryPoint>]  
 let main argv =
     //print <| split (Keyword "case") (tokenize "if case j h l case u case a b c case endmatch")
-    //print <| split (Keyword "case") (tokenize "x case 1 case 2 case endmatch f x y")
-    print <| tokenize_parse "match x case match y case f x case f y case endmatch case match f x case 1 case 2 case endmatch case endmatch"
+    //print <| split (Keyword "case") (tokenize "match x case 1 case 2 case endmatch f x y")
+    //print <| tokenize_parse "match x case match y case f x case f y case endmatch case match f x case 1 case 2 case endmatch case endmatch"
     //print <| tokenize_parse "match x + 1 case 1 case 2 case endmatch 21 + match x case f case j case endmatch"
     //print <| tokenize_parse "match f + x case match x + 1 case 1 case 2 case endmatch case 1 case endmatch j k"
     //print <| tokenize_parse "f x y"
     
-    
+    print <| tokenize_parse "match x case match y case f x case f y case endmatch case match f x case 1 case 2 case endmatch case endmatch"
     (*
      [Other "f"; AddToken; Other "x"; Keyword "case"; Keyword "match"; Other "x";
        AddToken; IntegerLit 1; Keyword "case"; IntegerLit 1; Keyword "case";

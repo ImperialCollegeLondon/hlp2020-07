@@ -1,7 +1,6 @@
 open Expecto
 open TokenModule
 open Definitions
-open System.IO
 
 
 let print x =
@@ -81,40 +80,10 @@ let mList = [1;2;3]
 
 [<EntryPoint>]
 let main argv =
-    //print <| tokenize "-> - / * + let ( ) [ ] 21.2 -21.2 21 -21 = 0xffaa other \"Hello There \""
-    runTestsInAssembly defaultConfig [||] |> ignore
-    (*let readLines =
-              "/Users/vladnistor/Documents/dev/hlp2020-07/vn1417/Input.txt"
-              |> File.ReadAllLines
-              |> Array.toList
-              
-    print readLines
-    *)
-    //print <| Seq.toList "\n"
-    //print <| tokenize "= \n 0xffaa other \"Hello There \""
-    //Tests.runTests defaultConfig properties |> ignore
-    //print <| tokenize "21.2"
-    //print "Hi "
+    runTestsInAssembly defaultConfig [||] |> ignore    
     0
     
 
     
     
-(*
-
-expected:
-[RightArrow; SpaceLit; SubToken; SpaceLit; DivToken; SpaceLit; MultToken;
- SpaceLit; AddToken; SpaceLit; Let; SpaceLit; OpenRoundBracket; SpaceLit;
- CloseRoundBracket; SpaceLit; OpenSquareBracket; SpaceLit; CloseSquareBracket;
- SpaceLit; DecimalLit 21.2; SpaceLit; DecimalLit -21.2; SpaceLit; IntegerLit 21;
- SpaceLit; IntegerLit -21; SpaceLit; EqualToken; SpaceLit; HexLit "0xffaa";
- SpaceLit; Other "other"; SpaceLit; StringLit ""Hello There ""]
-  actual:
-[RightArrow; SubToken; DivToken; MultToken; AddToken; Let; OpenRoundBracket;
- CloseRoundBracket; OpenSquareBracket; CloseSquareBracket; DecimalLit 21.2;
- DecimalLit -21.2; IntegerLit 21; IntegerLit -21; EqualToken; HexLit "0xffaa";
- Other "other"; StringLit ""Hello There ""]
-
-                                             
-*)
 
