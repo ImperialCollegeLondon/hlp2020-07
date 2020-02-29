@@ -1,14 +1,41 @@
 module ParserModule
 open Definitions
 
+
+//    print <| takeInsideTokens (Keyword "match") (Keyword "endmatch") [] (Ok <| tokenize "f x y + 1 endmatch case endmatch") 1
+
+
+
+let rec takeInsideTokens (openingToken:Token) (closingToken:Token) (acc:Token list) (inp:Result<Token list,Token list>) count : (Result<Token list * Result<Token list, Token list>,string>) = 
+    match inp with 
+    | Ok (hd::tl) when hd = closingToken ->
+                                                let count' = count - 1
+                                                match count' with 
+                                                | 0 -> Ok(acc,(Ok ([hd]@tl)))
+                                                | _ -> takeInsideTokens openingToken closingToken (acc@[hd]) (Ok tl) count'
+    | Ok (hd::tl) when hd = openingToken -> takeInsideTokens openingToken closingToken (acc@[hd]) (Ok tl) (count+1)
+    | Ok (hd::tl) -> takeInsideTokens openingToken closingToken (acc@[hd]) (Ok tl) count
+    | Ok [] -> Error "The tokens don't match"
+    | _ -> failwithf "What? Can't happen"
+
 let split (at:Token) (x:Token list)  : (Token list list * Token list) =
-    let smartSplitFolder ((state,acc):(Token list list * Token list) ) (elem:Token) : (Token list list * Token list) = 
-        if elem = at then
-            if List.isEmpty state then [acc],[] else state @ [acc], []
-        else
-            state,acc @ [elem]
-    let res = ((([],[]),x) ||> List.fold smartSplitFolder)
-    fst res,snd res
+    let rec splitHelper (at:Token) (x:Token list) (acc:Token list) (finalAcc:Token list list) : (Token list list * Token list) =
+        match x with
+        | [] ->  (finalAcc , acc)
+        | hd::tl when hd = Keyword "match"  ->
+            match takeInsideTokens (Keyword "match") (Keyword "endmatch") [] (Ok tl) 1 with
+            | Ok (mstruct,Ok (_::rest) ) ->
+                splitHelper at rest ([hd] @ acc @ mstruct @ [Keyword "endmatch"] ) finalAcc
+            | _ -> failwithf "Error while building nested stucture"
+        | hd::tl when hd <> at -> splitHelper at tl (acc @ [hd]) finalAcc
+        | hd::tl when hd = at ->
+            //must be the first time we actually met a split character so we can just split
+            splitHelper at tl [] (finalAcc @ [acc])
+         | _ -> failwithf "Does this actually happen"
+    
+    splitHelper at x [] [] 
+    //fst res,snd res
+
 
 
 type MathType = 
@@ -173,7 +200,7 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,
     | PMATCH (Keyword "match") (PBUILDMATCHCASES(astList, PMATCH (Keyword "endmatch") (inp')))  ->
         //print ast
         
-        let res = List.map (function |Ok x -> x |_ ->failwithf "One of the cases failed") astList
+        let res = List.map (function |Ok x -> x |y -> failwithf "One of the cases failed") astList
         //Assumes at least one
         //Not dealt with errors yet
         Ok(Ok (MatchDef{Condition = res.Head; Cases = res.Tail}),inp')
@@ -275,11 +302,14 @@ and (|PBUILDMATCHCASES|_|) (inp: Result<Token list, Token list>) : ( (Result<AST
     Some <| buildMatchCases inp
 
 and buildMatchCases (inp: Result<Token list, Token list>):(Result<AST,string> list *Result<Token list, Token list>) =
-    
     match inp with
-        | Ok cases ->   let (apply,rest) = cases |> split (Keyword "case")
-                        apply
-                        |> List.map ( fst << (function |Some x -> x | _ -> failwithf "One case couldn't parse"   )  << ((|PBUILDADDEXP|_|) << Ok)),Ok rest
+        | Ok x  ->
+                       let (cases,res) = split (Keyword "case") x
+                       cases
+                       |> List.map ( fst << (function |Some x -> x | _ -> failwithf "One case couldn't parse"   )  << ((|PBUILDADDEXP|_|) << Ok)),Ok res
+                       //split (Keyword "case") x
+                       //|> List.map ( fst << (function |Some x -> x | _ -> failwithf "One case couldn't parse"   )  << ((|PBUILDADDEXP|_|) << Ok)),res
+                       //failwithf "A"
         | _ -> failwithf "Cases failed"
     
     
@@ -386,7 +416,7 @@ and parse (inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token
         let result = buildFunctionDef (rest)
         match result with 
         | (Ok ast, Ok []) -> result
-        | (Ok ast, rest) -> (Error "Ilegal expression at the end", rest )
+        | (Ok ast, rest) -> (Error "Illegal expression at the end", rest )
         | (Error msg, rest) -> (Error msg,  rest)
     | _ -> 
           let res = buildAddExp [] inp
@@ -395,7 +425,7 @@ and parse (inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token
             //let ast' = ast |> leftAssociate
             (Ok ast, Ok [])
 
-          | (Ok ast, rest ) -> (Error "Ilegal expression at the end", rest )
+          | (Ok ast, rest ) -> (Error "Illegal expression at the end", rest )
           
           | (Error msg, rest) -> (Error msg, rest)
 
