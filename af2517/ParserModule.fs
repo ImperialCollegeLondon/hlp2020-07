@@ -154,6 +154,7 @@ and (|PNOTEXPITEM|_|) tokLst =
     | Ok (Other s::rest) when s = "TRUE" ->Some( Ok (Ok(Lambda {InputVar=Seq.toList "x";Body=Lambda{InputVar=Seq.toList "y"; Body=Var(Seq.toList"x")} }), Ok rest))
     | Ok (Other s::rest) when s = "FALSE" -> Some(Ok (Ok(Lambda {InputVar=Seq.toList "x";Body=Lambda{InputVar=Seq.toList "y"; Body=Var(Seq.toList "y")} }), Ok rest))
     | Ok (Other s :: rest) -> Some( Ok (Ok(Var(Seq.toList s)), Ok rest))
+    | Ok (Other "Null" :: rest) -> Some( Ok (Ok Null, Ok rest))
     | Ok (IntegerLit s:: rest) ->Some( Ok (Ok(Literal (Int s)) ,Ok rest))
     | Ok (StringLit s::rest) ->Some( Ok (Ok(Literal (String s)), Ok rest))
     | _ -> None
@@ -326,17 +327,17 @@ and  buildFunctionDef inp:(Result<AST,string>*Result<Token list, Token list>)  =
 and parse (inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token list, Token list>)  = 
     match inp with
     | PMATCH (Let) (Ok rest) -> 
-        let result = buildFunctionDef (rest)
-        match result with 
-        | (Ok _, Ok []) -> result
-        | (Ok _, rest) -> (Error "Ilegal expression at the end", rest )
-        | (Error msg, rest) -> (Error msg,  rest)
+        buildFunctionDef (rest)
+        
     | _ -> 
-        let result = buildAddExp [] inp
-        match result with 
-        | (Ok _, Ok []) -> result
-        | (Ok _, rest) -> (Error "Ilegal expression at the end", rest )
-        | (Error msg, rest) -> (Error msg,  rest)
+        buildAddExp [] inp
+ 
+
+and parsedOutput res = 
+    match res with 
+    | (Ok _, Ok []) -> res
+    | (Ok _, rest) -> (Error "Ilegal expression at the end", rest )
+    | (Error msg, rest) -> (Error msg,  rest)
 
 and buildList inp :(Result<Result<AST,string>*Result<Token list, Token list>,string>) = 
     match inp with
@@ -380,7 +381,7 @@ and buildList inp :(Result<Result<AST,string>*Result<Token list, Token list>,str
 let makeTests (name, instr, outI) =
     test name {
         let tokLst = instr
-        match (tokLst |> parse |> fst) with 
+        match (tokLst |> parse |> parsedOutput |> fst) with 
         | Ok ast -> Expect.equal (Ok ast) outI (sprintf "%A" tokLst)
         | Error msg -> Expect.equal (Error msg) outI (sprintf "%A" tokLst)
     }
@@ -388,6 +389,19 @@ let testListWithExpecto =
     [
         "first test",(Ok [Other "x"; Other "y"]),(Ok(FuncApp(Var ['x'], Var ['y'])))
         "second test",(Ok [Keyword "if"; Other "x";  IntegerLit 1; Keyword "then"; Other "y"; IntegerLit 1; Keyword "else"; Other "z"; IntegerLit 1; Keyword "fi"]) ,(Ok(FuncApp(FuncApp(FuncApp (Var ['x'],Literal (Int 1)),Lazy (FuncApp (Var ['y'],Literal (Int 1)))),Lazy (FuncApp (Var ['z'],Literal (Int 1))))))
+        "third test", (Ok [Let; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2; Other "in"; Other "x"; IntegerLit 5]), (Ok(FuncDefExp{ Name = ['x'];Body = FuncApp (FuncApp (BFunc (Math Mult),Var ['x']),Literal (Int 2));Expression = FuncApp (Var ['x'],Literal (Int 5)) }))   
+        "fourth test", (Ok [OpenSquareBracket; CloseSquareBracket; Other "x"; Other"y"]), (Ok (FuncApp (FuncApp (Pair (Null,Null),Var ['x']),Var ['y'])))
+        "fifth test", (Ok [Let; Other "f"; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2]), (Error "This function definition is never used")
+        "sixth test", (Ok [Let; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2; Other "in"; Other "x"; IntegerLit 5]), (Ok(FuncDefExp{ Name = ['x'];Body = FuncApp (FuncApp (BFunc (Math Mult),Var ['x']),Literal (Int 2));Expression = FuncApp (Var ['x'],Literal (Int 5)) }))
+        "seventh test", (Ok [OpenRoundBracket; Keyword "fun"; Other "x"; EqualToken; Other "x"; AddToken; IntegerLit 1; CloseRoundBracket]), (Ok(Lambda{ InputVar = ['x'];Body = FuncApp (FuncApp (BFunc (Math Add),Var ['x']),Literal (Int 1)) }))
+        "eigth test", (Ok [Other "f"; OpenRoundBracket; Other "x"; Other "y";Other "z"; CloseRoundBracket]), Ok (FuncApp (Var ['f'],FuncApp (FuncApp (Var ['x'],Var ['y']),Var ['z'])))
+        "ninth test", Ok [Other "f"; OpenRoundBracket; Other "a"; OpenRoundBracket; Other "f"; Other "d"; CloseRoundBracket; CloseRoundBracket], Ok (FuncApp (Var ['f'],FuncApp (Var ['a'],FuncApp (Var ['f'],Var ['d']))))
+        "tenth test", Ok [OpenSquareBracket; OpenSquareBracket; Other "x"; CloseSquareBracket], Error "List is not valid"
+        "eleventh test", Ok([Let; Other "f"; Other "x"; Other"y"; EqualToken; Other "x"; Other "in"; Other "f"; IntegerLit 3; IntegerLit 4]), Ok(FuncDefExp{ Name = ['f'];Body = Lambda { InputVar = ['x'];Body = Lambda { InputVar = ['y'];Body = Var ['x'] } };Expression =FuncApp(FuncApp (Var ['f'],Literal (Int 3)),Literal (Int 4)) })
+        "test 12", Ok [OpenSquareBracket; Other "x";  IntegerLit 1; Keyword ";"; Other "y"; IntegerLit 2; Keyword ";"; Other "z"; IntegerLit 3; CloseSquareBracket ], Ok(Pair(FuncApp (Var ['x'],Literal (Int 1)),Pair(FuncApp (Var ['y'],Literal (Int 2)),FuncApp (Var ['z'],Literal (Int 3)))))
+        "test 13", Ok [OpenSquareBracket; Other "x"; AddToken; IntegerLit 1; Keyword ";"; Other "y"; MultToken; IntegerLit 2; CloseSquareBracket ], (Ok(Pair(FuncApp (FuncApp (BFunc (Math Add),Var ['x']),Literal (Int 1)),FuncApp (FuncApp (BFunc (Math Mult),Var ['y']),Literal (Int 2)))))
+        "test 14", Ok [Other "f";MultToken; Other "g";MultToken; Other "h";AddToken; IntegerLit 1], Ok(FuncApp(FuncApp(BFunc (Math Add),FuncApp(FuncApp (BFunc (Math Mult),Var ['f']),FuncApp (FuncApp (BFunc (Math Mult),Var ['g']),Var ['h']))),Literal (Int 1)))
+        "test 15", Ok [Other"h";Keyword "if"; Other "x"; Keyword "then"; Other "y";  Keyword "else"; Other "z";  Keyword "fi"; Other"f"], Ok(FuncApp(FuncApp(Var ['h'],FuncApp (FuncApp (Var ['x'],Lazy (Var ['y'])),Lazy (Var ['z']))),Var ['f']))
     ]
     |> List.map makeTests
     |> testList "Set of tests"
