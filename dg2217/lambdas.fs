@@ -121,7 +121,7 @@ let rec execExplode (str) =
     | (Literal (String (hd::tl))) -> (Pair(Literal(String([hd])), Literal(String tl))) |> execExplode 
     | _ -> sprintf "Run-time error: %A is not a valid string to explode" str |> Error 
 
-/////////EXEC THIS IS THE MAIN RUNTIME BODY
+/////////EXEC IS THE MAIN RUNTIME BODY
 let rec exec (exp : AST) : Result<AST,string> =
     match exp with 
     | FuncDefExp(fde) -> fde |> func_Def_Exp_to_Lambda |> exec
