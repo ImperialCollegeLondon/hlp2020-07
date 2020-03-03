@@ -404,7 +404,8 @@ and parse (inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token
         buildAddExp [] inp
  
 
-and parsedOutput res = 
+and parsedOutput inp = 
+    let res = parse inp
     match res with 
     | (Ok _, Ok []) -> res
     | (Ok _, rest) -> (Error "Ilegal expression at the end", rest )
@@ -452,7 +453,7 @@ and buildList inp :(Result<Result<AST,string>*Result<Token list, Token list>,str
 let makeTests (name, instr, outI) =
     test name {
         let tokLst = instr
-        match (tokLst |> parse |> parsedOutput |> fst) with 
+        match (tokLst |> parsedOutput |> fst) with 
         | Ok ast -> Expect.equal (Ok ast) outI (sprintf "%A" tokLst)
         | Error msg -> Expect.equal (Error msg) outI (sprintf "%A" tokLst)
     }
