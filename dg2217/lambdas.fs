@@ -26,25 +26,21 @@ type AST =
     | Bracket of AST
     | Y
     | Lazy of AST
-
 and LambdaType = {
     InputVar: char list
     Body: AST
 }
-
 and FuncDefExpType = {
     Name: char list;
     Body: AST
     Expression: AST
 }
-
 and MatchDefType = {
     Condition: AST
     Cases: AST list
 }
-
 and LitType = 
-    | Int of int 
+    | Int of int64 
     | String of char list 
 
 and EnvironmentType = list<(char list)*AST>
@@ -86,9 +82,9 @@ let execMath op x y =
         | Add -> A+B |> Int |> Literal |> Ok //Literal(Int(valueA+valueB))
         | Sub -> A-B |> Int |> Literal |> Ok
         | Mult -> A*B |> Int |> Literal |> Ok
-        | Div when B<>0 -> A/B |> Int |> Literal |> Ok
-        | Mod when B<>0 -> A%B |> Int |> Literal |> Ok
-        | Div | Mod when B = 0 -> "Run-time error: Cannot divide by 0!" |> Error
+        | Div when B<>0L -> A/B |> Int |> Literal |> Ok
+        | Mod when B<>0L -> A%B |> Int |> Literal |> Ok
+        | Div | Mod when B = 0L -> "Run-time error: Cannot divide by 0!" |> Error
         | _ ->  "What? Shouldn't happen" |> Error
     | _ -> sprintf "Run-time error: %A(%A,%A) , is not a valid expression" op x y |> Error
 
@@ -127,26 +123,44 @@ let rec execExplode (str) =
     | (Literal (String (hd::tl))) -> (Pair(Literal(String([hd])), Literal(String tl))) |> execExplode 
     | _ -> sprintf "Run-time error: %A is not a valid string to explode" str |> Error 
 
+//let mutable cache : Map<AST, Result<AST,string>> = 
+//    Map [FuncApp(FuncApp(BFunc(Mat Add), Literal(Int 1L)),Literal( Int 2L)), 3L|> Int |> Literal |> Ok ; 
+//    FuncApp(FuncApp(BFunc(Mat Add), Literal(Int 1L)),Literal(Int 3L)), 4L |> Int |> Literal |> Ok;]
+
+let mutable cache = Map []
+
+let memoise fn =
+   fun x ->
+      match Map.containsKey x cache with
+      | true -> cache.[x] // return cached value
+      | false -> let res = fn x // compute function
+                 cache <- Map.add x res cache //store result in cache
+                 res // return result
+
 /////////EXEC IS THE MAIN RUNTIME BODY
 let rec exec (exp : AST) : Result<AST,string> =
     match exp with 
     | FuncDefExp(fde) -> fde |> func_Def_Exp_to_Lambda |> exec
     | Lazy(e) -> exec e
-    | FuncApp (func,Lazy(arg)) -> 
-        match exec func with 
-        | Ok executedFunc -> FuncApp(executedFunc,Lazy(arg))  |> applyFunc
-        | Error err -> Error err
-    | FuncApp(func,arg) -> 
-        match exec func with 
-        | Ok executedFunc -> 
-            match exec arg with 
-            | Ok executedArg -> FuncApp(executedFunc,executedArg) |> applyFunc
-            | Error err -> Error err
-        | Error err -> Error err
+    | FuncApp(func, arg) -> memoise execFunc (FuncApp(func,arg))
     | Pair(a,b)-> evalPair (Pair(a,b))
     | Literal _ | BFunc _ | Null | Y | Var _ | Lambda _ -> exp |> Ok 
 
-and applyFunc (exp:AST):Result<AST,string> = 
+and execFunc (FuncApp(func,arg):AST) : Result<AST,string>  = 
+    match arg with 
+    | Lazy(a) -> 
+        match exec func with 
+        | Ok executedFunc -> FuncApp(executedFunc,Lazy(a))  |> applyBasicFunc
+        | Error err -> Error err
+    | _ -> 
+        match exec func with 
+        | Ok executedFunc -> 
+            match exec arg with 
+            | Ok executedArg -> FuncApp(executedFunc,executedArg) |> applyBasicFunc
+            | Error err -> Error err
+        | Error err -> Error err
+
+and applyBasicFunc (exp:AST):Result<AST,string> = 
     match exp with
     | ONEARGFUN(Y,f) -> exec (FuncApp(f,Lazy(FuncApp(Y,f))))
     | ONEARGFUN(Lambda l,arg) ->
@@ -213,3 +227,20 @@ let run input =
     match input with 
     | Error(err)-> Error(err)
     | Ok(exp)-> exec exp
+
+
+let fminus1 = FuncApp(Var ['f'], FuncApp(FuncApp(BFunc (Mat Sub), Var ['a']),Literal (Int 1L)))
+let fminus2 = FuncApp(Var ['f'], FuncApp(FuncApp(BFunc (Mat Sub), Var ['a']),Literal (Int 2L)))
+let recBody = FuncApp(FuncApp(BFunc (Mat Add), fminus1),fminus2)
+let eqBody1 = FuncApp(FuncApp(BFunc Equal, Var ['a']), Literal(Int 1L))
+let eqBody0 = FuncApp(FuncApp(BFunc Equal, Var ['a']), Literal(Int 0L))
+let ifelseBody13 = FuncApp(FuncApp(eqBody0,Lazy(Literal(Int 0L))),Lazy(FuncApp(FuncApp(eqBody1,Lazy(Literal(Int 1L))),Lazy(recBody)))) 
+let test13 = 
+    FuncDefExp{
+        Name = ['f'];
+        Body = Lambda{InputVar = ['f']; Body = Lambda {InputVar = ['a']; Body = ifelseBody13}};
+        Expression = FuncApp(FuncApp(Var ['f'],Lazy(FuncApp(Y,Var['f']))),Literal(Int 92L))}
+
+let result13 = exec test13
+
+let fib92 = 7540113804746346429L
