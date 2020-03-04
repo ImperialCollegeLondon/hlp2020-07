@@ -174,7 +174,7 @@ let rec eval (x:Result<AST,string>) : Result<AST,string> =
     | Ok (Literal _ ) | Ok (Pair(_,_)) | Ok Null | Ok (BFunc _) -> reduceSKI
     | _ -> sprintf "RUN-TIME ERROR : EXPECTED SKI AST BUT USED %A" reduceSKI |> Error
     
-let Reduce (y:AST) : Result<AST,string> =
+let Reduce (y:Result<AST,string>) : Result<AST,string> =
     let rec reduceFuncTree (x:Result<AST,string>) : Result<AST,string> =
         match x with
         | Error _ -> x
@@ -193,5 +193,5 @@ let Reduce (y:AST) : Result<AST,string> =
         | Ok (FuncApp(E1,E2)) -> Ok (FuncApp(E1,E2))
         | Ok (Literal _ ) | Ok (Pair(_)) | Ok Null | Ok (BFunc _) -> x
         | _ -> sprintf "RUN-TIME ERROR : EXPECTED A RESULT<AST,STRING> BUT GOT %A"  x |> Error
-    y |> Ok |> reduceFuncTree |> eval
+    y |> reduceFuncTree |> eval
 

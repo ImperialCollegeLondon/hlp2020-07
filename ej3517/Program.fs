@@ -64,18 +64,18 @@ let rec length x =
 
 
 let (testDescriptions : list<string * Result<AST,string> * Result<AST,string> * string>) = [
-    ("simple addition let f x = x+2 in f 3", Reduce lambdaAddition, Ok (Literal (Int 5)), "f 3 =  Ok (Literal (Int 5))");
-    ("Explode let f x = Explode x in f \"aloha\"", Reduce testExplode, Ok(Pair(Literal (String "a"),Pair(Literal (String "l"),Pair(Literal (String "o"),Pair (Literal (String "h"),Pair (Literal (String "a"),Null)))))), "f \"aloha\" =  Ok (['a','l','o','h','a'])");
-    ("Explode let f x = Implode x in f ['a','l','o','h','a']", Reduce testImplode, Ok (Literal (String "aloha")), "f ['a','l','o','h','a'] =  Ok (Literal (String \"aloha\"))");
-    ("Equal : (\"aloha\" = \"aloha\") = True", Reduce testEqualString, Ok (BFunc True), "(\"aloha\" = \"aloha\") = True");
-    ("Equal : (1 = 1) = True", Reduce testEqualInt, Ok (BFunc True), "(1 = 1) = True");
-    ("Equal : (Null = Null) = True", Reduce testEqualNull, Ok (BFunc True), "(Null = Null) = True");
-    ("True : True 1 \"aloha\" = 1", Reduce testTrue, Ok (Literal(Int 1)), "False 1 \"aloha\" = 1");
-    ("False 1 \"aloha\" = \"aloha\"", Reduce testFalse, Ok (Literal( String "aloha")), "False 1 \"aloha\" = \"aloha\"");
-    ("(\"aloh\" = \"aloha\") 1 \"aloha\" = 1", Reduce testEqTrue, Ok (Literal( Int 1)), "(\"aloh\" = \"aloha\") 1 \"aloha\" = \"aloha\"");
-    ("Nested Function : (let f x = x - 1 in let g y = y * 3 in g ( f -1 )) = -6", Reduce testNestedFunc, Ok (Literal( Int -6)), "(let f x = x - 1 in let g y = y * 3 in g ( f -1 )) = -6");
-    ("(let h p = p^2 in let g n = n * 2 in let f m = g m + g (m + 1) + h ( h m ) in (if True then f 2 else Null)) = 26", Reduce finalExpression, Ok(Literal(Int 26)), "(let h p = p^2 in let g n = n * 2 in let f m = g m + g (m + 1) + h ( h m ) in (if True then f 2 else Null)) = 26");
-    ("fuction with multiple arguments : (let f x y = x + y in f 3 8) =11", Reduce lambdaAddition2, Ok (Literal (Int 11)),"(let f x y = x + y in f 3 8) =11" )]
+    ("simple addition let f x = x+2 in f 3", Reduce (Ok lambdaAddition), Ok (Literal (Int 5)), "f 3 =  Ok (Literal (Int 5))");
+    ("Explode let f x = Explode x in f \"aloha\"", Reduce (Ok testExplode), Ok(Pair(Literal (String "a"),Pair(Literal (String "l"),Pair(Literal (String "o"),Pair (Literal (String "h"),Pair (Literal (String "a"),Null)))))), "f \"aloha\" =  Ok (['a','l','o','h','a'])");
+    ("Explode let f x = Implode x in f ['a','l','o','h','a']", Reduce (Ok testImplode), Ok (Literal (String "aloha")), "f ['a','l','o','h','a'] =  Ok (Literal (String \"aloha\"))");
+    ("Equal : (\"aloha\" = \"aloha\") = True", Reduce (Ok testEqualString), Ok (BFunc True), "(\"aloha\" = \"aloha\") = True");
+    ("Equal : (1 = 1) = True", Reduce (Ok testEqualInt), Ok (BFunc True), "(1 = 1) = True");
+    ("Equal : (Null = Null) = True", Reduce (Ok testEqualNull), Ok (BFunc True), "(Null = Null) = True");
+    ("True : True 1 \"aloha\" = 1", Reduce (Ok testTrue), Ok (Literal(Int 1)), "False 1 \"aloha\" = 1");
+    ("False 1 \"aloha\" = \"aloha\"", Reduce (Ok testFalse), Ok (Literal( String "aloha")), "False 1 \"aloha\" = \"aloha\"");
+    ("(\"aloh\" = \"aloha\") 1 \"aloha\" = 1", Reduce (Ok testEqTrue), Ok (Literal( Int 1)), "(\"aloh\" = \"aloha\") 1 \"aloha\" = \"aloha\"");
+    ("Nested Function : (let f x = x - 1 in let g y = y * 3 in g ( f -1 )) = -6", Reduce (Ok testNestedFunc), Ok (Literal( Int -6)), "(let f x = x - 1 in let g y = y * 3 in g ( f -1 )) = -6");
+    ("(let h p = p^2 in let g n = n * 2 in let f m = g m + g (m + 1) + h ( h m ) in (if True then f 2 else Null)) = 26", Reduce (Ok finalExpression), Ok(Literal(Int 26)), "(let h p = p^2 in let g n = n * 2 in let f m = g m + g (m + 1) + h ( h m ) in (if True then f 2 else Null)) = 26");
+    ("fuction with multiple arguments : (let f x y = x + y in f 3 8) =11", Reduce (Ok lambdaAddition2), Ok (Literal (Int 11)),"(let f x y = x + y in f 3 8) =11" )]
 
 let makeMyTests (x,y,z,name) = 
     test x {Expect.equal y z name}
