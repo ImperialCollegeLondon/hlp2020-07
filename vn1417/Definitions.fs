@@ -150,11 +150,8 @@ let keywordEndMatch =
         ['h'],false
     ]
     
-let keywordEndCase = 
+let keywordCase = 
     [
-        ['e'],false
-        ['n'],false
-        ['d'],false
         ['c'],false
         ['a'],false
         ['s'],false
@@ -187,9 +184,8 @@ let mdict: Rule list = [
              newlineLit
              keywordMatch
              keywordEndMatch
-             keywordEndCase
+             keywordCase
              keywordColon
              ]
-
 
 
