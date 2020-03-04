@@ -228,19 +228,3 @@ let run input =
     | Error(err)-> Error(err)
     | Ok(exp)-> exec exp
 
-
-let fminus1 = FuncApp(Var ['f'], FuncApp(FuncApp(BFunc (Mat Sub), Var ['a']),Literal (Int 1L)))
-let fminus2 = FuncApp(Var ['f'], FuncApp(FuncApp(BFunc (Mat Sub), Var ['a']),Literal (Int 2L)))
-let recBody = FuncApp(FuncApp(BFunc (Mat Add), fminus1),fminus2)
-let eqBody1 = FuncApp(FuncApp(BFunc Equal, Var ['a']), Literal(Int 1L))
-let eqBody0 = FuncApp(FuncApp(BFunc Equal, Var ['a']), Literal(Int 0L))
-let ifelseBody13 = FuncApp(FuncApp(eqBody0,Lazy(Literal(Int 0L))),Lazy(FuncApp(FuncApp(eqBody1,Lazy(Literal(Int 1L))),Lazy(recBody)))) 
-let test13 = 
-    FuncDefExp{
-        Name = ['f'];
-        Body = Lambda{InputVar = ['f']; Body = Lambda {InputVar = ['a']; Body = ifelseBody13}};
-        Expression = FuncApp(FuncApp(Var ['f'],Lazy(FuncApp(Y,Var['f']))),Literal(Int 92L))}
-
-let result13 = exec test13
-
-let fib92 = 7540113804746346429L
