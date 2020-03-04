@@ -121,7 +121,6 @@ let rec execImplode lst =
         | Error err -> Error err
     | _ -> sprintf "Run-time error: %A is not a valid list to implode" lst |> Error
 
-
 let rec execExplode (str) =
     match str with
     | (Literal (String [])) -> Ok Null
@@ -210,3 +209,7 @@ and evalIfLazy2ARG func arg1 arg2 : Result<AST,string> =
     | Ok res1, Ok res2 -> func res1 res2
     | Error err, _ | _, Error err -> Error err
 
+let run input =
+    match input with 
+    | Error(err)-> Error(err)
+    | Ok(exp)-> exec exp
