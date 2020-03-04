@@ -10,13 +10,12 @@ type MathType =
    | Mod
 
 type BuiltInType = 
-    | Math of MathType
+    | Mat of MathType
     | Explode | Implode 
     | PFst | PSnd | IsPair | P
     | Equal
-    | True | False | IfThenElse
+    | True | False
     | BS | BK | BI
-    | Y
 
 type AST = 
     | FuncDefExp of FuncDefExpType
@@ -41,7 +40,7 @@ and LambdaType = {
 
 and LitType = 
     | Int of int 
-    | String of string
+    | String of char list
 
 //BRACKET ABSTRACTION
 let rec BracketAbstract (lambda : Result<AST,string>) : Result<AST,string> =
@@ -105,21 +104,21 @@ let rec reducCombinator (E:Result<AST,string>) : Result<AST,string> = // Reducti
     | Ok (Literal _) | Ok (Var _) | Ok (BFunc _) | Ok Null -> E
     | _ -> sprintf "RUN-TIME ERROR : EXPECTED AN AST FOR THE COMBINATOR REDUCTION BUT GOT %A" E |> Error
 
-//BUILT-IN FUNCTION
-let explode (s:string) = // Built-In function Explode and Implode
-    let rec lstToASTLst strLst = 
+
+let explode (s:char list) = // Built-In function Explode and Implode
+    let rec lstToASTLst (strLst:char list) = 
         match strLst with
         | [] -> Null
-        | h :: tl -> Pair(Literal( String h), lstToASTLst tl)
-    s |> Seq.toList |> List.map Char.ToString |> lstToASTLst |> Ok
-
+        | h :: tl -> Pair(Literal( String [h]), lstToASTLst tl)
+    s |> lstToASTLst |> Ok
+    
 let rec implode (aSTLst:Result<AST,string>) =
     match aSTLst with
     | Ok (Pair(Literal( String x) , Pair(a,b))) -> 
         let y = implode (Ok (Pair(a,b)))
         match y with
         | Error r -> Error r
-        | Ok (Literal( String y')) -> Ok <| Literal( String (x+y'))
+        | Ok (Literal( String y')) -> Ok <| Literal( String (List.append x y'))
         | _ -> sprintf "RUN-TIME ERROR : EXPECTED A STRING BUT USED %A" y |> Error
     | Ok (Pair(Literal( String a) , Null)) -> Ok <| Literal( String a)
     | _ ->  sprintf "RUN-TIME ERROR : EXPECTED A LIST BUT USED %A" aSTLst |> Error
@@ -128,11 +127,11 @@ let BuiltMathBool (func':Result<AST,string>) (a':Result<AST,string>) (b':Result<
     match func', a', b' with
     //Arithmetic
     | Error r, _, _ | _, Error r, _ | _, _, Error r -> Error r
-    | Ok (BFunc (Math Add)), Ok (Literal(Int a)), Ok (Literal(Int b)) ->  Literal(Int (a+b)) |> Ok // a+b
-    | Ok (BFunc (Math Sub)), Ok (Literal(Int a)), Ok (Literal(Int b)) ->  Literal(Int (a-b)) |> Ok // a-b
-    | Ok (BFunc (Math Mult)), Ok (Literal(Int a)), Ok (Literal(Int b)) -> Literal(Int (a*b)) |> Ok // a*b
-    | Ok (BFunc (Math Div)), Ok (Literal(Int a)), Ok (Literal(Int b)) ->  Literal(Int (a/b)) |> Ok // a/b
-    | Ok (BFunc (Math Mod)), Ok (Literal(Int a)), Ok (Literal(Int b)) -> Literal(Int (((a%b)+b)%b)) |> Ok // a mod b
+    | Ok (BFunc (Mat Add)), Ok (Literal(Int a)), Ok (Literal(Int b)) ->  Literal(Int (a+b)) |> Ok // a+b
+    | Ok (BFunc (Mat Sub)), Ok (Literal(Int a)), Ok (Literal(Int b)) ->  Literal(Int (a-b)) |> Ok // a-b
+    | Ok (BFunc (Mat Mult)), Ok (Literal(Int a)), Ok (Literal(Int b)) -> Literal(Int (a*b)) |> Ok // a*b
+    | Ok (BFunc (Mat Div)), Ok (Literal(Int a)), Ok (Literal(Int b)) ->  Literal(Int (a/b)) |> Ok // a/b
+    | Ok (BFunc (Mat Mod)), Ok (Literal(Int a)), Ok (Literal(Int b)) -> Literal(Int (((a%b)+b)%b)) |> Ok // a mod b
     //Equal
     | Ok (BFunc Equal), a, b -> 
         if a = b then Ok (BFunc True) else Ok (BFunc False)
@@ -150,18 +149,10 @@ let BuiltPair (op:BuiltInType) (x':Result<AST,string>) : Result<AST,string> = //
     | Implode, Ok x -> implode (Ok x)
     | _ -> sprintf "RUN-TIME ERROR : EXPECTED A BuiltInFunction and used %A, or EXPECTED A Pair/List and used %A " op x' |> Error
 
-// REDUCTION PHASE
 let rec eval (x:Result<AST,string>) : Result<AST,string> = 
     let reduceSKI = reducCombinator x
     match reduceSKI with
     | Error r -> Error r
-    | Ok (FuncApp( FuncApp( FuncApp( BFunc IfThenElse, a), b), c)) -> 
-        let evalA = a |> Ok |> eval
-        match evalA with
-        | Error r -> Error r
-        | Ok (BFunc True) -> b |> Ok |> eval
-        | Ok (BFunc False) -> c |> Ok |> eval
-        | _ -> sprintf "RUN-TIME ERROR : A BOOLEAN WAS EXPECTED BUT USED %A " evalA |> Error
     | Ok (FuncApp( FuncApp( BFunc P, a), b)) -> Pair (a,b) |> Ok
     | Ok (FuncApp( BFunc op, x)) -> 
         let x' = x |> Ok |> eval
@@ -174,7 +165,7 @@ let rec eval (x:Result<AST,string>) : Result<AST,string> =
     | Ok (Literal _ ) | Ok (Pair(_,_)) | Ok Null | Ok (BFunc _) -> reduceSKI
     | _ -> sprintf "RUN-TIME ERROR : EXPECTED SKI AST BUT USED %A" reduceSKI |> Error
     
-let Reduce (y:AST) : Result<AST,string> =
+let Reduce (y:Result<AST,string>) : Result<AST,string> =
     let rec reduceFuncTree (x:Result<AST,string>) : Result<AST,string> =
         match x with
         | Error _ -> x
@@ -193,5 +184,5 @@ let Reduce (y:AST) : Result<AST,string> =
         | Ok (FuncApp(E1,E2)) -> Ok (FuncApp(E1,E2))
         | Ok (Literal _ ) | Ok (Pair(_)) | Ok Null | Ok (BFunc _) -> x
         | _ -> sprintf "RUN-TIME ERROR : EXPECTED A RESULT<AST,STRING> BUT GOT %A"  x |> Error
-    y |> Ok |> reduceFuncTree |> eval
+    y |> reduceFuncTree |> eval
 
