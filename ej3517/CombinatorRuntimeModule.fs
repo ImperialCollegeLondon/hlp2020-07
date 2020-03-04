@@ -26,6 +26,9 @@ type AST =
     | Literal of LitType
     | BFunc of BuiltInType
     | Null
+    | Bracket of AST
+    | Y
+    | Lazy of AST
 
 and FuncDefExpType = {
     Name: char list
@@ -76,6 +79,7 @@ let rec Abstract (E:Result<AST,string>) : Result<AST,string> =
         match aE1', aE2' with
         | Error r, _ | _, Error r -> Error r
         | Ok E1, Ok E2 -> Ok <| Pair(E1, E2)
+    | Ok (Lazy x) -> x |> Ok |> Abstract // Extension
     | Ok (Literal _)| Ok (BFunc _) | Ok Null | Ok (Var _) -> E
     | _ -> sprintf "RUN-TIME ERROR : EXPECTED AN AST FOR THE BRACKET ABSTRACTION BUT GOT %A" E |> Error
 
@@ -101,6 +105,7 @@ let rec reducCombinator (E:Result<AST,string>) : Result<AST,string> = // Reducti
         match reducE1, reducE2 with
         | Error r, _ | _, Error r -> Error r
         | Ok reducE1', Ok reducE2' -> Pair (reducE1',reducE2') |> Ok
+    | Ok (Lazy x) -> x |> Ok |> reducCombinator //Extension
     | Ok (Literal _) | Ok (Var _) | Ok (BFunc _) | Ok Null -> E
     | _ -> sprintf "RUN-TIME ERROR : EXPECTED AN AST FOR THE COMBINATOR REDUCTION BUT GOT %A" E |> Error
 
@@ -162,6 +167,7 @@ let rec eval (x:Result<AST,string>) : Result<AST,string> =
         let b' = b |> Ok |> eval
         let func' = func |> Ok |> eval
         BuiltMathBool func' a' b'
+    | Ok (Lazy x) -> x |> Ok |> eval // Extension
     | Ok (Literal _ ) | Ok (Pair(_,_)) | Ok Null | Ok (BFunc _) -> reduceSKI
     | _ -> sprintf "RUN-TIME ERROR : EXPECTED SKI AST BUT USED %A" reduceSKI |> Error
     
@@ -182,6 +188,7 @@ let Reduce (y:Result<AST,string>) : Result<AST,string> =
         | Ok (Lambda{InputVar = x; Body = E1}) ->
             (Lambda{InputVar = x; Body = E1}) |> Ok |> Abstract
         | Ok (FuncApp(E1,E2)) -> Ok (FuncApp(E1,E2))
+        | Ok (Lazy x ) -> x |> Ok |> reduceFuncTree //Extension
         | Ok (Literal _ ) | Ok (Pair(_)) | Ok Null | Ok (BFunc _) -> x
         | _ -> sprintf "RUN-TIME ERROR : EXPECTED A RESULT<AST,STRING> BUT GOT %A"  x |> Error
     y |> reduceFuncTree |> eval
