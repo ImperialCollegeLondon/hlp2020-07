@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="lambdas.fs" />
+    <Compile Include="reWriteAST.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
