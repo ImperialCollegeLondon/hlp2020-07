@@ -19,17 +19,13 @@ let lambdaEvaluate inp =
     |> tokenize_parse
     |> run
 
-let combinatorEvaluate inp = 
-    let inter = inp |> tokenize_parse
-    match inter with 
-    | Ok ast -> Reduce ast
-    | _ -> failwithf "lool"
+
 
 
 [<EntryPoint>]  
 let main argv =
     testsWithExpecto() |> ignore
-    //print <| tokenize_parse "[ x + 1 ; y * 2 ]  "
+    print <| tokenize_parse "[ x + 1 ; y * 2 ]  "
     //print <| tokenize "match x case y case z case endmatch"
     //print <| lambdaEvaluate "[ 1 ; 2 ; 3 ; 4 ; 5]"
     //print <| lambdaEvaluate "[]"
