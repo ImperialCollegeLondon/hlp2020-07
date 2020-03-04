@@ -96,12 +96,11 @@ let tokenize (mstring:string) : Token list =
             | 19 -> Newline
             | 20 -> Keyword "match"
             | 21 -> Keyword "endmatch"
-            | 22 -> Keyword "endcase"
+            | 22 -> Keyword "case"
             | 23 -> if xString = "" then NoInput else Keyword  ";"
             | _ -> Unexpected xString
                 
     mstring
     |> combinedLexers
     |> List.map flattener
-    //|> List.filter (fun x -> x <> SpaceLit)
-
+    //|> List.filter (fun x -> x <> SpaceLit && x <> Newline)
