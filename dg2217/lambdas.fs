@@ -14,16 +14,18 @@ type BuiltInType =
     | IfThenElse  
 
 type AST = 
-    | Y 
-    | Lazy of AST
-    | FuncDefExp of FuncDefExpType//:char list*AST*AST 
+    | FuncDefExp of FuncDefExpType 
+    | MatchDef of MatchDefType
     | Lambda of LambdaType
-    | Var of char list 
-    | Funcapp of AST*AST
+    | Var of char list //only valid in lambdas 
+    | FuncApp of AST*AST
     | Pair of AST*AST 
     | Null 
     | Literal of LitType 
-    | BuiltInFunc of BuiltInType
+    | BFunc of BuiltInType
+    | Bracket of AST
+    | Y
+    | Lazy of AST
 
 and LambdaType = {
     InputVar: char list
@@ -34,6 +36,11 @@ and FuncDefExpType = {
     Name: char list;
     Body: AST
     Expression: AST
+}
+
+and MatchDefType = {
+    Condition: AST
+    Cases: AST list
 }
 
 and LitType = 
@@ -47,15 +54,15 @@ let falseAST = Lambda {InputVar = ['x']; Body = Lambda {InputVar = ['y']; Body =
 
 let (|TWOARGFUN|_|) exp = 
     match exp with
-    | Funcapp(Funcapp(func,x),y) -> Some (func, x, y)
+    | FuncApp(FuncApp(func,x),y) -> Some (func, x, y)
     | _ -> None
 
 let (|ONEARGFUN|_|) exp =
     match exp with
-    | Funcapp(func,x) -> Some (func, x)
+    | FuncApp(func,x) -> Some (func, x)
     | _ -> None 
 
-let func_Def_Exp_to_Lambda fde = Funcapp(Lambda{InputVar = fde.Name; Body = fde.Expression},fde.Body)
+let func_Def_Exp_to_Lambda fde = FuncApp(Lambda{InputVar = fde.Name; Body = fde.Expression},fde.Body)
 
 let rec findValue (env:EnvironmentType) name=
     match env with
@@ -121,51 +128,51 @@ let rec execExplode (str) =
     | (Literal (String (hd::tl))) -> (Pair(Literal(String([hd])), Literal(String tl))) |> execExplode 
     | _ -> sprintf "Run-time error: %A is not a valid string to explode" str |> Error 
 
-/////////EXEC THIS IS THE MAIN RUNTIME BODY
+/////////EXEC IS THE MAIN RUNTIME BODY
 let rec exec (exp : AST) : Result<AST,string> =
     match exp with 
     | FuncDefExp(fde) -> fde |> func_Def_Exp_to_Lambda |> exec
     | Lazy(e) -> exec e
-    | Funcapp (func,Lazy(arg)) -> 
+    | FuncApp (func,Lazy(arg)) -> 
         match exec func with 
-        | Ok executedFunc -> Funcapp(executedFunc,Lazy(arg))  |> applyFunc
+        | Ok executedFunc -> FuncApp(executedFunc,Lazy(arg))  |> applyFunc
         | Error err -> Error err
-    | Funcapp(func,arg) -> 
+    | FuncApp(func,arg) -> 
         match exec func with 
         | Ok executedFunc -> 
             match exec arg with 
-            | Ok executedArg -> Funcapp(executedFunc,executedArg) |> applyFunc
+            | Ok executedArg -> FuncApp(executedFunc,executedArg) |> applyFunc
             | Error err -> Error err
         | Error err -> Error err
     | Pair(a,b)-> evalPair (Pair(a,b))
-    | Literal _ | BuiltInFunc _ | Null | Y | Var _ | Lambda _ -> exp |> Ok 
+    | Literal _ | BFunc _ | Null | Y | Var _ | Lambda _ -> exp |> Ok 
 
 and applyFunc (exp:AST):Result<AST,string> = 
     match exp with
-    | ONEARGFUN(Y,f) -> exec (Funcapp(f,Lazy(Funcapp(Y,f))))
+    | ONEARGFUN(Y,f) -> exec (FuncApp(f,Lazy(FuncApp(Y,f))))
     | ONEARGFUN(Lambda l,arg) ->
         match lookUp [(l.InputVar, arg)] l.Body with 
         | Ok(ast) -> exec ast
         | Error(e)-> Error(e)
-    | TWOARGFUN (BuiltInFunc(P),arg1,arg2) -> evalPair (Pair(arg1,arg2))
-    | TWOARGFUN (BuiltInFunc(Equal),arg1,arg2) -> evalIfLazy2ARG execEqual arg1 arg2 
-    | TWOARGFUN (BuiltInFunc(Mat op), arg1, arg2) -> evalIfLazy2ARG (execMath op) arg1 arg2 
-    | ONEARGFUN (BuiltInFunc(PFst),arg) -> evalIfLazy execPFst arg
-    | ONEARGFUN (BuiltInFunc(PSnd),arg) ->  evalIfLazy execPSnd arg
-    | ONEARGFUN (BuiltInFunc(IsPair),arg) -> evalIfLazy execIsPair arg 
-    | ONEARGFUN (BuiltInFunc(Implode),arg) -> evalIfLazy execImplode arg
-    | ONEARGFUN (BuiltInFunc(Explode),arg) -> evalIfLazy execExplode arg    
+    | TWOARGFUN (BFunc(P),arg1,arg2) -> evalPair (Pair(arg1,arg2))
+    | TWOARGFUN (BFunc(Equal),arg1,arg2) -> evalIfLazy2ARG execEqual arg1 arg2 
+    | TWOARGFUN (BFunc(Mat op), arg1, arg2) -> evalIfLazy2ARG (execMath op) arg1 arg2 
+    | ONEARGFUN (BFunc(PFst),arg) -> evalIfLazy execPFst arg
+    | ONEARGFUN (BFunc(PSnd),arg) ->  evalIfLazy execPSnd arg
+    | ONEARGFUN (BFunc(IsPair),arg) -> evalIfLazy execIsPair arg 
+    | ONEARGFUN (BFunc(Implode),arg) -> evalIfLazy execImplode arg
+    | ONEARGFUN (BFunc(Explode),arg) -> evalIfLazy execExplode arg    
     | ONEARGFUN ((Literal(_)|Pair(_)|Null), _) -> sprintf "Run time error: %A is not a valid function application" (exp) |> Error
-    | ONEARGFUN (BuiltInFunc _, _) -> exp |> Ok //this is to deal with double argument builtIn functions
+    | ONEARGFUN (BFunc _, _) -> exp |> Ok //this is to deal with double argument builtIn functions
     | _ -> Error("SHOULD NEVER HAPPEN")
 
 and lookUp (env:EnvironmentType) exp = 
     match exp with
     | Var name -> findValue env name    
     | FuncDefExp fde -> fde |> func_Def_Exp_to_Lambda |> lookUp env
-    | Funcapp(func,arg) -> 
+    | FuncApp(func,arg) -> 
         match (lookUp env func,lookUp env arg) with
-        | (Ok lookedFunc, Ok lookedArg) -> Funcapp(lookedFunc, lookedArg) |> Ok
+        | (Ok lookedFunc, Ok lookedArg) -> FuncApp(lookedFunc, lookedArg) |> Ok
         | (Error err, _) | (_,Error err) -> Error err
     | Lazy(e) -> 
         match (lookUp env e) with 
@@ -180,7 +187,7 @@ and lookUp (env:EnvironmentType) exp =
         match lookUp updatedEnv l.Body with 
         | Ok updatedBody -> Ok (Lambda {InputVar = l.InputVar; Body = updatedBody})
         | Error err -> Error err
-    | Literal _ | BuiltInFunc _ | Null | Y -> Ok exp
+    | Literal _ | BFunc _ | Null | Y -> Ok exp
 
 and evalPair exp =
     match exp with 
@@ -202,3 +209,4 @@ and evalIfLazy2ARG func arg1 arg2 : Result<AST,string> =
     match (exec arg1, exec arg2) with 
     | Ok res1, Ok res2 -> func res1 res2
     | Error err, _ | _, Error err -> Error err
+
