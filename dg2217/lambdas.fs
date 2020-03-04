@@ -141,16 +141,16 @@ let memoise fn =
 let rec exec (exp : AST) : Result<AST,string> =
     match exp with 
     | FuncDefExp(fde) -> fde |> func_Def_Exp_to_Lambda |> exec
-    | Lazy(e) -> exec e
+    | Lazy(lazyExp) -> exec lazyExp
     | FuncApp(func, arg) -> memoise execFunc (FuncApp(func,arg))
     | Pair(a,b)-> evalPair (Pair(a,b))
     | Literal _ | BFunc _ | Null | Y | Var _ | Lambda _ -> exp |> Ok 
 
 and execFunc (FuncApp(func,arg):AST) : Result<AST,string>  = 
     match arg with 
-    | Lazy(a) -> 
+    | Lazy(lazyArg) -> 
         match exec func with 
-        | Ok executedFunc -> FuncApp(executedFunc,Lazy(a))  |> applyBasicFunc
+        | Ok executedFunc -> FuncApp(executedFunc,Lazy(lazyArg))  |> applyBasicFunc
         | Error err -> Error err
     | _ -> 
         match exec func with 
