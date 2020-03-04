@@ -64,7 +64,7 @@ let test13 =
         Body = Lambda{InputVar = ['f']; Body = Lambda {InputVar = ['a']; Body = ifelseBody13}};
         Expression = FuncApp(FuncApp(Var ['f'],Lazy(FuncApp(Y,Var['f']))),Literal(Int 25L))} 
 //fibonacci
-//let rec f a = if a = 0 then 0 else if a = 1 then 1 else f(a-1) + f(a-2) in f 25
+//let rec f a = if a = 0 then 0 else if a = 1 then 1 else f(a-1) + f(a-2) in f 92
 let tailBody14 = FuncApp(Var ['f'], FuncApp(BFunc (PSnd), Var ['p']))
 let headBody14 = FuncApp(FuncApp(BFunc (Mat Mult),FuncApp(BFunc PFst,(Var['p']))),Literal (Int 2L))
 let elseBody14 = FuncApp(FuncApp(BFunc P, Lazy(headBody14)),Lazy(tailBody14))

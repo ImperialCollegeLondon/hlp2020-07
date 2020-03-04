@@ -187,6 +187,3 @@ let mdict: Rule list = [
              keywordCase
              keywordColon
              ]
-
-
-

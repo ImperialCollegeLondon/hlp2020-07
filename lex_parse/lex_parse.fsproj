@@ -7,8 +7,10 @@
 
   <ItemGroup>
     <Compile Include="Definitions.fs" />
-    <Compile Include="ParserModule.fs" />
     <Compile Include="TokenModule.fs" />
+    <Compile Include="ParserModule.fs" />
+    <Compile Include="CombinatorRuntimeModule.fs" />
+    <Compile Include="lambdas.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

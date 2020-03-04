@@ -104,4 +104,3 @@ let tokenize (mstring:string) : Token list =
     |> combinedLexers
     |> List.map flattener
     |> List.filter (fun x -> x <> SpaceLit && x <> Newline)
-

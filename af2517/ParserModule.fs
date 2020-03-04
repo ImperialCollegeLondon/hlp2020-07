@@ -29,7 +29,7 @@ type MathType =
    | Mod
 
 type BuiltInType = 
-    | Math of MathType
+    | Mat of MathType
     | Equal //works for strings ints and nulls 
     | Explode 
     | Implode 
@@ -38,6 +38,7 @@ type BuiltInType =
     | PSnd
     | IsPair
     | IfThenElse  
+    | BS | BK | BI
 
 
 type AST = 
@@ -72,7 +73,7 @@ and MatchDefType = {
 
 and LitType = 
     | Int of int 
-    | String of string
+    | String of char list
 
 
     //fst res,snd res
@@ -160,7 +161,7 @@ let (|PMATCH|_|) (tok: Token) (tokLst: Result<Token list, Token list>) =
 
 
 
-let builtInFuncMap = ["mod", BFunc(Math Mod);"equals", BFunc Equal;"explode", BFunc Explode;"implode", BFunc Implode;"pair", BFunc P;"fst", BFunc PFst ;"snd", BFunc PSnd;"ispair", BFunc IsPair] |> Map.ofList
+let builtInFuncMap = ["mod", BFunc(Mat Mod);"equals", BFunc Equal;"explode", BFunc Explode;"implode", BFunc Implode;"pair", BFunc P;"fst", BFunc PFst ;"snd", BFunc PSnd;"ispair", BFunc IsPair] |> Map.ofList
 
 let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,string>*Result<Token list, Token list>,string>) option =
     match tokLst with
@@ -184,7 +185,13 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,
          | (Ok ast, Ok []),(Ok ast', Ok []),(Ok ast'', Ok []) -> Ok (Ok(Bracket(FuncApp(FuncApp(ast, Lazy (ast')), Lazy (ast'')))), inp')
          | _ -> Error "Couldn't parse one of the expressions in this if statement"
 
-    | PMATCH (OpenSquareBracket) (inp') -> buildList tokLst
+    | PMATCH (OpenSquareBracket) (PBUILDLIST (Ok (ast, PMATCH (CloseSquareBracket) (inp')))) -> Ok (Ok ast, inp')
+
+    | PMATCH (OpenSquareBracket) (PBUILDLIST (result)) ->
+        match result with
+        | Ok (ast, PMATCH (CloseSquareBracket) (inp')) -> Ok (Ok ast, inp')
+        | Error msg -> Error msg
+
 
     | PMATCH (Keyword "match") (PBUILDMATCHCASES(astList, PMATCH (Keyword "endmatch") (inp')))  ->
         //print ast
@@ -205,7 +212,7 @@ and (|PNOTEXPITEM|_|) tokLst =
     | Ok (Other s :: rest) -> Some( Ok (Ok(Var(Seq.toList s)), Ok rest))
     | Ok (Other "Null" :: rest) -> Some( Ok (Ok Null, Ok rest))
     | Ok (IntegerLit s:: rest) ->Some( Ok (Ok(Literal (Int s)) ,Ok rest))
-    | Ok (StringLit s::rest) ->Some( Ok (Ok(Literal (String s)), Ok rest))
+    | Ok (StringLit s::rest) ->Some( Ok (Ok(Literal (String (Seq.toList s))), Ok rest))
     | _ -> None
 
 and endKeyWordsList = [CloseRoundBracket; CloseSquareBracket; Keyword "then"; Keyword "else"; Keyword "fi"; Keyword ";"]
@@ -253,12 +260,19 @@ and buildMultExp (acc:Token list) (inp: Result<Token list, Token list>) :(Result
             buildMultExp   (acc'') inp'
         | Error msg -> (Error msg, inp)
 
+    | Ok (hd::tl) when hd = Keyword ";" ->
+        match Ok tl with 
+        | (PTAKEINSIDETOKENS (OpenSquareBracket) (CloseSquareBracket) (Ok(acc', inp'))) ->
+            let acc'' = (acc@[Keyword ";"] @acc')
+            buildMultExp (acc'') inp'
+        | _ -> (Error "Input list is not valid", inp)
+
     | Ok (hd::tl) when hd = MultToken -> 
         let appResult = buildAppExp (Ok acc)
         let multResult = buildMultExp  [] (Ok tl)
         match appResult,multResult with 
         | ((Ok appAST, _),(Ok multAST, rest)) -> 
-            (Ok (FuncApp(FuncApp(BFunc (Math Mult), leftAssociate appAST), multAST )), rest )
+            (Ok (FuncApp(FuncApp(BFunc (Mat Mult), leftAssociate appAST), multAST )), rest )
 
         | (Error msg, rest),_ -> (Error msg, rest)
         | _,(Error msg, rest) -> (Error msg, rest)
@@ -269,7 +283,7 @@ and buildMultExp (acc:Token list) (inp: Result<Token list, Token list>) :(Result
         match appResult,multResult with 
         | ((Ok appAST, _),(Ok multAST, rest)) -> 
              let appAST' = leftAssociate appAST
-             (Ok (FuncApp(FuncApp(BFunc (Math Div), appAST'), multAST )), rest )
+             (Ok (FuncApp(FuncApp(BFunc (Mat Div), appAST'), multAST )), rest )
         | (Error msg, rest),_ -> (Error msg, rest)
         | _,(Error msg, rest) -> (Error msg, rest)
     
@@ -308,12 +322,20 @@ and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(Result<
             let acc'' = (acc@[Keyword "if"] @acc')
             buildAddExp (acc'') inp'
         | Error msg -> (Error msg, inp)
+
+    | Ok (hd::tl) when hd = Keyword ";" ->
+        match Ok tl with 
+        | (PTAKEINSIDETOKENS (OpenSquareBracket) (CloseSquareBracket) (Ok(acc', inp'))) ->
+            let acc'' = (acc@[Keyword ";"] @acc')
+            buildAddExp (acc'') inp'
+        | _ -> (Error "Input list is not valid", inp)
+        
     
     | Ok (hd::tl) when hd = AddToken -> 
         let multResult =  buildMultExp [] (Ok acc) 
         let addResult = buildAddExp [] (Ok tl)
         match multResult,addResult with 
-        | ((Ok multAST, _),(Ok addAST, rest)) -> (Ok (FuncApp(FuncApp(BFunc (Math Add), multAST), addAST )), rest )
+        | ((Ok multAST, _),(Ok addAST, rest)) -> (Ok (FuncApp(FuncApp(BFunc (Mat Add), multAST), addAST )), rest )
         | (Error msg, rest),_ -> (Error msg, rest)
         | _,(Error msg, rest) -> (Error msg, rest)
     
@@ -321,7 +343,7 @@ and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(Result<
         let multResult =  buildMultExp [] (Ok acc) 
         let addResult = buildAddExp [] (Ok tl)
         match multResult,addResult with 
-        | ((Ok multAST, _),(Ok addAST, rest)) -> (Ok (FuncApp(FuncApp(BFunc (Math Sub), multAST), addAST )), rest )
+        | ((Ok multAST, _),(Ok addAST, rest)) -> (Ok (FuncApp(FuncApp(BFunc (Mat Sub), multAST), addAST )), rest )
         | (Error msg, rest),_ -> (Error msg, rest)
         | _,(Error msg, rest) -> (Error msg, rest)
     
@@ -402,7 +424,7 @@ and parse (inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token
         
     | _ -> 
         buildAddExp [] inp
- 
+ and (|PPARSE|_|) inp = Some(parse inp)
 
 and parsedOutput inp = 
     let res = parse inp
@@ -411,43 +433,18 @@ and parsedOutput inp =
     | (Ok _, rest) -> (Error "Ilegal expression at the end", rest )
     | (Error msg, rest) -> (Error msg,  rest)
 
-and buildList inp :(Result<Result<AST,string>*Result<Token list, Token list>,string>) = 
-    match inp with
-    | PMATCH (OpenSquareBracket) (PMATCH (CloseSquareBracket) (inp')) -> Ok (Ok (Pair(Null, Null)), inp')
-    | PMATCH (OpenSquareBracket) (PTAKEINSIDETOKENS (OpenSquareBracket) (Keyword ";") ( Ok (acc, inp'))) ->
-        let res = parse (Ok acc)
-        let res' = buildList inp'
-        match res, res' with 
-        | (Ok ast, lst),Ok(Ok ast', lst') -> Ok (Ok (Pair (ast, ast')), lst')
-        | (Error msg, lst), _ -> Error msg
-        | _,Error msg -> Error msg
-        | _ -> failwithf "What? Shouldn't happen"
-    
-    | PMATCH (Keyword ";") (PTAKEINSIDETOKENS (Keyword ";") (Keyword ";") (Ok (acc, inp'))) ->
-        let res = parse (Ok acc)
-        let res' = buildList inp'
-        match res, res' with 
-        | (Ok ast, lst),Ok(Ok ast', lst') -> Ok(Ok (Pair (ast, ast')), lst')
-        | (Error msg, lst), _ -> Error msg
-        | _,Error msg ->Error msg
-        | _ -> failwithf "What? Shouldn't happen"
 
-
-    | PMATCH (Keyword ";") (PTAKEINSIDETOKENS (Keyword ";") (CloseSquareBracket) (Ok (acc, inp'))) ->
-        let res = parse (Ok acc)
-        match res,inp' with 
-        | (Ok ast, inp''),Ok(hd::tl) -> Ok (Ok ast, Ok tl)
-        | (Error msg, lst),_ ->Error msg
-        | _ -> failwithf "What? Shouldn't happen"
-
-    | PMATCH (OpenSquareBracket) (PTAKEINSIDETOKENS (OpenSquareBracket) (CloseSquareBracket) (Ok (acc, inp'))) ->
-        let res = parse (Ok acc)
-        match res, inp' with 
-        | (Ok ast, inp''),Ok(hd::tl) -> Ok (Ok(Pair (ast, Null )), Ok tl)
-        | (Error msg, lst),_ ->Error msg
-        | _ ->  failwithf "What? Can't happen"
-
-    | _ -> Error (sprintf "List is not valid")
+and (|PBUILDLIST|_|) inp = 
+    match inp with 
+    | Ok (hd::tl) when hd = CloseSquareBracket -> Ok (Null, Ok (hd::tl))
+    | PPARSE (Ok ast, Ok (hd::tl)) -> 
+        match hd,(Ok tl) with
+        //| Keyword ";", (PPARSE (Ok (ast', lst') ) ) ->
+        | Keyword ";", (PBUILDLIST (Ok (ast', lst')))-> Ok (Pair (ast, ast'), lst')
+        | CloseSquareBracket, _ -> Ok (Pair (ast, Null), Ok (hd::tl))
+        | _ -> Error "Input list is not valid"
+    | _ -> Error "Input list is not valid"
+    |> Some
 
 
 let makeTests (name, instr, outI) =
@@ -461,20 +458,52 @@ let testListWithExpecto =
     [
         "first test",(Ok [Other "x"; Other "y"]),(Ok(FuncApp(Var ['x'], Var ['y'])))
         "second test",(Ok [Keyword "if"; Other "x";  IntegerLit 1; Keyword "then"; Other "y"; IntegerLit 1; Keyword "else"; Other "z"; IntegerLit 1; Keyword "fi"]) ,(Ok(FuncApp(FuncApp(FuncApp (Var ['x'],Literal (Int 1)),Lazy (FuncApp (Var ['y'],Literal (Int 1)))),Lazy (FuncApp (Var ['z'],Literal (Int 1))))))
-        "third test", (Ok [Let; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2; Other "in"; Other "x"; IntegerLit 5]), (Ok(FuncDefExp{ Name = ['x'];Body = FuncApp (FuncApp (BFunc (Math Mult),Var ['x']),Literal (Int 2));Expression = FuncApp (Var ['x'],Literal (Int 5)) }))   
-        "fourth test", (Ok [OpenSquareBracket; CloseSquareBracket; Other "x"; Other"y"]), (Ok (FuncApp (FuncApp (Pair (Null,Null),Var ['x']),Var ['y'])))
+        "third test", (Ok [Let; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2; Other "in"; Other "x"; IntegerLit 5]), (Ok(FuncDefExp{ Name = ['x'];Body = FuncApp (FuncApp (BFunc (Mat Mult),Var ['x']),Literal (Int 2));Expression = FuncApp (Var ['x'],Literal (Int 5)) }))   
+        "fourth test", (Ok [OpenSquareBracket; CloseSquareBracket; Other "x"; Other"y"]), Ok (FuncApp (FuncApp (Null,Var ['x']),Var ['y']))
         "fifth test", (Ok [Let; Other "f"; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2]), (Error "This function definition is never used")
-        "sixth test", (Ok [Let; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2; Other "in"; Other "x"; IntegerLit 5]), (Ok(FuncDefExp{ Name = ['x'];Body = FuncApp (FuncApp (BFunc (Math Mult),Var ['x']),Literal (Int 2));Expression = FuncApp (Var ['x'],Literal (Int 5)) }))
-        "seventh test", (Ok [OpenRoundBracket; Keyword "fun"; Other "x"; EqualToken; Other "x"; AddToken; IntegerLit 1; CloseRoundBracket]), (Ok(Lambda{ InputVar = ['x'];Body = FuncApp (FuncApp (BFunc (Math Add),Var ['x']),Literal (Int 1)) }))
+        "sixth test", (Ok [Let; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2; Other "in"; Other "x"; IntegerLit 5]), (Ok(FuncDefExp{ Name = ['x'];Body = FuncApp (FuncApp (BFunc (Mat Mult),Var ['x']),Literal (Int 2));Expression = FuncApp (Var ['x'],Literal (Int 5)) }))
+        "seventh test", (Ok [OpenRoundBracket; Keyword "fun"; Other "x"; EqualToken; Other "x"; AddToken; IntegerLit 1; CloseRoundBracket]), (Ok(Lambda{ InputVar = ['x'];Body = FuncApp (FuncApp (BFunc (Mat Add),Var ['x']),Literal (Int 1)) }))
         "eigth test", (Ok [Other "f"; OpenRoundBracket; Other "x"; Other "y";Other "z"; CloseRoundBracket]), Ok (FuncApp (Var ['f'],FuncApp (FuncApp (Var ['x'],Var ['y']),Var ['z'])))
         "ninth test", Ok [Other "f"; OpenRoundBracket; Other "a"; OpenRoundBracket; Other "f"; Other "d"; CloseRoundBracket; CloseRoundBracket], Ok (FuncApp (Var ['f'],FuncApp (Var ['a'],FuncApp (Var ['f'],Var ['d']))))
-        "tenth test", Ok [OpenSquareBracket; OpenSquareBracket; Other "x"; CloseSquareBracket], Error "List is not valid"
+        "tenth test", Ok [OpenSquareBracket; OpenSquareBracket; Other "x"; CloseSquareBracket], Error "Input list is not valid"
         "eleventh test", Ok([Let; Other "f"; Other "x"; Other"y"; EqualToken; Other "x"; Other "in"; Other "f"; IntegerLit 3; IntegerLit 4]), Ok(FuncDefExp{ Name = ['f'];Body = Lambda { InputVar = ['x'];Body = Lambda { InputVar = ['y'];Body = Var ['x'] } };Expression =FuncApp(FuncApp (Var ['f'],Literal (Int 3)),Literal (Int 4)) })
-        "test 12", Ok [OpenSquareBracket; Other "x";  IntegerLit 1; Keyword ";"; Other "y"; IntegerLit 2; Keyword ";"; Other "z"; IntegerLit 3; CloseSquareBracket ], Ok(Pair(FuncApp (Var ['x'],Literal (Int 1)),Pair(FuncApp (Var ['y'],Literal (Int 2)),FuncApp (Var ['z'],Literal (Int 3)))))
-        "test 13", Ok [OpenSquareBracket; Other "x"; AddToken; IntegerLit 1; Keyword ";"; Other "y"; MultToken; IntegerLit 2; CloseSquareBracket ], (Ok(Pair(FuncApp (FuncApp (BFunc (Math Add),Var ['x']),Literal (Int 1)),FuncApp (FuncApp (BFunc (Math Mult),Var ['y']),Literal (Int 2)))))
-        "test 14", Ok [Other "f";MultToken; Other "g";MultToken; Other "h";AddToken; IntegerLit 1], Ok(FuncApp(FuncApp(BFunc (Math Add),FuncApp(FuncApp (BFunc (Math Mult),Var ['f']),FuncApp (FuncApp (BFunc (Math Mult),Var ['g']),Var ['h']))),Literal (Int 1)))
+        "test 12", Ok [OpenSquareBracket; Other "x";  IntegerLit 1; Keyword ";"; Other "y"; IntegerLit 2; Keyword ";"; Other "z"; IntegerLit 3; CloseSquareBracket ], Ok(Pair(FuncApp (Var ['x'],Literal (Int 1)),Pair(FuncApp (Var ['y'],Literal (Int 2)),Pair (FuncApp (Var ['z'],Literal (Int 3)),Null))))
+        "test 13", Ok [OpenSquareBracket; Other "x"; AddToken; IntegerLit 1; Keyword ";"; Other "y"; MultToken; IntegerLit 2; CloseSquareBracket ], Ok(Pair(FuncApp (FuncApp (BFunc (Mat Add),Var ['x']),Literal (Int 1)),Pair (FuncApp (FuncApp (BFunc (Mat Mult),Var ['y']),Literal (Int 2)),Null)))
+        "test 14", Ok [Other "f";MultToken; Other "g";MultToken; Other "h";AddToken; IntegerLit 1], Ok(FuncApp(FuncApp(BFunc (Mat Add),FuncApp(FuncApp (BFunc (Mat Mult),Var ['f']),FuncApp (FuncApp (BFunc (Mat Mult),Var ['g']),Var ['h']))),Literal (Int 1)))
         "test 15", Ok [Other"h";Keyword "if"; Other "x"; Keyword "then"; Other "y";  Keyword "else"; Other "z";  Keyword "fi"; Other"f"], Ok(FuncApp(FuncApp(Var ['h'],FuncApp (FuncApp (Var ['x'],Lazy (Var ['y'])),Lazy (Var ['z']))),Var ['f']))
-    ]
+        "test 16", Ok [Let; Other "f"; Other "x"; Other "y"; EqualToken; OpenSquareBracket; Other "x";Keyword ";"; Other "x"; MultToken; Other "x"; Keyword ";"; Other "x"; MultToken;Other "x"; MultToken; Other "x"; Keyword ";"; OpenSquareBracket; Other "x";AddToken; Other "y"; CloseSquareBracket; CloseSquareBracket; Other "in";Other "f"; IntegerLit 3; IntegerLit 7], (Ok
+        (FuncDefExp
+           { Name = ['f']
+             Body =
+                   Lambda
+                     { InputVar = ['x']
+                       Body =
+                             Lambda
+                               { InputVar = ['y']
+                                 Body =
+                                       Pair
+                                         (Var ['x'],
+                                          Pair
+                                            (FuncApp
+                                               (FuncApp (BFunc (Mat Mult),Var ['x']),
+                                                Var ['x']),
+                                             Pair
+                                               (FuncApp
+                                                  (FuncApp
+                                                     (BFunc (Mat Mult),Var ['x']),
+                                                   FuncApp
+                                                     (FuncApp
+                                                        (BFunc (Mat Mult),Var ['x']),
+                                                      Var ['x'])),
+                                                Pair
+                                                  (Pair
+                                                     (FuncApp
+                                                        (FuncApp
+                                                           (BFunc (Mat Add),Var ['x']),
+                                                         Var ['y']),Null),Null)))) } }
+             Expression =
+                         FuncApp (FuncApp (Var ['f'],Literal (Int 3)),Literal (Int 7)) }))
+    ]  
     |> List.map makeTests
     |> testList "Set of tests"
 
