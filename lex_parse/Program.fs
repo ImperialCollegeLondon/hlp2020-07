@@ -45,7 +45,7 @@ let main argv =
     CloseRoundBracket; OpenRoundBracket; Other "f"; OpenRoundBracket; Other "snd"; Other "p"; CloseRoundBracket; CloseRoundBracket;
     Keyword "fi"; Other "in"; Other "f"; OpenSquareBracket; IntegerLit 1L; Keyword ";"; IntegerLit 2L; MultToken; IntegerLit 3L; Keyword ";"; IntegerLit 3L; CloseSquareBracket])))
 
-    print <| lambdaEval "let rec f p = if equals p [] then [] else pair ((fst p)*2) (f(snd p)) fi in f [1;2*3;3]"
+    print <| lambdaEval "let rec f n = if equals n 0 then 1 else n * f (n - 1) fi in let g x = 2*x in g (f 3)"
     //print   <| parse  (Ok [Let; Other "f"; Other "x"; Other "y"; EqualToken; OpenSquareBracket; Other "x";Keyword ";"; Other "x"; MultToken; Other "x"; Keyword ";"; Other "x"; MultToken;Other "x"; MultToken; Other "x"; Keyword ";"; OpenSquareBracket; Other "x";AddToken; Other "y"; CloseSquareBracket; CloseSquareBracket; Other "in";Other "f"; IntegerLit 3L; IntegerLit 7L])
     //print <| split (Keyword "case") (tokenize "if case j h l case u case a b c case endmatch")
     //print <| split (Keyword "case") (tokenize "x case 1 case 2 case endmatch f x y")
