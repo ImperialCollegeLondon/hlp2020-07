@@ -7,7 +7,7 @@ let print x = printfn "%A" x
 
 [<EntryPoint>]
 let main argv =
-    testsWithExpecto() |> ignore
+    testsWithExpectoParser() |> ignore
 
     0 // return an integer exit code
 
