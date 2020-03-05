@@ -12,10 +12,11 @@ let tokenize_parse (x:string) =
     |> Ok
     |> parse
 
-let rec fib a = 
-    if a = 0 then 0
-    else (if a = 1 then 1 else fib (a-1) + fib (a-2))
-
+let lambdaEval inp = 
+    inp 
+    |> tokenize_parse
+    |> fst
+    |> run
 
 
 [<EntryPoint>]  
@@ -35,7 +36,7 @@ let main argv =
      Other "a"; SubToken; IntegerLit 1L; CloseRoundBracket; AddToken; Other "fib";
      OpenRoundBracket; Other "a"; SubToken; IntegerLit 2L; CloseRoundBracket; Keyword "fi";
      Keyword "fi"; Other "in"; Other "fib"; IntegerLit 9L])))
-    print <| fib 9
+    //print <| fib 9
 
     print <| run (fst (parse (Ok [Let; Other "rec"; Other "f"; Other "p"; EqualToken; Keyword "if"; Other "equals"; Other "p";
     OpenSquareBracket; CloseSquareBracket; Keyword "then";
@@ -44,7 +45,7 @@ let main argv =
     CloseRoundBracket; OpenRoundBracket; Other "f"; OpenRoundBracket; Other "snd"; Other "p"; CloseRoundBracket; CloseRoundBracket;
     Keyword "fi"; Other "in"; Other "f"; OpenSquareBracket; IntegerLit 1L; Keyword ";"; IntegerLit 2L; MultToken; IntegerLit 3L; Keyword ";"; IntegerLit 3L; CloseSquareBracket])))
 
-    print <| tokenize "let rec f p = if equals p [] then [] else pair ((fst p)*2) (f(snd p)) in f [1;2*3;3]"
+    print <| lambdaEval "let rec f p = if equals p [] then [] else pair ((fst p)*2) (f(snd p)) fi in f [1;2*3;3]"
     //print   <| parse  (Ok [Let; Other "f"; Other "x"; Other "y"; EqualToken; OpenSquareBracket; Other "x";Keyword ";"; Other "x"; MultToken; Other "x"; Keyword ";"; Other "x"; MultToken;Other "x"; MultToken; Other "x"; Keyword ";"; OpenSquareBracket; Other "x";AddToken; Other "y"; CloseSquareBracket; CloseSquareBracket; Other "in";Other "f"; IntegerLit 3L; IntegerLit 7L])
     //print <| split (Keyword "case") (tokenize "if case j h l case u case a b c case endmatch")
     //print <| split (Keyword "case") (tokenize "x case 1 case 2 case endmatch f x y")

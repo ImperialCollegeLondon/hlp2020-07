@@ -194,6 +194,7 @@ let keywordMatch =
         ['t'],false
         ['c'],false
         ['h'],false
+        [' '],true
     ]
 let keywordEndMatch =
     [
@@ -205,6 +206,7 @@ let keywordEndMatch =
         ['t'],false
         ['c'],false
         ['h'],false
+        [' '],true
     ]
     
 let keywordCase = 
@@ -213,8 +215,38 @@ let keywordCase =
         ['a'],false
         ['s'],false
         ['e'],false
+        [' '],true
     ]
-
+    
+let keywordIf = 
+    [
+        ['i'],false
+        ['f'],false
+        [' '],true
+    ]
+let keywordThen = 
+    [
+        ['t'],false
+        ['h'],false
+        ['e'],false
+        ['n'],false
+        [' '],true
+    ]
+let keywordElse = 
+    [
+        ['e'],false
+        ['l'],false
+        ['s'],false
+        ['e'],false
+        [' '],true
+    ]
+let keywordFi = 
+    [
+        ['f'],false
+        ['i'],false
+        [' '],true
+    ]
+    
 //------------------------------------------------------------
 //Dict
 //------------------------------------------------------------
@@ -242,5 +274,9 @@ let mdict: Rule list = [
              keywordMatch
              keywordEndMatch
              keywordCase
+             keywordIf
+             keywordThen
+             keywordElse
+             keywordFi
              keywordColon
              ]
