@@ -22,7 +22,7 @@ let rec findValue (env:EnvironmentType) name=
     match env with
     | (n,v)::_ when n=name -> Ok v 
     | _::tl -> findValue tl name 
-    | _ -> sprintf "Run-time error: %A is not defined" name |> Error
+    | _ -> name |> List.map string |> List.reduce (+) |> sprintf "Run-time error: %A is not defined"|> Error
 
 let execEqual x y = 
     match (x,y) with
@@ -107,7 +107,7 @@ let rec exec (exp : AST) : Result<AST,string> =
     | Var(name) -> findValue globalEnv name
     | Literal _ | BFunc _ | Null | Y | Lambda _ -> exp |> Ok 
 
-and execFunc (FuncApp(func,arg):AST) : Result<AST,string>  = 
+and execFunc (FuncApp(func,arg)) = 
     match arg with 
     | Lazy(lazyArg) -> 
         match exec func with 

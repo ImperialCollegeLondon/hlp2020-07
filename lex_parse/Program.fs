@@ -34,6 +34,7 @@ let combinatorEvaluate (inp:string) :Result<AST,string>  =
 
 [<EntryPoint>]  
 let main argv =
+    //print <| tokenize "let add1 x = x + 1 in 4"
     //testsWithExpecto() |> ignore
     //print <| tokenize_parse "[ x + 1 ; y * 2 ] "
     //print <| combinatorEvaluate "let f x y = x + y in let g x = f x x in g 8"
