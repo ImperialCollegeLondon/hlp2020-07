@@ -1,8 +1,10 @@
+open System
 open TokenModule
 open ParserModule
 open Definitions
 open Lambdas
 open CombinatorRuntimeModule
+//open CombinatorRuntimeModule
 
 let print x =
     printfn "%A" x
@@ -14,24 +16,39 @@ let tokenize_parse (x:string) =
     |> parsedOutput
     |> fst
 
-let lambdaEvaluate inp = 
+let lambdaEvaluate (inp:string) : Result<AST,string>  = 
     inp 
     |> tokenize_parse
     |> run
 
+let rec FSILike argv=
+    let input = (string (Console.ReadLine()))
+    let ninput = input.[..input.Length-1]
+    if ninput = "exit" then 0 else
+        print <| lambdaEvaluate ninput
+        FSILike argv
+   
 
-
+let combinatorEvaluate (inp:string) :Result<AST,string>  = 
+    inp 
+    |> tokenize_parse
+    |> Reduce
 
 [<EntryPoint>]  
 let main argv =
-    testsWithExpecto() |> ignore
-    print <| tokenize_parse "[ x + 1 ; y * 2 ]  "
+    //testsWithExpecto() |> ignore
+    //print <| tokenize_parse "[ x + 1 ; y * 2 ] "
+    print <| combinatorEvaluate "let f x y = x + y in let g x = f x x in g 8"
     //print <| tokenize "match x case y case z case endmatch"
-    //print <| lambdaEvaluate "[ 1 ; 2 ; 3 ; 4 ; 5]"
+    print <| combinatorEvaluate "[ 1 ; 2 ; 3 ; 4 ; 5]"
     //print <| lambdaEvaluate "[]"
     //print <| lambdaEvaluate "[[x]]"
+    //print <| lambdaEvaluate "let x = 2 in let y = 1"
+    //print <| lambdaEvaluate "let x = 10*2"
     //print <| lambdaEvaluate "let f x = [ [ x ] ; x ] in f 3"
     //print <| lambdaEvaluate "let f x = x + 1 in let g y = y + 2 in f ( g 3 )"
-    //print <| tokenize "let f x y = [x ; x * x ; x * x * x ; [ x + y ] ] in f 3 7"
-    //print <| tokenize_parse "f x"
+    print <| combinatorEvaluate "let f x y = [x ; x * x ; x * x * x ; [ x + y ] ] in f 3 7"
+    //print <| tokenize_parse "let f x = x + 1 in let g y = y + 2 in f ( g 3 )"
+    //FSILike 0
+    Console.ReadKey() |> ignore // not needed running from Visual Studio
     0

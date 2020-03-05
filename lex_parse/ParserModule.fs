@@ -1,71 +1,13 @@
 module ParserModule
 open Expecto
 open Definitions
-
-type MathType = 
-   | Add 
-   | Sub
-   | Div
-   | Mult
-   | Mod
-
-type BuiltInType = 
-    | Mat of MathType
-    | Equal //works for strings ints and nulls 
-    | Explode 
-    | Implode 
-    | P //creates a pair 
-    | PFst 
-    | PSnd
-    | IsPair
-    | IfThenElse  
-    | BS | BK | BI
-
-
-type AST = 
-    | FuncDefExp of FuncDefExpType 
-    | MatchDef of MatchDefType
-    | Lambda of LambdaType
-    | Var of char list //only valid in lambdas 
-    | FuncApp of AST*AST
-    | Pair of AST*AST 
-    | Null 
-    | Literal of LitType 
-    | BFunc of BuiltInType
-    | Bracket of AST
-    | Y
-    | Lazy of AST
-
-and FuncDefExpType = {
-    Name: char list;
-    Body: AST
-    Expression: AST
-}
-
-and LambdaType = {
-    InputVar: char list
-    Body: AST
-}
-
-and MatchDefType = {
-    Condition: AST
-    Cases: AST list
-}
-
-and LitType = 
-    | Int of int 
-    | String of char list
-
-
     //fst res,snd res
-    
     
 let rec extractRightAppList (lst:AST list) (inp:AST) : AST list = 
     match inp with 
     | FuncApp (hd, tl) -> 
         lst @ (extractRightAppList [] hd) @ (extractRightAppList [] tl)
     | el ->  lst @ [el]
-
     
 let rec makeLeftAppList (inp:AST list) : AST =
     match inp with
@@ -112,7 +54,6 @@ let split (at:Token) (x:Token list)  : (Token list list * Token list) =
             | _ -> failwithf "Does this actually happen"
         
     splitHelper at x [] [] 
-
 
 let rec takeInsideMatch acc inp count : Result<(Result<Token list,'b> * Token list),string> =
     match inp with
@@ -193,7 +134,7 @@ and (|PNOTEXPITEM|_|) tokLst =
     | Ok (Other s :: rest) -> Some( Ok (Ok(Var(Seq.toList s)), Ok rest))
     | Ok (Other "Null" :: rest) -> Some( Ok (Ok Null, Ok rest))
     | Ok (IntegerLit s:: rest) ->Some( Ok (Ok(Literal (Int s)) ,Ok rest))
-    | Ok (StringLit s::rest) ->Some( Ok (Ok(Literal (String (Seq.toList s))), Ok rest))
+    | Ok (StringLit s::rest) ->Some( Ok (Ok(Literal (Str (Seq.toList s))), Ok rest))
     | _ -> None
 
 and endKeyWordsList = [CloseRoundBracket; CloseSquareBracket; Keyword "then"; Keyword "else"; Keyword "fi"; Keyword ";"]
@@ -375,7 +316,7 @@ and extractParts inp acc =
     match inp with 
     | hd::tl when hd = Other "in" -> Ok( acc,tl)
     | hd::tl -> extractParts tl (acc @ [hd])
-    | [] -> Error "This function definition is never used"
+    | [] -> Ok (acc, []) //Error "This function definition is never used"
     
 and  buildFunctionDef inp:(Result<AST,string>*Result<Token list, Token list>)  = 
     match inp with 
@@ -384,6 +325,10 @@ and  buildFunctionDef inp:(Result<AST,string>*Result<Token list, Token list>)  =
             | Other x -> 
                 let splitFunc = extractParts tl []
                 match splitFunc with 
+                | Ok (body, []) -> 
+                    match buildLambda (Ok body) with
+                    | (Ok body, _) -> (Ok(FuncDef(Seq.toList x, body)), Ok [])
+                    | (Error msg, rest) -> (Error msg, rest)
                 | Ok (body, expression) ->
                     let parsedExpression = parse (Ok expression)
                     let parsedBody = buildLambda (Ok body)
@@ -438,21 +383,21 @@ let makeTests (name, instr, outI) =
 let testListWithExpecto = 
     [
         "first test",(Ok [Other "x"; Other "y"]),(Ok(FuncApp(Var ['x'], Var ['y'])))
-        "second test",(Ok [Keyword "if"; Other "x";  IntegerLit 1; Keyword "then"; Other "y"; IntegerLit 1; Keyword "else"; Other "z"; IntegerLit 1; Keyword "fi"]) ,(Ok(FuncApp(FuncApp(FuncApp (Var ['x'],Literal (Int 1)),Lazy (FuncApp (Var ['y'],Literal (Int 1)))),Lazy (FuncApp (Var ['z'],Literal (Int 1))))))
-        "third test", (Ok [Let; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2; Other "in"; Other "x"; IntegerLit 5]), (Ok(FuncDefExp{ Name = ['x'];Body = FuncApp (FuncApp (BFunc (Mat Mult),Var ['x']),Literal (Int 2));Expression = FuncApp (Var ['x'],Literal (Int 5)) }))   
+        "second test",(Ok [Keyword "if"; Other "x";  IntegerLit 1L; Keyword "then"; Other "y"; IntegerLit 1L; Keyword "else"; Other "z"; IntegerLit 1L; Keyword "fi"]) ,(Ok(FuncApp(FuncApp(FuncApp (Var ['x'],Literal (Int 1L)),Lazy (FuncApp (Var ['y'],Literal (Int 1L)))),Lazy (FuncApp (Var ['z'],Literal (Int 1L))))))
+        "third test", (Ok [Let; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2L; Other "in"; Other "x"; IntegerLit 5L]), (Ok(FuncDefExp{ Name = ['x'];Body = FuncApp (FuncApp (BFunc (Mat Mult),Var ['x']),Literal (Int 2L));Expression = FuncApp (Var ['x'],Literal (Int 5L)) }))   
         "fourth test", (Ok [OpenSquareBracket; CloseSquareBracket; Other "x"; Other"y"]), Ok (FuncApp (FuncApp (Null,Var ['x']),Var ['y']))
-        "fifth test", (Ok [Let; Other "f"; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2]), (Error "This function definition is never used")
-        "sixth test", (Ok [Let; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2; Other "in"; Other "x"; IntegerLit 5]), (Ok(FuncDefExp{ Name = ['x'];Body = FuncApp (FuncApp (BFunc (Mat Mult),Var ['x']),Literal (Int 2));Expression = FuncApp (Var ['x'],Literal (Int 5)) }))
-        "seventh test", (Ok [OpenRoundBracket; Keyword "fun"; Other "x"; EqualToken; Other "x"; AddToken; IntegerLit 1; CloseRoundBracket]), (Ok(Lambda{ InputVar = ['x'];Body = FuncApp (FuncApp (BFunc (Mat Add),Var ['x']),Literal (Int 1)) }))
+        "fifth test", (Ok [Let; Other "f"; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2L]), (Error "This function definition is never used")
+        "sixth test", (Ok [Let; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2L; Other "in"; Other "x"; IntegerLit 5L]), (Ok(FuncDefExp{ Name = ['x'];Body = FuncApp (FuncApp (BFunc (Mat Mult),Var ['x']),Literal (Int 2L));Expression = FuncApp (Var ['x'],Literal (Int 5L)) }))
+        "seventh test", (Ok [OpenRoundBracket; Keyword "fun"; Other "x"; EqualToken; Other "x"; AddToken; IntegerLit 1L; CloseRoundBracket]), (Ok(Lambda{ InputVar = ['x'];Body = FuncApp (FuncApp (BFunc (Mat Add),Var ['x']),Literal (Int 1L)) }))
         "eigth test", (Ok [Other "f"; OpenRoundBracket; Other "x"; Other "y";Other "z"; CloseRoundBracket]), Ok (FuncApp (Var ['f'],FuncApp (FuncApp (Var ['x'],Var ['y']),Var ['z'])))
         "ninth test", Ok [Other "f"; OpenRoundBracket; Other "a"; OpenRoundBracket; Other "f"; Other "d"; CloseRoundBracket; CloseRoundBracket], Ok (FuncApp (Var ['f'],FuncApp (Var ['a'],FuncApp (Var ['f'],Var ['d']))))
         "tenth test", Ok [OpenSquareBracket; OpenSquareBracket; Other "x"; CloseSquareBracket], Error "Input list is not valid"
-        "eleventh test", Ok([Let; Other "f"; Other "x"; Other"y"; EqualToken; Other "x"; Other "in"; Other "f"; IntegerLit 3; IntegerLit 4]), Ok(FuncDefExp{ Name = ['f'];Body = Lambda { InputVar = ['x'];Body = Lambda { InputVar = ['y'];Body = Var ['x'] } };Expression =FuncApp(FuncApp (Var ['f'],Literal (Int 3)),Literal (Int 4)) })
-        "test 12", Ok [OpenSquareBracket; Other "x";  IntegerLit 1; Keyword ";"; Other "y"; IntegerLit 2; Keyword ";"; Other "z"; IntegerLit 3; CloseSquareBracket ], Ok(Pair(FuncApp (Var ['x'],Literal (Int 1)),Pair(FuncApp (Var ['y'],Literal (Int 2)),Pair (FuncApp (Var ['z'],Literal (Int 3)),Null))))
-        "test 13", Ok [OpenSquareBracket; Other "x"; AddToken; IntegerLit 1; Keyword ";"; Other "y"; MultToken; IntegerLit 2; CloseSquareBracket ], Ok(Pair(FuncApp (FuncApp (BFunc (Mat Add),Var ['x']),Literal (Int 1)),Pair (FuncApp (FuncApp (BFunc (Mat Mult),Var ['y']),Literal (Int 2)),Null)))
-        "test 14", Ok [Other "f";MultToken; Other "g";MultToken; Other "h";AddToken; IntegerLit 1], Ok(FuncApp(FuncApp(BFunc (Mat Add),FuncApp(FuncApp (BFunc (Mat Mult),Var ['f']),FuncApp (FuncApp (BFunc (Mat Mult),Var ['g']),Var ['h']))),Literal (Int 1)))
+        "eleventh test", Ok([Let; Other "f"; Other "x"; Other"y"; EqualToken; Other "x"; Other "in"; Other "f"; IntegerLit 3L; IntegerLit 4L]), Ok(FuncDefExp{ Name = ['f'];Body = Lambda { InputVar = ['x'];Body = Lambda { InputVar = ['y'];Body = Var ['x'] } };Expression =FuncApp(FuncApp (Var ['f'],Literal (Int 3L)),Literal (Int 4L)) })
+        "test 12", Ok [OpenSquareBracket; Other "x";  IntegerLit 1L; Keyword ";"; Other "y"; IntegerLit 2L; Keyword ";"; Other "z"; IntegerLit 3L; CloseSquareBracket ], Ok(Pair(FuncApp (Var ['x'],Literal (Int 1L)),Pair(FuncApp (Var ['y'],Literal (Int 2L)),Pair (FuncApp (Var ['z'],Literal (Int 3L)),Null))))
+        "test 13", Ok [OpenSquareBracket; Other "x"; AddToken; IntegerLit 1L; Keyword ";"; Other "y"; MultToken; IntegerLit 2L; CloseSquareBracket ], Ok(Pair(FuncApp (FuncApp (BFunc (Mat Add),Var ['x']),Literal (Int 1L)),Pair (FuncApp (FuncApp (BFunc (Mat Mult),Var ['y']),Literal (Int 2L)),Null)))
+        "test 14", Ok [Other "f";MultToken; Other "g";MultToken; Other "h";AddToken; IntegerLit 1L], Ok(FuncApp(FuncApp(BFunc (Mat Add),FuncApp(FuncApp (BFunc (Mat Mult),Var ['f']),FuncApp (FuncApp (BFunc (Mat Mult),Var ['g']),Var ['h']))),Literal (Int 1L)))
         "test 15", Ok [Other"h";Keyword "if"; Other "x"; Keyword "then"; Other "y";  Keyword "else"; Other "z";  Keyword "fi"; Other"f"], Ok(FuncApp(FuncApp(Var ['h'],FuncApp (FuncApp (Var ['x'],Lazy (Var ['y'])),Lazy (Var ['z']))),Var ['f']))
-        "test 16", Ok [Let; Other "f"; Other "x"; Other "y"; EqualToken; OpenSquareBracket; Other "x";Keyword ";"; Other "x"; MultToken; Other "x"; Keyword ";"; Other "x"; MultToken;Other "x"; MultToken; Other "x"; Keyword ";"; OpenSquareBracket; Other "x";AddToken; Other "y"; CloseSquareBracket; CloseSquareBracket; Other "in";Other "f"; IntegerLit 3; IntegerLit 7], (Ok
+        "test 16", Ok [Let; Other "f"; Other "x"; Other "y"; EqualToken; OpenSquareBracket; Other "x";Keyword ";"; Other "x"; MultToken; Other "x"; Keyword ";"; Other "x"; MultToken;Other "x"; MultToken; Other "x"; Keyword ";"; OpenSquareBracket; Other "x";AddToken; Other "y"; CloseSquareBracket; CloseSquareBracket; Other "in";Other "f"; IntegerLit 3L; IntegerLit 7L], (Ok
         (FuncDefExp
            { Name = ['f']
              Body =
@@ -483,7 +428,7 @@ let testListWithExpecto =
                                                            (BFunc (Mat Add),Var ['x']),
                                                          Var ['y']),Null),Null)))) } }
              Expression =
-                         FuncApp (FuncApp (Var ['f'],Literal (Int 3)),Literal (Int 7)) }))
+                         FuncApp (FuncApp (Var ['f'],Literal (Int 3L)),Literal (Int 7L)) }))
     ]  
     |> List.map makeTests
     |> testList "Set of tests"
