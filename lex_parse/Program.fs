@@ -22,7 +22,7 @@ let lambdaEvaluate (inp:string) : Result<AST,string>  =
     |> run
 
 let rec FSILike argv=
-    let input = (string (Console.ReadLine()))
+    let input = Console.ReadLine() |> string 
     let ninput = input.[..input.Length-1]
     if ninput = "exit" then 0 else
         print <| lambdaEvaluate ninput
