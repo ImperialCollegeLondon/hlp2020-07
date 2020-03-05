@@ -10,7 +10,7 @@ let tokenize_parse (x:string) =
     x
     |> tokenize
     |> Ok
-    |> parse
+    |> parsedOutput
 
 let lambdaEval inp = 
     inp 
