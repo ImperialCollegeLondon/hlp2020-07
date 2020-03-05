@@ -54,12 +54,23 @@ let rec BracketAbstract (lambda : Result<AST,string>) : Result<AST,string> =
         match lambda1, lambda2 with
         | Error r, _ | _, Error r -> Error r
         | Ok xE1, Ok xE2 -> Ok <| FuncApp( FuncApp( BFunc BS, xE1), xE2)
+    | Ok (Lambda{InputVar = x; Body = Pair(E1,E2)})  -> pairFunctionAbstract x E1 E2
     | Ok (Lambda{InputVar = x; Body = E1}) -> 
         if (Var x) = E1
         then Ok <| BFunc BI
         else Ok <| FuncApp(BFunc BK, E1)
     | _ -> sprintf "RUN-TIME ERROR : EXPECTED A LAMBDA EXPRESSION BUT GOT %A" lambda |> Error
 
+and pairFunctionAbstract (x :char list) (E1:AST) (E2:AST) =
+    match E1 with
+    | Literal _ | Null -> FuncApp(BFunc BK, Pair(E1,E2)) |> Ok
+    | _ ->
+        let absE1 = Lambda{InputVar = x; Body = E1} |> Ok |> Abstract
+        let absE2 = Lambda{InputVar = x; Body = E2} |> Ok |> Abstract
+        match absE1,absE2 with
+        | Error r, _ | _, Error r -> Error r
+        | Ok E1, Ok E2 -> Pair(E1,E2) |> Ok
+        
 and Abstract (E:Result<AST,string>) : Result<AST,string> =
     match E with 
     | Ok (FuncApp(E1,E2)) ->
@@ -72,14 +83,14 @@ and Abstract (E:Result<AST,string>) : Result<AST,string> =
         let aE1' = Abstract (Ok E1)
         match aE1' with
         | Error r -> Error r
-        | Ok E1 -> BracketAbstract <| Ok (Lambda{InputVar = x; Body = E1})
+        | Ok E1 ->  Lambda{InputVar = x; Body = E1} |> Ok |> BracketAbstract
     | Ok (Pair(E1,E2)) ->
         let aE1' = Abstract (Ok E1)
         let aE2' = Abstract (Ok E2)
         match aE1', aE2' with
         | Error r, _ | _, Error r -> Error r
         | Ok E1, Ok E2 -> Ok <| Pair(E1, E2)
-    | Ok (Lazy x) -> x |> Ok |> Abstract // Extension
+    | Ok (Lazy x) -> x |> Ok |> Abstract
     | Ok (Literal _)| Ok (BFunc _) | Ok Null | Ok (Var _) -> E
     | _ -> sprintf "RUN-TIME ERROR : EXPECTED AN AST FOR THE BRACKET ABSTRACTION BUT GOT %A" E |> Error
 
@@ -105,7 +116,7 @@ let rec reducCombinator (E:Result<AST,string>) : Result<AST,string> = // Reducti
         match reducE1, reducE2 with
         | Error r, _ | _, Error r -> Error r
         | Ok reducE1', Ok reducE2' -> Pair (reducE1',reducE2') |> Ok
-    | Ok (Lazy x) -> x |> Ok |> reducCombinator //Extension
+    | Ok (Lazy x) -> x |> Ok |> reducCombinator
     | Ok (Literal _) | Ok (Var _) | Ok (BFunc _) | Ok Null -> E
     | _ -> sprintf "RUN-TIME ERROR : EXPECTED AN AST FOR THE COMBINATOR REDUCTION BUT GOT %A" E |> Error
 
@@ -134,12 +145,11 @@ let BuiltPair (op:BuiltInType) (x':Result<AST,string>) : Result<AST,string> = //
     | IsPair, Ok (Pair(_)) -> Ok <| BFunc True
     | IsPair, _ -> Ok <| BFunc False
     | Explode, Ok (Literal( String a)) -> explode a
-    | Implode, Ok x -> implode (Ok x)
+    | Implode, Ok x -> x |> Ok |> implode
     | _ -> sprintf "RUN-TIME ERROR : EXPECTED A BuiltInFunction and used %A, or EXPECTED A Pair/List and used %A " op x' |> Error
 
 let BuiltMath (func':MathType) (a':Result<AST,string>) (b':Result<AST,string>) : Result<AST,string> = // FuncApp( FuncApp( BFunc op, a), b)
     match func', a', b' with
-    //Arithmetic
     | _, Error r, _ | _, _, Error r -> Error r
     | Add, Ok (Literal(Int a)), Ok (Literal(Int b)) ->  Literal(Int (a+b)) |> Ok // a+b
     | Sub, Ok (Literal(Int a)), Ok (Literal(Int b)) ->  Literal(Int (a-b)) |> Ok // a-b
@@ -148,8 +158,8 @@ let BuiltMath (func':MathType) (a':Result<AST,string>) (b':Result<AST,string>) :
     | Mod, Ok (Literal(Int a)), Ok (Literal(Int b)) -> Literal(Int (((a%b)+b)%b)) |> Ok // a mod b
     | _ -> sprintf "RUN-TIME ERROR : EXPECTED A Int and got %A and %A " a' b' |> Error
     
-let rec eval (x:Result<AST,string>) : Result<AST,string> = 
-    let reduceSKI = reducCombinator x
+let rec eval (x:Result<AST,string>) : Result<AST,string> =
+    let reduceSKI =  x |> evalBracket |> reducCombinator
     match reduceSKI with
     | Error r -> Error r
     | Ok (FuncApp( BFunc op, x)) -> 
@@ -158,10 +168,21 @@ let rec eval (x:Result<AST,string>) : Result<AST,string> =
     | Ok (FuncApp( FuncApp( func, a), b)) ->
         let func' = func |> Ok |> eval
         BuiltFF func' a b
-    | Ok (Lazy x) -> x |> Ok |> eval // Extension
+    | Ok (Lazy x) -> x |> Ok |> eval
     | Ok (Literal _ ) | Ok (Pair(_,_)) | Ok Null | Ok (BFunc _) -> reduceSKI
     | _ -> sprintf "RUN-TIME ERROR : EXPECTED SKI AST BUT USED %A" reduceSKI |> Error
 
+and evalBracket (x:Result<AST,string>) : Result<AST,string> =
+    match x with
+    | Error _ -> x
+    | Ok (FuncApp( f, Pair(a,b))) ->
+        let evfa = FuncApp( f, a) |> Ok |> eval
+        let evfb = FuncApp( f, b) |> Ok |> eval
+        match evfa, evfb with
+        | Error r, _ | _, Error r-> Error r
+        | Ok a, Ok b -> Pair(a,b) |> Ok
+    | _ -> x
+        
 and BuiltFF (func':Result<AST,string>) (a':AST) (b':AST) : Result<AST,string> = // FuncApp( FuncApp( BFunc op, a), b)
     match func' with
     | Error r-> Error r
@@ -193,8 +214,7 @@ let Reduce (y:Result<AST,string>) : Result<AST,string> =
         | Ok (Lambda{InputVar = x; Body = E1}) ->
             (Lambda{InputVar = x; Body = E1}) |> Ok |> Abstract
         | Ok (FuncApp(E1,E2)) -> Ok (FuncApp(E1,E2))
-        | Ok (Lazy x ) -> x |> Ok |> reduceFuncTree //Extension
+        | Ok (Lazy x ) -> x |> Ok |> reduceFuncTree
         | Ok (Literal _ ) | Ok (Pair(_)) | Ok Null | Ok (BFunc _) -> x
         | _ -> sprintf "RUN-TIME ERROR : EXPECTED A RESULT<AST,STRING> BUT GOT %A"  x |> Error
     y |> reduceFuncTree |> eval
-
