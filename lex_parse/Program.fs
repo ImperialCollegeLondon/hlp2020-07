@@ -48,6 +48,8 @@ let main argv =
     //print <| lambdaEvaluate "let f x = x + 1 in let g y = y + 2 in f ( g 3 )"
     //print <| combinatorEvaluate "let f x y = [x ; x * x ; x * x * x ; [ x + y ] ] in f 3 7"
     //print <| tokenize_parse "let f x = x + 1 in let g y = y + 2 in f ( g 3 )"
-    FSILike()
+    //FSILike()
+    testsWithExpecto()
     Console.ReadKey() |> ignore // not needed running from Visual Studio
     0
+
