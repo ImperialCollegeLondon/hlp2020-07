@@ -2,6 +2,7 @@ open TokenModule
 open ParserModule
 open Definitions
 open Lambdas
+open System
 
 let print x =
     printfn "%A" x
@@ -17,6 +18,12 @@ let lambdaEval inp =
     |> tokenize_parse
     |> fst
     |> run
+
+let rec FSILike() =
+    let input = Console.ReadLine() |> string
+    if input = "exit" then () else
+        print <| lambdaEval input
+        FSILike()
 
 
 [<EntryPoint>]  
