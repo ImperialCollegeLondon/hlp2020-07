@@ -78,7 +78,7 @@ let tokenize (mstring:string) : Token list =
         match y with
             | 0 -> Other xString
             | 1 -> SubToken
-            | 2 | 3 -> IntegerLit (int xString)
+            | 2 | 3 -> IntegerLit (int64 xString)
             | 4 -> StringLit xString
             | 5 | 6 -> DecimalLit (float xString)
             | 7 -> SpaceLit

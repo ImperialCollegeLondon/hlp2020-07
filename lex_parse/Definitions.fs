@@ -16,7 +16,7 @@ type Token = OpenRoundBracket
             |CloseRoundBracket
             |OpenSquareBracket
             |CloseSquareBracket
-            |IntegerLit of int
+            |IntegerLit of int64
             |StringLit of string
             |SpaceLit
             |DecimalLit of float
@@ -33,6 +33,63 @@ type Token = OpenRoundBracket
             |Unexpected of string
             |Newline
             |NoInput
+
+type MathType = 
+   | Add 
+   | Sub
+   | Div
+   | Mult
+   | Mod
+
+type BuiltInType = 
+    | Mat of MathType
+    | Equal //works for strings ints and nulls 
+    | Explode 
+    | Implode 
+    | P //creates a pair 
+    | PFst 
+    | PSnd
+    | IsPair
+    | IfThenElse  
+    | True | False
+    | BS | BK | BI
+
+type AST = 
+    | FuncDefExp of FuncDefExpType 
+    | FuncDef of char list*AST
+    | MatchDef of MatchDefType
+    | Lambda of LambdaType
+    | Var of char list //only valid in lambdas 
+    | FuncApp of AST*AST
+    | Pair of AST*AST 
+    | Null 
+    | Literal of LitType 
+    | BFunc of BuiltInType
+    | Bracket of AST
+    | Y
+    | Lazy of AST
+
+and FuncDefExpType = {
+    Name: char list;
+    Body: AST
+    Expression: AST
+}
+
+and LambdaType = {
+    InputVar: char list
+    Body: AST
+}
+
+and MatchDefType = {
+    Condition: AST
+    Cases: AST list
+}
+
+and LitType = 
+    | Int of int64 
+    | Str of char list
+
+
 //Rules
 //------------------------------------------------------------
 let integerLit =
