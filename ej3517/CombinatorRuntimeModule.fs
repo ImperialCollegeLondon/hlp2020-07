@@ -62,8 +62,13 @@ let rec BracketAbstract (lambda : Result<AST,string>) : Result<AST,string> =
     | _ -> sprintf "RUN-TIME ERROR : EXPECTED A LAMBDA EXPRESSION BUT GOT %A" lambda |> Error
 
 and pairFunctionAbstract (x :char list) (E1:AST) (E2:AST) =
-    match E1 with
-    | Literal _ | Null -> FuncApp(BFunc BK, Pair(E1,E2)) |> Ok
+    match E1,E2 with
+    | Literal _,_ | Null,_ -> FuncApp(BFunc BK, Pair(E1,E2)) |> Ok
+    | _ , Null ->
+        let absE1 = Lambda{InputVar = x; Body = E1} |> Ok |> Abstract
+        match absE1 with
+        | Error _ -> absE1
+        | Ok E1 -> Pair(E1,Null) |> Ok
     | _ ->
         let absE1 = Lambda{InputVar = x; Body = E1} |> Ok |> Abstract
         let absE2 = Lambda{InputVar = x; Body = E2} |> Ok |> Abstract
@@ -175,6 +180,11 @@ let rec eval (x:Result<AST,string>) : Result<AST,string> =
 and evalBracket (x:Result<AST,string>) : Result<AST,string> =
     match x with
     | Error _ -> x
+    | Ok (FuncApp( f, Pair(a,Null))) ->
+        let evfa = FuncApp( f, a) |> Ok |> eval
+        match evfa with
+        | Error r-> Error r
+        | Ok a-> Pair(a,Null) |> Ok
     | Ok (FuncApp( f, Pair(a,b))) ->
         let evfa = FuncApp( f, a) |> Ok |> eval
         let evfb = FuncApp( f, b) |> Ok |> eval

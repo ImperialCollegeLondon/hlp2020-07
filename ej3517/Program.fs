@@ -60,7 +60,7 @@ let lambdaAddition2 =  FuncDefExp{Name = ['f']; Body = Lambda{InputVar = ['x']; 
 let ifthenelsetest = FuncApp( FuncApp( FuncApp( FuncApp( BFunc Equal, Literal (Int 2)),Literal (Int 1) ), Lazy(Literal(String ['t';'r';'u';'e']))), Lazy(Literal(String ['f';'a';'l';'s';'e'])))
 
 //14 - (let f x = [x*2;x*6;x*3] in f 3 ) = [6;18;9]
-let listFunctest = FuncDefExp{Name = ['f']; Body = Lambda{InputVar = ['x']; Body = Pair(FuncApp( FuncApp( BFunc( Mat Mult), Var ['x']), Literal( Int 2)),Pair(FuncApp( FuncApp( BFunc( Mat Mult), Var ['x']), Literal( Int 6)),FuncApp( FuncApp( BFunc( Mat Mult), Var ['x']), Literal( Int 3))))} ; Expression = FuncApp(Var['f'],Literal( Int 3))}
+let listFunctest = FuncDefExp{Name = ['f']; Body = Lambda{InputVar = ['x']; Body = Pair(FuncApp( FuncApp( BFunc( Mat Mult), Var ['x']), Literal( Int 2)),Pair(FuncApp( FuncApp( BFunc( Mat Mult), Var ['x']), Literal( Int 6)),Pair(FuncApp( FuncApp( BFunc( Mat Mult), Var ['x']), Literal( Int 3)),Null)))} ; Expression = FuncApp(Var['f'],Literal( Int 3))}
 
 let (testDescriptions : list<string * Result<AST,string> * Result<AST,string> * string>) = [
     ("simple addition let f x = x+2 in f 3", Reduce (Ok lambdaAddition), Ok (Literal (Int 5)), "f 3 =  Ok (Literal (Int 5))");
@@ -76,9 +76,7 @@ let (testDescriptions : list<string * Result<AST,string> * Result<AST,string> * 
     ("(let h p = p^2 in let g n = n * 2 in let f m = g m + g (m + 1) + h ( h m ) in (if True then f 2 else Null)) = 26", Reduce (Ok finalExpression), Ok(Literal(Int 26)), "(let h p = p^2 in let g n = n * 2 in let f m = g m + g (m + 1) + h ( h m ) in (if True then f 2 else Null)) = 26");
     ("fuction with multiple arguments : (let f x y = x + y in f 3 8) =11", Reduce (Ok lambdaAddition2), Ok (Literal (Int 11)),"(let f x y = x + y in f 3 8) =11" );
     ("if 2=1 then \"true\" else \"false\"", Reduce (Ok ifthenelsetest), Ok (Literal (String ['f'; 'a'; 'l'; 's'; 'e'])),"if 2=1 then \"true\" else \"false\"" )
-    ("(let f x = [x*2;x*6;x*3] in f 3 ) = [6;18;9]", Reduce (Ok listFunctest), Ok (Pair (Literal (Int 6),Pair (Literal (Int 18),Literal (Int 9)))),"(let f x = [x*2;x*6;x*3] in f 3 ) = [6;18;9]" )]
-
-let implodett = testImplode |> Ok |> Reduce
+    ("(let f x = [x*2;x*6;x*3] in f 3 ) = [6;18;9]", Reduce (Ok listFunctest), Ok (Pair (Literal (Int 6),Pair (Literal (Int 18),Pair(Literal (Int 9),Null)))),"(let f x = [x*2;x*6;x*3] in f 3 ) = [6;18;9]" )]
 
 let makeMyTests (x,y,z,name) = 
     test x {Expect.equal y z name}
