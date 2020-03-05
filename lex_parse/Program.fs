@@ -2,7 +2,7 @@ open TokenModule
 open ParserModule
 open Definitions
 open Lambdas
-open CombinatorRuntimeModule
+
 
 let print x =
     printfn "%A" x
@@ -22,10 +22,13 @@ let lambdaEvaluate inp =
 
 
 
+
+
 [<EntryPoint>]  
 let main argv =
     testsWithExpecto() |> ignore
-    print <| tokenize_parse "[ x + 1 ; y * 2 ]  "
+    //print <| tokenize_parse "[ x + 1 ; y * 2 ]  "
+    print <| parsedOutput (Ok [Keyword "if"; Other "x"; Keyword "then"; Other "y"; Keyword "else"; Other"z"; Keyword "fi"])
     //print <| tokenize "match x case y case z case endmatch"
     //print <| lambdaEvaluate "[ 1 ; 2 ; 3 ; 4 ; 5]"
     //print <| lambdaEvaluate "[]"
