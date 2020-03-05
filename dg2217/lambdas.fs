@@ -14,7 +14,6 @@ type BuiltInType =
     | IfThenElse  
 
 type AST = 
-    | FuncDef of char list*AST
     | FuncDefExp of FuncDefExpType 
     | MatchDef of MatchDefType
     | Lambda of LambdaType
@@ -124,13 +123,7 @@ let rec execExplode (str) =
     | (Literal (String (hd::tl))) -> (Pair(Literal(String([hd])), Literal(String tl))) |> execExplode 
     | _ -> sprintf "Run-time error: %A is not a valid string to explode" str |> Error 
 
-//let mutable cache : Map<AST, Result<AST,string>> = 
-//    Map [FuncApp(FuncApp(BFunc(Mat Add), Literal(Int 1L)),Literal( Int 2L)), 3L|> Int |> Literal |> Ok ; 
-//    FuncApp(FuncApp(BFunc(Mat Add), Literal(Int 1L)),Literal(Int 3L)), 4L |> Int |> Literal |> Ok;]
-
 let mutable cache = Map []
-
-let mutable glovalEnv:EnvironmentType =  [] 
 
 let memoise fn =
    fun x ->
@@ -144,15 +137,10 @@ let memoise fn =
 let rec exec (exp : AST) : Result<AST,string> =
     match exp with 
     | FuncDefExp(fde) -> fde |> func_Def_Exp_to_Lambda |> exec
-    | FuncDef(name, body) -> 
-        match exec body with
-        | Ok(result) -> glovalEnv <- (name, result)::glovalEnv ; Ok(result)
-        | Error err -> Error err
     | Lazy(lazyExp) -> exec lazyExp
     | FuncApp(func, arg) -> memoise execFunc (FuncApp(func,arg))
     | Pair(a,b)-> evalPair (Pair(a,b))
-    | Var(name) -> findValue glovalEnv name
-    | Literal _ | BFunc _ | Null | Y | Lambda _ -> exp |> Ok 
+    | Literal _ | BFunc _ | Null | Y | Var _ | Lambda _ -> exp |> Ok 
 
 and execFunc (FuncApp(func,arg):AST) : Result<AST,string>  = 
     match arg with 
@@ -235,4 +223,3 @@ let run input =
     match input with 
     | Error(err)-> Error(err)
     | Ok(exp)-> exec exp
-
