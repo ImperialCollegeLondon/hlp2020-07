@@ -385,8 +385,8 @@ and buildLambda (inp:Result<Token list, Token list>):(Result<AST,string>*Result<
             | (Error msg, rest) -> (Error msg, rest)
         | (EqualToken), _ -> parse (Ok (hd'::tl))
         
-        | _ -> (Error "Invalid arguments" , inp)
-    | _ -> (Error "insufficient expression" , inp )
+        | _ -> (Error "Invalid function arguments" , inp)
+    | _ -> (Error "Insufficient elements in function definition" , inp )
 
 and (|BUILDLAMBDA|_|) inp:((Result<AST,string>*Result<Token list, Token list>) option) = Some (buildLambda inp)
 
