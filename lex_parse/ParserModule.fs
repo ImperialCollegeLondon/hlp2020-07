@@ -129,6 +129,7 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,
 and (|PNOTEXPITEM|_|) tokLst = 
     match tokLst with
     | Ok (Other s::rest) when Map.containsKey s builtInFuncMap -> Some(Ok (Ok(builtInFuncMap.[s]) , Ok rest ))
+    | Ok (Keyword s::rest) when s = "Y" ->  Some( Ok (Ok Y, Ok rest))
     | Ok (Other s::rest) when s = "TRUE" ->Some( Ok (Ok(Lambda {InputVar=Seq.toList "x";Body=Lambda{InputVar=Seq.toList "y"; Body=Var(Seq.toList"x")} }), Ok rest))
     | Ok (Other s::rest) when s = "FALSE" -> Some(Ok (Ok(Lambda {InputVar=Seq.toList "x";Body=Lambda{InputVar=Seq.toList "y"; Body=Var(Seq.toList "y")} }), Ok rest))
     | Ok (Other s :: rest) -> Some( Ok (Ok(Var(Seq.toList s)), Ok rest))
@@ -317,11 +318,43 @@ and extractParts inp acc =
     | hd::tl when hd = Other "in" -> Ok( acc,tl)
     | hd::tl -> extractParts tl (acc @ [hd])
     | [] -> Ok (acc, []) //Error "This function definition is never used"
+
+and adaptRecursiveExpression lambda name inp = 
+    match inp with 
+    | Other x when x = name -> [Keyword "Y"] @ lambda
+    | x -> [x]
+
+and bodyToAnonymousFun inp = 
+    [OpenRoundBracket]@[Keyword "fun"]@inp@[CloseRoundBracket]
     
 and  buildFunctionDef inp:(Result<AST,string>*Result<Token list, Token list>)  = 
     match inp with 
     | hd::tl  -> 
-        match hd with 
+        match hd with
+            | Other "rec" -> 
+                match tl with
+                | hd'::tl' ->
+                    match hd' with 
+                    | Other x -> 
+                        let splitFunc = extractParts tl []
+                        match splitFunc with 
+                        | Ok (body, []) -> 
+                            match buildLambda (Ok body) with
+                            | (Ok body, _) -> (Ok(FuncDef(Seq.toList x, body)), Ok [])
+                            | (Error msg, rest) -> (Error msg, rest)
+                        | Ok (body, expression) ->
+                            let modifiedExpression = List.map  (adaptRecursiveExpression (bodyToAnonymousFun body) x) expression
+                                                     |> List.concat
+                            let parsedExpression = parse (Ok modifiedExpression)
+                            let parsedBody = buildLambda (Ok body)
+                            match  parsedBody, parsedExpression with 
+                            |((Ok body, _),(Ok expression, rest))  -> (Ok (FuncDefExp {Name=Seq.toList x;Body=body; Expression=expression}),rest)
+                            | ((Error msg, rest), _) -> (Error msg, rest)
+                            | (_, (Error msg, rest)) -> (Error msg, rest)
+                        | Error msg -> (Error msg, Error inp)
+                    | _ -> (Error  "No name found for this function definition", Error inp)
+                | _ -> (Error "Insufficient elements in function definition" , Error inp )
+
             | Other x -> 
                 let splitFunc = extractParts tl []
                 match splitFunc with 
@@ -380,13 +413,13 @@ let makeTests (name, instr, outI) =
         | Ok ast -> Expect.equal (Ok ast) outI (sprintf "%A" tokLst)
         | Error msg -> Expect.equal (Error msg) outI (sprintf "%A" tokLst)
     }
-let testListWithExpecto = 
+let testListWithExpectoParser = 
     [
         "first test",(Ok [Other "x"; Other "y"]),(Ok(FuncApp(Var ['x'], Var ['y'])))
         "second test",(Ok [Keyword "if"; Other "x";  IntegerLit 1L; Keyword "then"; Other "y"; IntegerLit 1L; Keyword "else"; Other "z"; IntegerLit 1L; Keyword "fi"]) ,(Ok(FuncApp(FuncApp(FuncApp (Var ['x'],Literal (Int 1L)),Lazy (FuncApp (Var ['y'],Literal (Int 1L)))),Lazy (FuncApp (Var ['z'],Literal (Int 1L))))))
         "third test", (Ok [Let; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2L; Other "in"; Other "x"; IntegerLit 5L]), (Ok(FuncDefExp{ Name = ['x'];Body = FuncApp (FuncApp (BFunc (Mat Mult),Var ['x']),Literal (Int 2L));Expression = FuncApp (Var ['x'],Literal (Int 5L)) }))   
         "fourth test", (Ok [OpenSquareBracket; CloseSquareBracket; Other "x"; Other"y"]), Ok (FuncApp (FuncApp (Null,Var ['x']),Var ['y']))
-        "fifth test", (Ok [Let; Other "f"; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2L]), (Error "This function definition is never used")
+        //"fifth test", (Ok [Let; Other "f"; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2L]), (Error "This function definition is never used")
         "sixth test", (Ok [Let; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2L; Other "in"; Other "x"; IntegerLit 5L]), (Ok(FuncDefExp{ Name = ['x'];Body = FuncApp (FuncApp (BFunc (Mat Mult),Var ['x']),Literal (Int 2L));Expression = FuncApp (Var ['x'],Literal (Int 5L)) }))
         "seventh test", (Ok [OpenRoundBracket; Keyword "fun"; Other "x"; EqualToken; Other "x"; AddToken; IntegerLit 1L; CloseRoundBracket]), (Ok(Lambda{ InputVar = ['x'];Body = FuncApp (FuncApp (BFunc (Mat Add),Var ['x']),Literal (Int 1L)) }))
         "eigth test", (Ok [Other "f"; OpenRoundBracket; Other "x"; Other "y";Other "z"; CloseRoundBracket]), Ok (FuncApp (Var ['f'],FuncApp (FuncApp (Var ['x'],Var ['y']),Var ['z'])))
@@ -433,5 +466,5 @@ let testListWithExpecto =
     |> List.map makeTests
     |> testList "Set of tests"
 
-let testsWithExpecto() =
-    runTests defaultConfig testListWithExpecto |> ignore
+let testsWithExpectoParser() =
+    runTests defaultConfig testListWithExpectoParser |> ignore

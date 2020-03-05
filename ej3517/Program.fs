@@ -56,17 +56,16 @@ let finalExpression = FuncDefExp{ Name = ['h']; Body = lambdaH; Expression = exp
 //12- let f x y = x + y in f 3 8
 let lambdaAddition2 =  FuncDefExp{Name = ['f']; Body = Lambda{InputVar = ['x']; Body = Lambda{InputVar = ['y']; Body = FuncApp(FuncApp(BFunc (Mat Add), Var ['x']), Var['y'])}}; Expression = FuncApp(FuncApp( Var ['f'], Literal(Int 3)), Literal(Int 8))}
 
-//recursive test 
-let rec length x =
-    if x = 0
-    then 0
-    else 1 + length (x-1)
+//13- if 2=1 then ['t';'r';'u';'e'] else ['f';'a';'l';'s';'e']
+let ifthenelsetest = FuncApp( FuncApp( FuncApp( FuncApp( BFunc Equal, Literal (Int 2)),Literal (Int 1) ), Lazy(Literal(String ['t';'r';'u';'e']))), Lazy(Literal(String ['f';'a';'l';'s';'e'])))
 
+//14 - (let f x = [x*2;x*6;x*3] in f 3 ) = [6;18;9]
+let listFunctest = FuncDefExp{Name = ['f']; Body = Lambda{InputVar = ['x']; Body = Pair(FuncApp( FuncApp( BFunc( Mat Mult), Var ['x']), Literal( Int 2)),Pair(FuncApp( FuncApp( BFunc( Mat Mult), Var ['x']), Literal( Int 6)),Pair(FuncApp( FuncApp( BFunc( Mat Mult), Var ['x']), Literal( Int 3)),Null)))} ; Expression = FuncApp(Var['f'],Literal( Int 3))}
 
 let (testDescriptions : list<string * Result<AST,string> * Result<AST,string> * string>) = [
     ("simple addition let f x = x+2 in f 3", Reduce (Ok lambdaAddition), Ok (Literal (Int 5)), "f 3 =  Ok (Literal (Int 5))");
     ("Explode let f x = Explode x in f \"aloha\"", Reduce (Ok testExplode), Ok(Pair(Literal (String ['a']),Pair(Literal (String ['l']),Pair(Literal (String ['o']),Pair (Literal (String ['h']),Pair (Literal (String ['a']),Null)))))), "f \"aloha\" =  Ok (['a','l','o','h','a'])");
-    ("Explode let f x = Implode x in f ['a','l','o','h','a']", Reduce (Ok testImplode), Ok (Literal (String ['a';'l';'o';'h';'a'])), "f ['a','l','o','h','a'] =  Ok (Literal (String \"aloha\"))");
+    ("Implode let f x = Implode x in f ['a','l','o','h','a']", Reduce (Ok testImplode), Ok (Literal (String ['a';'l';'o';'h';'a'])), "f ['a','l','o','h','a'] =  Ok (Literal (String \"aloha\"))");
     ("Equal : (\"aloha\" = \"aloha\") = True", Reduce (Ok testEqualString), Ok (BFunc True), "(\"aloha\" = \"aloha\") = True");
     ("Equal : (1 = 1) = True", Reduce (Ok testEqualInt), Ok (BFunc True), "(1 = 1) = True");
     ("Equal : (Null = Null) = True", Reduce (Ok testEqualNull), Ok (BFunc True), "(Null = Null) = True");
@@ -75,7 +74,9 @@ let (testDescriptions : list<string * Result<AST,string> * Result<AST,string> * 
     ("(\"aloh\" = \"aloha\") 1 \"aloha\" = 1", Reduce (Ok testEqTrue), Ok (Literal( Int 1)), "(\"aloh\" = \"aloha\") 1 \"aloha\" = \"aloha\"");
     ("Nested Function : (let f x = x - 1 in let g y = y * 3 in g ( f -1 )) = -6", Reduce (Ok testNestedFunc), Ok (Literal( Int -6)), "(let f x = x - 1 in let g y = y * 3 in g ( f -1 )) = -6");
     ("(let h p = p^2 in let g n = n * 2 in let f m = g m + g (m + 1) + h ( h m ) in (if True then f 2 else Null)) = 26", Reduce (Ok finalExpression), Ok(Literal(Int 26)), "(let h p = p^2 in let g n = n * 2 in let f m = g m + g (m + 1) + h ( h m ) in (if True then f 2 else Null)) = 26");
-    ("fuction with multiple arguments : (let f x y = x + y in f 3 8) =11", Reduce (Ok lambdaAddition2), Ok (Literal (Int 11)),"(let f x y = x + y in f 3 8) =11" )]
+    ("fuction with multiple arguments : (let f x y = x + y in f 3 8) =11", Reduce (Ok lambdaAddition2), Ok (Literal (Int 11)),"(let f x y = x + y in f 3 8) =11" );
+    ("if 2=1 then \"true\" else \"false\"", Reduce (Ok ifthenelsetest), Ok (Literal (String ['f'; 'a'; 'l'; 's'; 'e'])),"if 2=1 then \"true\" else \"false\"" )
+    ("(let f x = [x*2;x*6;x*3] in f 3 ) = [6;18;9]", Reduce (Ok listFunctest), Ok (Pair (Literal (Int 6),Pair (Literal (Int 18),Pair(Literal (Int 9),Null)))),"(let f x = [x*2;x*6;x*3] in f 3 ) = [6;18;9]" )]
 
 let makeMyTests (x,y,z,name) = 
     test x {Expect.equal y z name}
