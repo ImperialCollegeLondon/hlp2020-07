@@ -2,7 +2,7 @@
 
 15 tests have been written in the Lambdas module. The tests are run with expecto in the Program.fs file. These tests give a good idea of the capabilities of this runtime system: It is capable of executing both named and anonymus functions, handle recursion, and handle lists in the form of nested Pairs. Explode and Implode built-in functions for lists and strings were also written.
 
-Care has been put on optimizing the way ASTs are evaluated, but this runtime system clearly still has some performance issues. Test 13, which handles a fibbonaci recursive function to find Fib(25) clearly takes much longer than F# to execute. Mnemoization will be an interesting thing to add during the team phase of the project.
+Care has been put on optimizing the way ASTs are evaluated, but this runtime system clearly still has some performance issues. To deal with recursion performance issues, a simple memoization step is called every time that the runtime finds a Funcapp(arg, func) node in the ast. Test 13, which handles a fibbonaci recursive function benefitted massively from this memoisation feature. 
 
 The only part of my code that was written in colaboration with other people have been the types. In order to guarantee minimum frictions when joining the lexer and parser with the runtime, every addition and modification to the AST in order to, for example, handle IF statements using Church Booleans, was always discussed and agreed with other team members.
 

@@ -2,7 +2,6 @@ module TokenModule
 open System
 open Definitions
 
-
 //------------------------------------------------------------
 //Returns first occurence of element in list
 let index arr elem =
@@ -67,10 +66,7 @@ let combinedLexers (mstring:string) : (MappedRule list) =
             |_ ->  acc @ [(look),-1]
             
             
-    consume [] (Seq.toList mstring)
-    
-    
-    
+    consume [] (Seq.toList mstring)    
     
 let tokenize (mstring:string) : Token list = 
     let flattener ((x:char list,y:int) : MappedRule) : Token =
@@ -78,7 +74,7 @@ let tokenize (mstring:string) : Token list =
         match y with
             | 0 -> Other xString
             | 1 -> SubToken
-            | 2 | 3 -> IntegerLit (int xString)
+            | 2 | 3 -> IntegerLit (int64 xString)
             | 4 -> StringLit xString
             | 5 | 6 -> DecimalLit (float xString)
             | 7 -> SpaceLit
@@ -104,3 +100,4 @@ let tokenize (mstring:string) : Token list =
     |> combinedLexers
     |> List.map flattener
     |> List.filter (fun x -> x <> SpaceLit && x <> Newline)
+   

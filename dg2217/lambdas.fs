@@ -14,6 +14,7 @@ type BuiltInType =
     | IfThenElse  
 
 type AST = 
+    | FuncDef of char list*AST
     | FuncDefExp of FuncDefExpType 
     | MatchDef of MatchDefType
     | Lambda of LambdaType
@@ -129,6 +130,8 @@ let rec execExplode (str) =
 
 let mutable cache = Map []
 
+let mutable glovalEnv:EnvironmentType =  [] 
+
 let memoise fn =
    fun x ->
       match Map.containsKey x cache with
@@ -141,16 +144,21 @@ let memoise fn =
 let rec exec (exp : AST) : Result<AST,string> =
     match exp with 
     | FuncDefExp(fde) -> fde |> func_Def_Exp_to_Lambda |> exec
-    | Lazy(e) -> exec e
+    | FuncDef(name, body) -> 
+        match exec body with
+        | Ok(result) -> glovalEnv <- (name, result)::glovalEnv ; Ok(result)
+        | Error err -> Error err
+    | Lazy(lazyExp) -> exec lazyExp
     | FuncApp(func, arg) -> memoise execFunc (FuncApp(func,arg))
     | Pair(a,b)-> evalPair (Pair(a,b))
-    | Literal _ | BFunc _ | Null | Y | Var _ | Lambda _ -> exp |> Ok 
+    | Var(name) -> findValue glovalEnv name
+    | Literal _ | BFunc _ | Null | Y | Lambda _ -> exp |> Ok 
 
 and execFunc (FuncApp(func,arg):AST) : Result<AST,string>  = 
     match arg with 
-    | Lazy(a) -> 
+    | Lazy(lazyArg) -> 
         match exec func with 
-        | Ok executedFunc -> FuncApp(executedFunc,Lazy(a))  |> applyBasicFunc
+        | Ok executedFunc -> FuncApp(executedFunc,Lazy(lazyArg))  |> applyBasicFunc
         | Error err -> Error err
     | _ -> 
         match exec func with 
@@ -228,19 +236,3 @@ let run input =
     | Error(err)-> Error(err)
     | Ok(exp)-> exec exp
 
-
-let fminus1 = FuncApp(Var ['f'], FuncApp(FuncApp(BFunc (Mat Sub), Var ['a']),Literal (Int 1L)))
-let fminus2 = FuncApp(Var ['f'], FuncApp(FuncApp(BFunc (Mat Sub), Var ['a']),Literal (Int 2L)))
-let recBody = FuncApp(FuncApp(BFunc (Mat Add), fminus1),fminus2)
-let eqBody1 = FuncApp(FuncApp(BFunc Equal, Var ['a']), Literal(Int 1L))
-let eqBody0 = FuncApp(FuncApp(BFunc Equal, Var ['a']), Literal(Int 0L))
-let ifelseBody13 = FuncApp(FuncApp(eqBody0,Lazy(Literal(Int 0L))),Lazy(FuncApp(FuncApp(eqBody1,Lazy(Literal(Int 1L))),Lazy(recBody)))) 
-let test13 = 
-    FuncDefExp{
-        Name = ['f'];
-        Body = Lambda{InputVar = ['f']; Body = Lambda {InputVar = ['a']; Body = ifelseBody13}};
-        Expression = FuncApp(FuncApp(Var ['f'],Lazy(FuncApp(Y,Var['f']))),Literal(Int 92L))}
-
-let result13 = exec test13
-
-let fib92 = 7540113804746346429L

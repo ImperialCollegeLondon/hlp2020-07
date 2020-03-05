@@ -1,6 +1,6 @@
 Parser information:
 
-There is only one module for the parser named ParserModule. The input is the output of the tokenizer and the output interfaces with the runtimes through a call to the function "parsedOutput". This is the function that is called after tokenizing the input and returns the appropriate AST that will then be passed to the Runtimes. 
+There is only one module for the parser named ParserModule. The input is the output of the tokenizer and the output interfaces with the runtimes through a call to the function "parsedOutput". This is the function that is called after tokenizing the input and returns the appropriate AST or Error Message that will then be passed to the Runtimes. 
 
 There are a few extensions to the MVP such as support for "* / + -" operators, left associativity in function applications,anonymous functions and lists of literals or functions with or without operators or other lists using the built in type pair. 
 
