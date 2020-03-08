@@ -97,17 +97,24 @@ let memoise fn =
 let rec exec (exp : AST) : Result<AST,string> =
     match exp with 
     | FuncDefExp(fde) -> fde |> func_Def_Exp_to_Lambda |> exec
+    | MutFuncDef(namesList, bodiesList) -> 
+        match execMutFunc (namesList,bodiesList) with
+        | Ok(rewrittenBundle) -> printf "BUNDLE: %A" rewrittenBundle ; exec rewrittenBundle
+        | Error(err) -> Error(err)
     | FuncDef(name, body) -> 
         match exec body with
         | Ok(result) -> globalEnv <- (name, result)::globalEnv ; Ok(result)
         | Error err -> Error err
     | Lazy(lazyExp) -> exec lazyExp
-    | FuncApp(func, arg) -> memoise execFunc (FuncApp(func,arg))
+    | FuncApp(func, arg) -> memoise execFunc (func,arg)
     | Pair(a,b)-> evalPair (Pair(a,b))
-    | Var(name) -> findValue globalEnv name
+    | Var(name) -> 
+        match (findValue globalEnv name) with
+        | Ok(result) -> exec result
+        | Error(err) -> Error(err)
     | Literal _ | BFunc _ | Null | Y | Lambda _ -> exp |> Ok 
 
-and execFunc (FuncApp(func,arg)) = 
+and execFunc (func,arg) = 
     match arg with 
     | Lazy(lazyArg) -> 
         match exec func with 
@@ -138,7 +145,7 @@ and applyBasicFunc (exp:AST):Result<AST,string> =
     | ONEARGFUN (BFunc(Explode),arg) -> evalIfLazy execExplode arg    
     | ONEARGFUN ((Literal(_)|Pair(_)|Null), _) -> sprintf "Run time error: %A is not a valid function application" (exp) |> Error
     | ONEARGFUN (BFunc _, _) -> exp |> Ok //this is to deal with double argument builtIn functions
-    | _ -> Error("SHOULD NEVER HAPPEN")
+    | _ -> Error(sprintf "SHOULD NEVER HAPPEN: %A" exp) 
 
 and lookUp (env:EnvironmentType) exp = 
     match exp with
@@ -163,6 +170,33 @@ and lookUp (env:EnvironmentType) exp =
         | Ok updatedBody -> Ok (Lambda {InputVar = l.InputVar; Body = updatedBody})
         | Error err -> Error err
     | Literal _ | BFunc _ | Null | Y -> Ok exp
+
+and execMutFunc (namesList, bodiesList) : Result<AST, string> = 
+    let folder (res:EnvironmentType) (el:char list) =
+        match res with 
+        |(_, (FuncApp(BFunc PFst, p)))::_ -> (el,FuncApp(BFunc PFst , (FuncApp(BFunc PSnd, p))))::res
+        |[] -> [(el, FuncApp(BFunc PFst, (Var ['f';'p'])))]
+    let newNamesEnv = namesList |> List.fold folder []
+    globalEnv <- newNamesEnv @ globalEnv
+    printf "NAMESENV: %A" newNamesEnv
+    let folder2 res el = 
+        match res with 
+        | Error(err)->Error(err)
+        | Ok(lst) -> 
+            match lookUp (globalEnv) el with
+            | Error(err)-> Error(err)
+            | Ok(looked_el) ->Ok(looked_el::lst)
+    let lookedUpBodies = bodiesList |> List.fold folder2 (Ok [])
+    printf "LookedUpBodies: %A" lookedUpBodies
+
+    let folder3 res el =
+        match res with
+        | Null -> Pair(el,Null)
+        | _ -> Pair(el, res)
+
+    match lookedUpBodies with
+        | Ok(lst) -> Ok (FuncDef( ['f';'p'], FuncApp(Y,Lambda{InputVar = ['f';'p']; Body = List.fold folder3 Null lst})))
+        | Error(err) -> Error(err)    
 
 and evalPair exp =
     match exp with 

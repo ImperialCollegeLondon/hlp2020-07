@@ -57,6 +57,7 @@ type BuiltInType =
 type AST = 
     | FuncDefExp of FuncDefExpType 
     | FuncDef of char list*AST
+    | MutFuncDef of char list list * AST list
     | MatchDef of MatchDefType
     | Lambda of LambdaType
     | Var of char list //only valid in lambdas 

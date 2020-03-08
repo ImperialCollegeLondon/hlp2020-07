@@ -13,6 +13,8 @@ let tokenize_parse (x:string) =
     |> Ok
     |> parsedOutput
 
+tokenize_parse "if equals n 0 then true else b ( n - 1 ) fi"
+tokenize_parse "if equals n 0 then true else a ( n - 1 ) fi"
 let lambdaEval inp = 
     inp 
     |> tokenize_parse
@@ -25,9 +27,13 @@ let rec FSILike() =
         print <| lambdaEval input
         FSILike()
 
+let rec even = fun n -> if n = 0 then true else odd (n-1) 
+and odd = fun n -> if n = 0 then false else even (n-1) 
+
 
 [<EntryPoint>]  
 let main argv =
+    FSILike()
     testsWithExpectoParser() |> ignore
     //print <| parse (Ok [OpenRoundBracket; Keyword "fun"; Other "x"; EqualToken; Other "x"; AddToken; IntegerLit 1L; CloseRoundBracket])
     print <| run(fst(parse (Ok [Let; Other "rec"; Other "f"; Other "n"; EqualToken; Keyword "if"; Other "equals"; Other "n";

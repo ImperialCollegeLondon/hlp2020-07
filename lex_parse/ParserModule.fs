@@ -130,8 +130,8 @@ and (|PNOTEXPITEM|_|) tokLst =
     match tokLst with
     | Ok (Other s::rest) when Map.containsKey s builtInFuncMap -> Some(Ok (Ok(builtInFuncMap.[s]) , Ok rest ))
     | Ok (Keyword s::rest) when s = "Y" ->  Some( Ok (Ok Y, Ok rest))
-    | Ok (Other s::rest) when s = "TRUE" ->Some( Ok (Ok(Lambda {InputVar=Seq.toList "x";Body=Lambda{InputVar=Seq.toList "y"; Body=Var(Seq.toList"x")} }), Ok rest))
-    | Ok (Other s::rest) when s = "FALSE" -> Some(Ok (Ok(Lambda {InputVar=Seq.toList "x";Body=Lambda{InputVar=Seq.toList "y"; Body=Var(Seq.toList "y")} }), Ok rest))
+    | Ok (Other s::rest) when s = "true" ->Some( Ok (Ok(Lambda {InputVar=Seq.toList "x";Body=Lambda{InputVar=Seq.toList "y"; Body=Var(Seq.toList"x")} }), Ok rest))
+    | Ok (Other s::rest) when s = "false" -> Some(Ok (Ok(Lambda {InputVar=Seq.toList "x";Body=Lambda{InputVar=Seq.toList "y"; Body=Var(Seq.toList "y")} }), Ok rest))
     | Ok (Other s :: rest) -> Some( Ok (Ok(Var(Seq.toList s)), Ok rest))
     | Ok (Other "Null" :: rest) -> Some( Ok (Ok Null, Ok rest))
     | Ok (IntegerLit s:: rest) ->Some( Ok (Ok(Literal (Int s)) ,Ok rest))
