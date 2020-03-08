@@ -223,3 +223,21 @@ let run input =
     match input with 
     | Error(err)-> Error(err)
     | Ok(exp)-> exec exp
+
+   
+
+let elseBody12 = FuncApp(FuncApp(BFunc(Mat Mult),Var ['n']),FuncApp(Var ['f'], FuncApp(FuncApp(BFunc(Mat Sub),Var ['n']),Literal(Int 1L))))
+let ifStatement12 = FuncApp(FuncApp(FuncApp(FuncApp(BFunc Equal,Var ['n']),Literal(Int 0L)),Lazy(Literal(Int 1L))),Lazy(elseBody12))
+let fBody12 = FuncApp(Y, Lambda{InputVar = ['f']; Body = Lambda{InputVar = ['n']; Body = ifStatement12}})
+let test12 = FuncDefExp{Name = ['f'];Body = fBody12;Expression = FuncApp(Var ['f'],Literal(Int 5L))}
+
+let result12 = exec  test12
+
+let namesList = [['a'];['b']]
+let bodyA = (FuncApp (FuncApp(FuncApp (FuncApp (BFunc Equal,Var ['n']),Literal (Int 0L)),Lazy (Literal (Int 1L))),Lazy(FuncApp(Var ['b'],FuncApp (FuncApp (BFunc (Mat Sub),Var ['n']),Literal (Int 1L))))))
+let bodyB = (FuncApp (FuncApp(FuncApp (FuncApp (BFunc Equal,Var ['n']),Literal (Int 0L)),Lazy (Literal (Int 0L))),Lazy(FuncApp(Var ['a'],FuncApp (FuncApp (BFunc (Mat Sub),Var ['n']),Literal (Int 1L))))))
+let bodiesList = [Lambda{InputVar = ['n']; Body = bodyA};Lambda{InputVar = ['n']; Body = bodyB}]
+
+let test15 = MutFuncDef(namesList, bodiesList)
+let result15 = exec test15
+exec (FuncApp(Var ['a'], Literal(Int 501L)))
