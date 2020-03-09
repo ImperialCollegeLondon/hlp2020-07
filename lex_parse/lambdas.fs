@@ -6,6 +6,17 @@ type  EnvironmentType = list<(char list)*AST>
 let trueAST = Lambda {InputVar = ['x']; Body = Lambda {InputVar = ['y'];Body = Var ['x']}}
 let falseAST = Lambda {InputVar = ['x']; Body = Lambda {InputVar = ['y']; Body = Var ['y']}}
 
+let firstASTOccurrence (x:AST) (lst:(AST*AST) list ) : int =
+    let rec firstASTOccurrenceHelper (lst:(AST*AST) list) (acc:int) : int =
+        match lst with
+            |hd::_ when (fst hd) = x -> acc
+            |_::tl -> firstASTOccurrenceHelper tl (acc+1)
+            |[] -> -1
+    firstASTOccurrenceHelper lst 0 
+
+
+
+
 let (|TWOARGFUN|_|) exp = 
     match exp with
     | FuncApp(FuncApp(func,x),y) -> Some (func, x, y)
@@ -95,7 +106,25 @@ let memoise fn =
 
 /////////EXEC IS THE MAIN RUNTIME BODY
 let rec exec (exp : AST) : Result<AST,string> =
-    match exp with 
+    match exp with
+    | MatchDef f ->
+            match exec f.Condition with
+                |Ok (Literal x)  ->
+                    //type of f.Cases -> (AST * AST) list
+                    //type exec f.Condition  -> Result<AST,string>
+                    let occ = firstASTOccurrence (Literal x) f.Cases
+                    exec <| snd f.Cases.[occ]
+                |Ok x ->
+                    print "f.Condition"
+                    print f.Condition
+                    print "f.cases[1]"
+                    print f.Cases.[1]
+                    //this is where I'm assuming the result is a pair and break it down accordingly 
+                    Ok <| Literal (Int 4L)
+                
+                |Error x -> failwithf "Condition from match is not a valid expression"
+                
+                
     | FuncDefExp(fde) -> fde |> func_Def_Exp_to_Lambda |> exec
     | MutFuncDef(namesList, bodiesList) -> execMutFunc (namesList,bodiesList) |> exec
     | FuncDef(name, body) -> 

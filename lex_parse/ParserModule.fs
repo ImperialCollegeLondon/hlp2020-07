@@ -3,6 +3,8 @@ open Expecto
 open Definitions
     //fst res,snd res
     
+ 
+    
 let rec extractRightAppList (lst:AST list) (inp:AST) : AST list = 
     match inp with 
     | FuncApp (hd, tl) -> 
@@ -37,6 +39,23 @@ let rec takeInsideTokens openingToken closingToken acc inp count =
 
 let (|PTAKEINSIDETOKENS|_|) openingToken closingToken inp = Some(takeInsideTokens openingToken closingToken [] inp 1)
 
+
+let firstOccurrence (x:Token List) (findThis: Token) : int =   
+        
+    let rec firstOccurenceHelper (x:Token List) (acc:int) : int =
+      match x with
+       | [] -> -1 // token could not be found
+       | hd::tl when hd = findThis -> acc
+       | hd::tl -> firstOccurenceHelper tl acc + 1
+      
+            
+    
+    firstOccurenceHelper x 0
+
+let sepConditionExpression (x:Token list) : (Token list * Token list) =
+    let condition = x.GetSlice (Some 0, Some ((firstOccurrence x RightArrow) - 1 ))
+    let expression = x.GetSlice (Some ((firstOccurrence x RightArrow) + 1), Some (x.Length - 1 ))
+    (condition,expression)   
 
 let split (at:Token) (x:Token list)  : (Token list list * Token list) =
     let rec splitHelper (at:Token) (x:Token list) (acc:Token list) (finalAcc:Token list list) : (Token list list * Token list) =
@@ -115,13 +134,8 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,
         | Error msg -> Error msg
 
 
-    | PMATCH (Keyword "match") (PBUILDMATCHCASES(astList, PMATCH (Keyword "endmatch") (inp')))  ->
-        //print ast
-        
-        let res = List.map (function |Ok x -> x |y -> failwithf "One of the cases failed") astList
-        //Assumes at least one
-        //Not dealt with errors yet
-        Ok(Ok (MatchDef{Condition = res.Head; Cases = res.Tail}),inp')
+    | PMATCH (Keyword "match") (PBUILDMATCHCASES(astList, Ok A, PMATCH (Keyword "endmatch") (inp')))  ->
+        Ok(Ok (MatchDef{Condition = A; Cases = astList}),inp')
     | Ok (hd::tl) -> Error (sprintf "Couldn't parse item %A" hd)
     | Error lst -> Error "Input list was invalid"
     |> Some
@@ -277,19 +291,31 @@ and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(Result<
 and (|PBUILDADDEXP|_|) (inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token list, Token list>)option = 
     Some (buildAddExp [] inp)
 
-and (|PBUILDMATCHCASES|_|) (inp: Result<Token list, Token list>) : ( (Result<AST,string> list) * Result<Token list, Token list>) option =
+and (|PBUILDMATCHCASES|_|) (inp: Result<Token list, Token list>) : ( (AST * AST) list *Result<AST,string> *Result<Token list, Token list>) option =
     Some <| buildMatchCases inp
 
-and buildMatchCases (inp: Result<Token list, Token list>):(Result<AST,string> list *Result<Token list, Token list>) =
+
+and buildMatchCases (inp: Result<Token list, Token list>):( (AST * AST) list * Result<AST , string> * Result<Token list, Token list> ) =
     match inp with
         | Ok x  ->
-                       let (cases,res) = split (Keyword "case") x
-                       cases
-                       |> List.map ( fst << (function |Some x -> x | _ -> failwithf "One case couldn't parse"   )  << ((|PBUILDADDEXP|_|) << Ok)),Ok res
-                       //split (Keyword "case") x
-                       //|> List.map ( fst << (function |Some x -> x | _ -> failwithf "One case couldn't parse"   )  << ((|PBUILDADDEXP|_|) << Ok)),res
-                       //failwithf "A"
-        | _ -> failwithf "Cases failed"
+           let (cases,res) = split (Keyword "case") x
+           let toMatch = match (|PBUILDADDEXP|_|) <|  Ok cases.Head with
+                            | Some (Ok x, Ok y) when List.isEmpty y -> x
+                            | _ -> failwithf "thing to be matched didn't parse"
+           cases.Tail
+           |> List.map
+              (
+              sepConditionExpression
+              >> fun (cond,exp) -> ( (|PBUILDADDEXP|_|) <| Ok cond, (|PBUILDADDEXP|_|) <| Ok exp )
+              >> fun (parsedCondition, parsedExpression) ->
+                  match parsedCondition, parsedExpression with
+                    | Some (Ok finalCond,Ok resEmpty1), Some (Ok finalExp,Ok resEmpty2) when ((List.isEmpty resEmpty1) && (List.isEmpty resEmpty2) ) -> finalCond, finalExp
+                    | _ -> failwithf "Parsing before/after arrow in match case failed"
+              ) , Ok toMatch,  Ok res
+        | _ ->
+           failwithf "Cases failed"
+
+
 
 and buildLambda (inp:Result<Token list, Token list>):(Result<AST,string>*Result<Token list, Token list>) = 
     match inp with 
