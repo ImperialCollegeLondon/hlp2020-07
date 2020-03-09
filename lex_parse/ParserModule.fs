@@ -138,7 +138,7 @@ and (|PNOTEXPITEM|_|) tokLst =
     | Ok (StringLit s::rest) ->Some( Ok (Ok(Literal (Str (Seq.toList s))), Ok rest))
     | _ -> None
 
-and endKeyWordsList = [CloseRoundBracket; CloseSquareBracket; Keyword "then"; Keyword "else"; Keyword "fi"; Keyword ";"]
+and endKeyWordsList = [CloseRoundBracket; CloseSquareBracket; Keyword "then"; Keyword "else"; Keyword "fi"; Keyword ";"; Other "mrec"]
 
 and buildAppExp(inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token list, Token list>) =
    match inp with
@@ -292,6 +292,7 @@ and buildMatchCases (inp: Result<Token list, Token list>):(Result<AST,string> li
         | _ -> failwithf "Cases failed"
 
 and buildLambda (inp:Result<Token list, Token list>):(Result<AST,string>*Result<Token list, Token list>) = 
+    //printf "Entered buildLambda with %A \n" inp
     match inp with 
     | Ok (hd::(hd'::tl)) -> 
         match hd,hd' with 
@@ -309,7 +310,7 @@ and buildLambda (inp:Result<Token list, Token list>):(Result<AST,string>*Result<
         | (EqualToken), _ -> parse (Ok (hd'::tl))
         
         | _ -> (Error "Invalid arguments" , inp)
-    | _ -> (Error "insufficient expression" , inp )
+    | _ -> (Error "insufficient expression" , inp)
 
 and (|BUILDLAMBDA|_|) inp:((Result<AST,string>*Result<Token list, Token list>) option) = Some (buildLambda inp)
 
@@ -319,10 +320,9 @@ and extractParts inp acc =
     | hd::tl -> extractParts tl (acc @ [hd])
     | [] -> Ok (acc, []) //Error "This function definition is never used"
 
-and adaptRecursiveExpression lambda name inp = 
-    match inp with 
-    | Other x when x = name -> [Keyword "Y"] @ lambda
-    | x -> [x]
+and adaptRecursiveExpression lambda  = 
+     [Keyword "Y"] @ lambda
+
 
 and bodyToAnonymousFun inp = 
     [OpenRoundBracket]@[Keyword "fun"]@inp@[CloseRoundBracket]
@@ -339,14 +339,14 @@ and  buildFunctionDef inp:(Result<AST,string>*Result<Token list, Token list>)  =
                         let splitFunc = extractParts tl []
                         match splitFunc with 
                         | Ok (body, []) -> 
-                            match buildLambda (Ok body) with
+                            let modifiedBody = adaptRecursiveExpression (bodyToAnonymousFun body)
+                            match parse (Ok modifiedBody) with
                             | (Ok body, _) -> (Ok(FuncDef(Seq.toList x, body)), Ok [])
                             | (Error msg, rest) -> (Error msg, rest)
                         | Ok (body, expression) ->
-                            let modifiedExpression = List.map  (adaptRecursiveExpression (bodyToAnonymousFun body) x) expression
-                                                     |> List.concat
-                            let parsedExpression = parse (Ok modifiedExpression)
-                            let parsedBody = buildLambda (Ok body)
+                            let modifiedBody = adaptRecursiveExpression (bodyToAnonymousFun body)
+                            let parsedExpression = parse (Ok expression)
+                            let parsedBody = parse (Ok modifiedBody)
                             match  parsedBody, parsedExpression with 
                             |((Ok body, _),(Ok expression, rest))  -> (Ok (FuncDefExp {Name=Seq.toList x;Body=body; Expression=expression}),rest)
                             | ((Error msg, rest), _) -> (Error msg, rest)
@@ -380,7 +380,14 @@ and parse (inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token
     match inp with
     | PMATCH (Let) (Ok rest) -> 
         buildFunctionDef (rest)
-        
+
+    | PMATCH (Other "mrec") (Ok rest) ->
+        let tup = buildMRecExp (rest)
+        match tup with 
+        | Ok (x, y) -> 
+            let res = MutFuncDef (x, y)
+            (Ok res, Ok [])
+        | Error msg -> (Error msg, inp)
     | _ -> 
         buildAddExp [] inp
  and (|PPARSE|_|) inp = Some(parse inp)
@@ -404,6 +411,22 @@ and (|PBUILDLIST|_|) inp =
         | _ -> Error "Input list is not valid"
     | _ -> Error "Input list is not valid"
     |> Some
+
+and buildMRecExp inp = 
+    //printf "Entered buildMRecExp with %A \n" inp
+    match inp with 
+    | Other hd::tl ->
+        let parsed = buildLambda (Ok tl)
+        match parsed with 
+        | (Ok ast, Ok ((Other "mrec")::rest)) ->
+            let res = buildMRecExp rest
+            match res with 
+            | Ok (x, y) -> Ok ([Seq.toList hd] @ x, [ast]@y)
+            | Error msg -> Error msg
+        | (Ok ast, Ok []) -> Ok ([Seq.toList hd], [ast])
+        | (Error msg, rest) -> Error msg
+        | _ -> Error "Invalid mutual recursive functions definition"
+    | _ -> Error "Invalid mutual recursive functions definition "
 
 
 let makeTests (name, instr, outI) =
