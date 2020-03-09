@@ -97,10 +97,7 @@ let memoise fn =
 let rec exec (exp : AST) : Result<AST,string> =
     match exp with 
     | FuncDefExp(fde) -> fde |> func_Def_Exp_to_Lambda |> exec
-    | MutFuncDef(namesList, bodiesList) -> 
-        match execMutFunc (namesList,bodiesList) with
-        | Ok(rewrittenBundle) -> printf "BUNDLE: %A" rewrittenBundle ; exec rewrittenBundle
-        | Error(err) -> Error(err)
+    | MutFuncDef(namesList, bodiesList) -> execMutFunc (namesList,bodiesList) |> exec
     | FuncDef(name, body) -> 
         match exec body with
         | Ok(result) -> globalEnv <- (name, result)::globalEnv ; Ok(result)
@@ -171,32 +168,20 @@ and lookUp (env:EnvironmentType) exp =
         | Error err -> Error err
     | Literal _ | BFunc _ | Null | Y -> Ok exp
 
-and execMutFunc (namesList, bodiesList) : Result<AST, string> = 
+and execMutFunc (namesList, bodiesList) : AST = 
     let folder (res:EnvironmentType) (el:char list) =
         match res with 
         |(_, (FuncApp(BFunc PFst, p)))::_ -> (el,FuncApp(BFunc PFst , (FuncApp(BFunc PSnd, p))))::res
         |[] -> [(el, FuncApp(BFunc PFst, (Var ['f';'p'])))]
     let newNamesEnv = namesList |> List.fold folder []
     globalEnv <- newNamesEnv @ globalEnv
-    printf "NAMESENV: %A" newNamesEnv
-    let folder2 res el = 
-        match res with 
-        | Error(err)->Error(err)
-        | Ok(lst) -> 
-            match lookUp (globalEnv) el with
-            | Error(err)-> Error(err)
-            | Ok(looked_el) ->Ok(looked_el::lst)
-    let lookedUpBodies = bodiesList |> List.fold folder2 (Ok [])
-    printf "LookedUpBodies: %A" lookedUpBodies
 
     let folder3 res el =
         match res with
         | Null -> Pair(el,Null)
         | _ -> Pair(el, res)
 
-    match lookedUpBodies with
-        | Ok(lst) -> Ok (FuncDef( ['f';'p'], FuncApp(Y,Lambda{InputVar = ['f';'p']; Body = List.fold folder3 Null lst})))
-        | Error(err) -> Error(err)    
+    (FuncDef( ['f';'p'], FuncApp(Y,Lambda{InputVar = ['f';'p']; Body = bodiesList |> List.rev |> List.fold folder3 Null})))
 
 and evalPair exp =
     match exp with 
@@ -240,4 +225,4 @@ let bodiesList = [Lambda{InputVar = ['n']; Body = bodyA};Lambda{InputVar = ['n']
 
 let test15 = MutFuncDef(namesList, bodiesList)
 let result15 = exec test15
-exec (FuncApp(Var ['a'], Literal(Int 501L)))
+exec (FuncApp(Var ['a'], Literal(Int 70L)))
