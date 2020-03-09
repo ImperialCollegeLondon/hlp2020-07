@@ -157,12 +157,13 @@ let rec exec (exp : AST) : Result<AST,string> =
                     let binded,caseNum =  bindPair x (List.map fst f.Cases)
                     // HERE DANI
                     let dani1 = List.map matchReducer binded
+                    let dani2 = snd f.Cases.[caseNum]
                     
                     
                     
                     
                     
-                    printf "Binded: %A \n Case: %A" dani1 (snd f.Cases.[caseNum])
+                    printf "Binded: %A \n Case: %A" dani1 dani2
                     //this is where I'm assuming the result is a pair and break it down accordingly 
                     Ok <| Literal (Int 4L)
                 
