@@ -425,8 +425,9 @@ and buildMRecExp inp =
             | Error msg -> Error msg
         | (Ok ast, Ok []) -> Ok ([Seq.toList hd], [ast])
         | (Error msg, rest) -> Error msg
+        | (Ok ast, Ok ((Other "in")::rest)) -> Error "Write the expression in a separate line"
         | _ -> Error "Invalid mutual recursive functions definition"
-    | _ -> Error "Invalid mutual recursive functions definition "
+    | _ -> Error "Invalid mutual recursive functions definition"
 
 
 let makeTests (name, instr, outI) =
