@@ -14,7 +14,37 @@ let firstASTOccurrence (x:AST) (lst:(AST*AST) list ) : int =
             |[] -> -1
     firstASTOccurrenceHelper lst 0 
 
-
+let lengthPair (p: AST) : int =
+    let rec lengthPairHelper (p: AST) (acc:int) : int =
+        match p with
+            | Pair (_,y) when y <> Null -> lengthPairHelper y (acc+1)
+            | Pair (_,_) -> acc
+            | Null -> 0
+            | _ -> failwithf "Pair not constructed properly or pair not given"
+    lengthPairHelper p 1   
+let bindPair (toMatch: AST) (intoThis:AST list) : ((AST * AST) list) * int =
+     let bind (fromMatch:AST) (intoThis:AST) : (AST * AST) list =
+         let rec bindHelper (left:AST) (right:AST) (envList: (AST * AST) list) : (AST * AST) list =             
+             match (left,right) with
+             |Pair (x,Null), Pair (y,Null) ->
+                 envList @ [x,y]
+             |Pair (_,_), Pair (y,Null) ->
+                 envList @ [left, y]
+             |Pair (x,x_left), Pair (y,y_left) ->
+                 bindHelper x_left y_left (envList @ [x,y])
+             | _ -> failwithf "Why is this happenning?"
+         //print <| bindHelper fromMatch intoThis []
+         bindHelper fromMatch intoThis []
+     let rec bindPairHelper (remList:AST list) (acc:int) : ((AST * AST) list) * int =    
+         match remList with
+             |hd :: tl when (lengthPair hd) <= (lengthPair toMatch) ->
+                 (bind toMatch hd), acc
+             |_ :: tl -> bindPairHelper tl (acc+1)
+             |[] -> failwithf "All patterns too small"
+     bindPairHelper intoThis 0
+    
+        
+    
 
 
 let (|TWOARGFUN|_|) exp = 
@@ -106,6 +136,14 @@ let memoise fn =
 
 /////////EXEC IS THE MAIN RUNTIME BODY
 let rec exec (exp : AST) : Result<AST,string> =
+    
+    let matchReducer (x:AST*AST) : (AST*char list) = 
+        match x with
+            | y, Var name -> y,name
+            | _ -> failwithf "should be a variable. Anything else not supported yet in match"
+    
+    
+    
     match exp with
     | MatchDef f ->
             match exec f.Condition with
@@ -114,11 +152,17 @@ let rec exec (exp : AST) : Result<AST,string> =
                     //type exec f.Condition  -> Result<AST,string>
                     let occ = firstASTOccurrence (Literal x) f.Cases
                     exec <| snd f.Cases.[occ]
+                //Assume only pairs can be matched so far
                 |Ok x ->
-                    print "f.Condition"
-                    print f.Condition
-                    print "f.cases[1]"
-                    print f.Cases.[1]
+                    let binded,caseNum =  bindPair x (List.map fst f.Cases)
+                    // HERE DANI
+                    let dani1 = List.map matchReducer binded
+                    
+                    
+                    
+                    
+                    
+                    printf "Binded: %A \n Case: %A" dani1 (snd f.Cases.[caseNum])
                     //this is where I'm assuming the result is a pair and break it down accordingly 
                     Ok <| Literal (Int 4L)
                 

@@ -310,7 +310,9 @@ and buildMatchCases (inp: Result<Token list, Token list>):( (AST * AST) list * R
               >> fun (parsedCondition, parsedExpression) ->
                   match parsedCondition, parsedExpression with
                     | Some (Ok finalCond,Ok resEmpty1), Some (Ok finalExp,Ok resEmpty2) when ((List.isEmpty resEmpty1) && (List.isEmpty resEmpty2) ) -> finalCond, finalExp
-                    | _ -> failwithf "Parsing before/after arrow in match case failed"
+                    | _ ->
+                        printf "Parsed Condition %A \n Parsed Expression %A" parsedCondition parsedExpression 
+                        failwithf "Parsing before/after arrow in match case failed"
               ) , Ok toMatch,  Ok res
         | _ ->
            failwithf "Cases failed"
