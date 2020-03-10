@@ -45,15 +45,29 @@ let test4 =
         | Ok x,y -> x
         | _ -> failwithf "wot?d"
 
+let test5 =
+    match tokenize_parse "1" with
+        |Ok x,y -> x
+        | _ -> failwithf "s"
+
+
+let test6 = []
+
+
 
 [<EntryPoint>]  
 let main argv =
     
+    //print test7
+    
     //print <| firstOccurrence [Other "a"; Let; Let; RightArrow; Keyword "a"] Let
     //print <| test1.GetSlice (Some 0, Some (firstOccurrence test1 Let))
     //print <| test1.GetSlice (Some ((firstOccurrence test1 Let) + 1), Some (test1.Length - 1) )
-    print <| lambdaEval "match [1;2;3;4;5] case [x;y;z] -> x + 3 case [x;y;z;a;k] -> 5 * 20 case endmatch"
     
+    //print <| bindEmptyVariables test5
+    
+    print <| lambdaEval "let f = [1;2;3;4;5] in let g = 2 in match f case [x;y;z;a;b;c;d] -> 1 + x + g case [x;y] -> 2 + g + x case [x] -> 3 case endmatch"
+    //print <| lambdaEval "let h = 2 in let f = 1 in f * h"
     //print <| lengthPair test2
     //print <| bindPair test3 [test4]
     //print <| tokenize_parse "match 1 case 1 -> 1 + 5 case [1;2;3] -> 5 * 20 case 3 ->  3*100 case endmatch"

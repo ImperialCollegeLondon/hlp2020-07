@@ -6,6 +6,18 @@ type  EnvironmentType = list<(char list)*AST>
 let trueAST = Lambda {InputVar = ['x']; Body = Lambda {InputVar = ['y'];Body = Var ['x']}}
 let falseAST = Lambda {InputVar = ['x']; Body = Lambda {InputVar = ['y']; Body = Var ['y']}}
 
+
+let bindEmptyVariables (pairs:AST) : EnvironmentType =
+    
+    let rec bindEmptyVariablesHelper(pairs: AST) (acc:EnvironmentType) : EnvironmentType =
+        match pairs with
+            |Pair (Var x, Null) -> acc @ [x, Var x]
+            |Pair (Var x,y) -> bindEmptyVariablesHelper y (acc @ [x, Var x])
+            |_  -> []
+        
+    
+    bindEmptyVariablesHelper pairs []
+
 let firstASTOccurrence (x:AST) (lst:(AST*AST) list ) : int =
     let rec firstASTOccurrenceHelper (lst:(AST*AST) list) (acc:int) : int =
         match lst with
@@ -20,7 +32,7 @@ let lengthPair (p: AST) : int =
             | Pair (_,y) when y <> Null -> lengthPairHelper y (acc+1)
             | Pair (_,_) -> acc
             | Null -> 0
-            | _ -> failwithf "Pair not constructed properly or pair not given"
+            | x -> print x ;failwithf "Pair not constructed properly or pair not given"
     lengthPairHelper p 1   
 let bindPair (toMatch: AST) (intoThis:AST list) : ((AST * AST) list) * int =
      let bind (fromMatch:AST) (intoThis:AST) : (AST * AST) list =
@@ -32,12 +44,15 @@ let bindPair (toMatch: AST) (intoThis:AST list) : ((AST * AST) list) * int =
                  envList @ [left, y]
              |Pair (x,x_left), Pair (y,y_left) ->
                  bindHelper x_left y_left (envList @ [x,y])
-             | _ -> failwithf "Why is this happenning?"
+             | Null, Pair (y, Null) -> envList @ [Null, y]
+             | Null, Null -> []
+             | x -> print x;failwithf "Why is this happening?"
          //print <| bindHelper fromMatch intoThis []
          bindHelper fromMatch intoThis []
      let rec bindPairHelper (remList:AST list) (acc:int) : ((AST * AST) list) * int =    
-         match remList with
-             |hd :: tl when (lengthPair hd) <= (lengthPair toMatch) ->
+         match remList with             
+             |x::tl when toMatch = Null && x = Null -> [],acc
+             |hd :: tl when (lengthPair hd) <= (lengthPair toMatch) && hd <> Null ->
                  (bind toMatch hd), acc
              |_ :: tl -> bindPairHelper tl (acc+1)
              |[] -> failwithf "All patterns too small"
@@ -137,9 +152,9 @@ let memoise fn =
 /////////EXEC IS THE MAIN RUNTIME BODY
 let rec exec (exp : AST) : Result<AST,string> =
     
-    let matchReducer (x:AST*AST) : (AST*char list) = 
+    let matchReducer (x:AST*AST) : (char list*AST) = 
         match x with
-            | y, Var name -> y,name
+            | y, Var name -> name,y
             | _ -> failwithf "should be a variable. Anything else not supported yet in match"
     
     
@@ -156,16 +171,12 @@ let rec exec (exp : AST) : Result<AST,string> =
                 |Ok x ->
                     let binded,caseNum =  bindPair x (List.map fst f.Cases)
                     // HERE DANI
-                    let dani1 = List.map matchReducer binded
+                    let binded = List.map matchReducer binded
                     let dani2 = snd f.Cases.[caseNum]
-                    
-                    
-                    
-                    
-                    
-                    printf "Binded: %A \n Case: %A" dani1 dani2
-                    //this is where I'm assuming the result is a pair and break it down accordingly 
-                    Ok <| Literal (Int 4L)
+                    match lookUp (binded @ globalEnv) dani2 with
+                            | Ok(lookedUp) -> exec lookedUp
+                            | Error(err)->Error(err)
+                   
                 
                 |Error x -> failwithf "Condition from match is not a valid expression"
                 
@@ -220,6 +231,17 @@ and applyBasicFunc (exp:AST):Result<AST,string> =
 
 and lookUp (env:EnvironmentType) exp = 
     match exp with
+    | MatchDef f ->
+        //print env
+        match lookUp env f.Condition with
+        
+        | Ok(lookedUpCondition) ->
+            let res = List.map ( (function |x,Ok y -> x,y |_ -> failwithf "Looking up one of the matches failed" ) << (fun (z,x,y) -> z, lookUp (x @ env) y ) << (fun (x,y) -> x,bindEmptyVariables x,y )) f.Cases
+            //lookUp (newEnv @ env) body
+            Ok <| MatchDef {Condition = lookedUpCondition; Cases =  res }           
+        | Error(err) -> Error(err)
+        
+        //failwithf "not supported yet"
     | Var name -> findValue env name
     //| FuncDef (name,body) ->       
     | FuncDefExp fde -> fde |> func_Def_Exp_to_Lambda |> lookUp env
