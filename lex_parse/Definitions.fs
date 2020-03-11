@@ -53,6 +53,7 @@ type BuiltInType =
     | IfThenElse  
     | True | False
     | BS | BK | BI
+    | Print
 
 type AST = 
     | FuncDefExp of FuncDefExpType 
