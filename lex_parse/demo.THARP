@@ -1,0 +1,4 @@
+let x = 10
+let g = 100
+let f x = x+g
+f 10

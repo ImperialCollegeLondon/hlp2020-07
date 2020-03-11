@@ -1,22 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
-
   <ItemGroup>
     <Compile Include="Definitions.fs" />
     <Compile Include="TokenModule.fs" />
     <Compile Include="ParserModule.fs" />
-    <Compile Include="CombinatorRuntimeModule.fs" />
     <Compile Include="lambdas.fs" />
+    <Compile Include="CombinatorRuntimeModule.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="Expecto" Version="8.13.1" />
     <PackageReference Include="Expecto.FsCheck" Version="8.13.1" />
   </ItemGroup>
-
 </Project>

@@ -3,6 +3,7 @@ open ParserModule
 open Definitions
 open Lambdas
 open System
+open System.IO
 
 let print x =
     printfn "%A" x
@@ -27,12 +28,31 @@ let rec FSILike() =
         print <| lambdaEval input
         FSILike()
 
+let printASTResult = 
+    function
+    | Literal(Int n) -> n |> print
+    | Literal(Str cLst) -> String.Concat(Array.ofList(cLst)) |> print
+    | _ -> print "\n"
+
+
+let execFile(filePath) =
+    let rec execLines =
+        function
+        | hd::tl -> 
+            match lambdaEval hd with
+            | Error(err) -> print err 
+            | Ok(ast) -> printASTResult ast; execLines tl
+        | [] -> ()
+    File.ReadAllLines filePath |> Array.toList |> execLines
+
+
 let rec even = fun n -> if n = 0 then true else odd (n-1) 
 and odd = fun n -> if n = 0 then false else even (n-1) 
 
 
 [<EntryPoint>]  
 let main argv =
+    execFile("C:\\Users\\danig\\Desktop\\myF#\\hlp2020-07\\lex_parse\\demo.THARP")
     FSILike()
     testsWithExpectoParser() |> ignore
     //print <| parse (Ok [OpenRoundBracket; Keyword "fun"; Other "x"; EqualToken; Other "x"; AddToken; IntegerLit 1L; CloseRoundBracket])
