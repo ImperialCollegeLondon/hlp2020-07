@@ -81,6 +81,7 @@ let rec execExplode (str) =
     | (Literal (Str (hd::tl))) -> (Pair(Literal(Str([hd])), Literal(Str tl))) |> execExplode 
     | _ -> sprintf "Run-time error: %A is not a valid string to explode" str |> Error 
 
+
 let mutable cache = Map []
 
 let mutable globalEnv:EnvironmentType =  [] 
@@ -93,11 +94,27 @@ let memoise fn =
                  cache <- Map.add x res cache //store result in cache
                  res // return result
 
+let createRecBundle (namesList, bodiesList) : AST = 
+    let toPairNames (res:EnvironmentType) (el:char list) =
+        match res with 
+        |(_, (FuncApp(BFunc PFst, p)))::_ -> (el,FuncApp(BFunc PFst , (FuncApp(BFunc PSnd, p))))::res
+        |[] -> [(el, FuncApp(BFunc PFst, (Var [' '])))]
+        | _ -> printf "%A SHOULD NEVER HAPPEN" res ; []
+    let newNamesEnv = namesList |> List.fold toPairNames []
+    globalEnv <- newNamesEnv @ globalEnv
+
+    let toNestedPairs res el =
+        match res with
+        | Null -> Pair(el,Null)
+        | _ -> Pair(el, res)
+    (FuncDef( [' '], FuncApp(Y,Lambda{InputVar = [' ']; Body = bodiesList |> List.rev |> List.fold toNestedPairs Null})))
+
+
 /////////EXEC IS THE MAIN RUNTIME BODY
 let rec exec (exp : AST) : Result<AST,string> =
     match exp with 
     | FuncDefExp(fde) -> fde |> func_Def_Exp_to_Lambda |> exec
-    | MutFuncDef(namesList, bodiesList) -> execMutFunc (namesList,bodiesList) |> exec
+    | MutFuncDef(namesList, bodiesList) -> createRecBundle (namesList,bodiesList) |> exec
     | FuncDef(name, body) -> 
         match exec body with
         | Ok(result) -> globalEnv <- (name, result)::globalEnv ; Ok(result)
@@ -147,7 +164,6 @@ and applyBasicFunc (exp:AST):Result<AST,string> =
 and lookUp (env:EnvironmentType) exp = 
     match exp with
     | Var name -> findValue env name
-    //| FuncDef (name,body) ->       
     | FuncDefExp fde -> fde |> func_Def_Exp_to_Lambda |> lookUp env
     | FuncApp(func,arg) -> 
         match (lookUp env func,lookUp env arg) with
@@ -167,21 +183,6 @@ and lookUp (env:EnvironmentType) exp =
         | Ok updatedBody -> Ok (Lambda {InputVar = l.InputVar; Body = updatedBody})
         | Error err -> Error err
     | Literal _ | BFunc _ | Null | Y -> Ok exp
-
-and execMutFunc (namesList, bodiesList) : AST = 
-    let folder (res:EnvironmentType) (el:char list) =
-        match res with 
-        |(_, (FuncApp(BFunc PFst, p)))::_ -> (el,FuncApp(BFunc PFst , (FuncApp(BFunc PSnd, p))))::res
-        |[] -> [(el, FuncApp(BFunc PFst, (Var ['f';'p'])))]
-    let newNamesEnv = namesList |> List.fold folder []
-    globalEnv <- newNamesEnv @ globalEnv
-
-    let folder3 res el =
-        match res with
-        | Null -> Pair(el,Null)
-        | _ -> Pair(el, res)
-
-    (FuncDef( ['f';'p'], FuncApp(Y,Lambda{InputVar = ['f';'p']; Body = bodiesList |> List.rev |> List.fold folder3 Null})))
 
 and evalPair exp =
     match exp with 
@@ -207,9 +208,7 @@ and evalIfLazy2ARG func arg1 arg2 : Result<AST,string> =
 let run input =
     match input with 
     | Error(err)-> Error(err)
-    | Ok(exp)-> exec exp
-
-   
+    | Ok(exp)-> exec exp   
 
 let elseBody12 = FuncApp(FuncApp(BFunc(Mat Mult),Var ['n']),FuncApp(Var ['f'], FuncApp(FuncApp(BFunc(Mat Sub),Var ['n']),Literal(Int 1L))))
 let ifStatement12 = FuncApp(FuncApp(FuncApp(FuncApp(BFunc Equal,Var ['n']),Literal(Int 0L)),Lazy(Literal(Int 1L))),Lazy(elseBody12))
