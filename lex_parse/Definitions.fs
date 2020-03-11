@@ -33,6 +33,8 @@ type Token = OpenRoundBracket
             |Unexpected of string
             |Newline
             |NoInput
+            |OpenCurlyBracket
+            |CloseCurlyBracket
 
 type MathType = 
    | Add 

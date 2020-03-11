@@ -115,6 +115,8 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,
 
     | PMATCH (OpenSquareBracket) (PBUILDLIST (Ok (ast, PMATCH (CloseSquareBracket) (inp')))) -> Ok (Ok ast, inp')
 
+    | PMATCH (OpenCurlyBracket) (PBUILDMATCHLIST (Ok (ast, PMATCH (CloseCurlyBracket) (inp')))) -> Ok (Ok ast, inp')
+
     | PMATCH (OpenSquareBracket) (PBUILDLIST (result)) ->
         match result with
         | Ok (ast, PMATCH (CloseSquareBracket) (inp')) -> Ok (Ok ast, inp')
@@ -145,7 +147,7 @@ and (|PNOTEXPITEM|_|) tokLst =
     | Ok (StringLit s::rest) ->Some( Ok (Ok(Literal (Str (Seq.toList s))), Ok rest))
     | _ -> None
 
-and endKeyWordsList = [CloseRoundBracket; CloseSquareBracket; Keyword "then"; Keyword "else"; Keyword "fi"; Keyword ";"; Other "mrec"]
+and endKeyWordsList = [CloseRoundBracket; CloseSquareBracket; Keyword "then"; Keyword "else"; Keyword "fi"; Keyword ";"; Other "mrec"; Keyword ":"; CloseCurlyBracket]
 
 and buildAppExp(inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token list, Token list>) =
    match inp with
@@ -178,6 +180,10 @@ and buildMultExp (acc:Token list) (inp: Result<Token list, Token list>) :(Result
         let acc'' = (acc@[OpenSquareBracket] @acc')
         buildMultExp (acc'') inp' 
 
+    | PMATCH (OpenCurlyBracket) (PTAKEINSIDETOKENS (OpenCurlyBracket) (CloseCurlyBracket) (Ok(acc', inp')))  ->
+        let acc'' = (acc@[OpenCurlyBracket] @acc')
+        buildMultExp (acc'') inp' 
+
     | PMATCH (Keyword "match") (TAKEINSIDEMATCH (Ok(inp', acc'))) ->
         let acc'' = (acc@[Keyword "match"] @ acc')
         buildMultExp (acc'') inp'
@@ -194,6 +200,13 @@ and buildMultExp (acc:Token list) (inp: Result<Token list, Token list>) :(Result
         match Ok tl with 
         | (PTAKEINSIDETOKENS (OpenSquareBracket) (CloseSquareBracket) (Ok(acc', inp'))) ->
             let acc'' = (acc@[Keyword ";"] @acc')
+            buildMultExp (acc'') inp'
+        | _ -> (Error "Input list is not valid", inp)
+
+    | Ok (hd::tl) when hd = Keyword ":" ->
+        match Ok tl with 
+        | (PTAKEINSIDETOKENS (OpenCurlyBracket) (CloseCurlyBracket) (Ok(acc', inp'))) ->
+            let acc'' = (acc@[Keyword ":"] @acc')
             buildMultExp (acc'') inp'
         | _ -> (Error "Input list is not valid", inp)
 
@@ -240,6 +253,10 @@ and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(Result<
         | Error msg -> (Error msg, inp)
     | PMATCH (OpenSquareBracket) (PTAKEINSIDETOKENS (OpenSquareBracket) (CloseSquareBracket) (Ok(acc', inp')))  ->
         let acc'' = (acc@[OpenSquareBracket] @acc')
+        buildAddExp (acc'') inp'
+
+    | PMATCH (OpenCurlyBracket) (PTAKEINSIDETOKENS (OpenCurlyBracket) (CloseCurlyBracket) (Ok(acc', inp')))  ->
+        let acc'' = (acc@[OpenCurlyBracket] @acc')
         buildAddExp (acc'') inp' 
 
     | PMATCH (Keyword "match") (TAKEINSIDEMATCH (Ok(inp', acc'))) ->
@@ -257,6 +274,13 @@ and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(Result<
         match Ok tl with 
         | (PTAKEINSIDETOKENS (OpenSquareBracket) (CloseSquareBracket) (Ok(acc', inp'))) ->
             let acc'' = (acc@[Keyword ";"] @acc')
+            buildAddExp (acc'') inp'
+        | _ -> (Error "Input list is not valid", inp)
+
+    | Ok (hd::tl) when hd = Keyword ":" ->
+        match Ok tl with 
+        | (PTAKEINSIDETOKENS (OpenCurlyBracket) (CloseCurlyBracket) (Ok(acc', inp'))) ->
+            let acc'' = (acc@[Keyword ":"] @acc')
             buildAddExp (acc'') inp'
         | _ -> (Error "Input list is not valid", inp)
         
@@ -417,6 +441,18 @@ and (|PBUILDLIST|_|) inp =
         | CloseSquareBracket, _ -> Ok (Pair (ast, Null), Ok (hd::tl))
         | _ -> Error "Input list is not valid"
     | _ -> Error "Input list is not valid"
+    |> Some
+
+and (|PBUILDMATCHLIST|_|) inp = 
+    match inp with 
+    | Ok (hd::tl) when hd = CloseCurlyBracket -> Ok (Null, Ok (hd::tl))
+    | PPARSE (Ok ast, Ok (hd::tl)) -> 
+        match hd,(Ok tl) with
+        //| Keyword ";", (PPARSE (Ok (ast', lst') ) ) ->
+        | Keyword ":", (PBUILDMATCHLIST (Ok (ast', lst')))-> Ok (Pair (ast, ast'), lst')
+        | CloseCurlyBracket, _ -> Ok (Pair (ast, Null), Ok (hd::tl))
+        | _ -> Error "Match is not valid"
+    | _ -> Error "Match is not valid"
     |> Some
 
 and buildMRecExp inp = 
