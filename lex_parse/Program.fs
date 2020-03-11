@@ -40,8 +40,9 @@ let main argv =
     //IntegerLit 1L; CloseRoundBracket; CloseRoundBracket; Keyword "fi"; Other "in";
     //Other "f"; IntegerLit 3L])))
 
-    print <| lambdaEval "mrec even n = if equals n 0 then true else odd (n - 1) fi mrec odd n = if equals n 0 then false else even (n - 1) fi"
-    print <| lambdaEval "even 100"
+    //print <| lambdaEval "mrec even n = if equals n 0 then true else odd (n - 1) fi mrec odd n = if equals n 0 then false else even (n - 1) fi"
+    //print <| lambdaEval "even 100"
+    print <| tokenize_parse "let f x y = x * x in f 3 lazy(2 + 1)"
 
 
     //print <| run(fst(parse (Ok [Let; Other "rec"; Other "fib"; Other "a"; EqualToken; Keyword "if";

@@ -83,17 +83,23 @@ let (|PMATCH|_|) (tok: Token) (tokLst: Result<Token list, Token list>) =
 
 
 
-let builtInFuncMap = ["mod", BFunc(Mat Mod);"equals", BFunc Equal;"explode", BFunc Explode;"implode", BFunc Implode;"pair", BFunc P;"fst", BFunc PFst ;"snd", BFunc PSnd;"ispair", BFunc IsPair] |> Map.ofList
+let builtInFuncMap = ["mod", BFunc(Mat Mod);"equals", BFunc Equal;"explode", BFunc Explode;"implode", BFunc Implode;"pair", BFunc P;"fst", BFunc PFst ;"snd", BFunc PSnd;"ispair", BFunc IsPair; "print", BFunc Print] |> Map.ofList
 
 let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,string>*Result<Token list, Token list>,string>) option =
     match tokLst with
     | Ok [] -> Error "Input expression was empty"
+    | PMATCH (Other "lazy") (PMATCH (OpenRoundBracket) (PBUILDADDEXP(result, PMATCH (CloseRoundBracket) (inp')))) -> 
+        match result with 
+        | Ok ast -> Ok (Ok (Bracket (Lazy ast)), inp')
+        | Error msg -> Error msg
+    
     | PNOTEXPITEM (Ok(ast, Ok lst)) ->  Ok (ast, Ok lst)
     | PMATCH (OpenRoundBracket) (PMATCH (Keyword "fun") (BUILDLAMBDA (lamb, PMATCH (CloseRoundBracket) (inp') ) )) ->
         match lamb with 
         | Ok ast -> Ok (lamb, inp')      
         | Error msg -> Error msg
-    
+
+
     | PMATCH (OpenRoundBracket) (PBUILDADDEXP(result, PMATCH (CloseRoundBracket) (inp'))) -> 
         match result with 
         | Ok ast -> Ok (Ok (Bracket ast), inp')
@@ -113,6 +119,7 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,
         match result with
         | Ok (ast, PMATCH (CloseSquareBracket) (inp')) -> Ok (Ok ast, inp')
         | Error msg -> Error msg
+        | _ -> failwithf "What? Shouldn't happen"
 
 
     | PMATCH (Keyword "match") (PBUILDMATCHCASES(astList, PMATCH (Keyword "endmatch") (inp')))  ->
