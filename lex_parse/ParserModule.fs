@@ -52,10 +52,7 @@ let firstOccurrence (x:Token List) (findThis: Token) : int =
     
     firstOccurenceHelper x 0
 
-let sepConditionExpression (x:Token list) : (Token list * Token list) =
-    let condition = x.GetSlice (Some 0, Some ((firstOccurrence x RightArrow) - 1 ))
-    let expression = x.GetSlice (Some ((firstOccurrence x RightArrow) + 1), Some (x.Length - 1 ))
-    (condition,expression)   
+
 
 let split (at:Token) (x:Token list)  : (Token list list * Token list) =
     let rec splitHelper (at:Token) (x:Token list) (acc:Token list) (finalAcc:Token list list) : (Token list list * Token list) =
@@ -64,7 +61,7 @@ let split (at:Token) (x:Token list)  : (Token list list * Token list) =
         | hd::tl when hd = Keyword "match"  ->
             match takeInsideTokens (Keyword "match") (Keyword "endmatch") [] (Ok tl) 1 with
             | Ok (mstruct,Ok (_::rest) ) ->
-                splitHelper at rest ([hd] @ acc @ mstruct @ [Keyword "endmatch"] ) finalAcc
+                splitHelper at rest (acc @ [hd] @ mstruct @ [Keyword "endmatch"] ) finalAcc
             | _ -> failwithf "Error while building nested stucture"
         | hd::tl when hd <> at -> splitHelper at tl (acc @ [hd]) finalAcc
         | hd::tl when hd = at ->
@@ -72,7 +69,13 @@ let split (at:Token) (x:Token list)  : (Token list list * Token list) =
             splitHelper at tl [] (finalAcc @ [acc])
             | _ -> failwithf "Does this actually happen"
         
-    splitHelper at x [] [] 
+    splitHelper at x [] []
+    
+let sepConditionExpression (x:Token list) : (Token list * Token list) =
+    //print x
+    let res = split (RightArrow) x
+    (fst res).[0], snd res
+    //failwithf "Not implemented yet"
 
 let rec takeInsideMatch acc inp count : Result<(Result<Token list,'b> * Token list),string> =
     match inp with
@@ -298,7 +301,18 @@ and (|PBUILDMATCHCASES|_|) (inp: Result<Token list, Token list>) : ( (AST * AST)
 and buildMatchCases (inp: Result<Token list, Token list>):( (AST * AST) list * Result<AST , string> * Result<Token list, Token list> ) =
     match inp with
         | Ok x  ->
+           
+           //Ok Cases
+           (*
+           let (apply,rest) = cases |> split (Keyword "case")
+                        apply
+                        |> List.map ( fst << (function |Some x -> x | _ -> failwithf "One case couldn't parse"   )
+                        <<
+                        ((|PBUILDADDEXP|_|) << Ok)),Ok rest
+           *)
+           
            let (cases,res) = split (Keyword "case") x
+           //print cases.Head
            let toMatch = match (|PBUILDADDEXP|_|) <|  Ok cases.Head with
                             | Some (Ok x, Ok y) when List.isEmpty y -> x
                             | _ -> failwithf "thing to be matched didn't parse"
