@@ -491,8 +491,8 @@ and (|PBUILDMATCHLIST|_|) inp =
     | PPARSE (Ok ast, Ok (hd::tl)) -> 
         match hd,(Ok tl) with
         //| Keyword ";", (PPARSE (Ok (ast', lst') ) ) ->
-        | Keyword ":", (PBUILDMATCHLIST (Ok (ast', lst')))-> Ok (Pair (ast, ast'), lst')
-        | CloseCurlyBracket, _ -> Ok (Pair (ast, Null), Ok (hd::tl))
+        | Keyword ":", (PBUILDMATCHLIST (Ok (ast', lst')))-> Ok (ExactPairMatch (ast, ast'), lst')
+        | CloseCurlyBracket, _ -> Ok (ExactPairMatch (ast, Null), Ok (hd::tl))
         | _ -> Error "Match is not valid"
     | _ -> Error "Match is not valid"
     |> Some

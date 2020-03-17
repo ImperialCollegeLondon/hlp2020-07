@@ -49,7 +49,13 @@ let execFile(filePath) =
 let rec even = fun n -> if n = 0 then true else odd (n-1) 
 and odd = fun n -> if n = 0 then false else even (n-1) 
 
-
+//Need to write more tests here
+let testTokenizerDescriptions =
+    [
+        (
+            ""
+        )
+    ]
 
 let testMatchDescriptions =
     [
@@ -192,7 +198,9 @@ let main argv =
 
 
     runTestsInAssembly defaultConfig [||] |> ignore
-
+    print <| tokenize_parse "{a : b}"
+    
+    
     //print <| run(fst(parse (Ok [Let; Other "rec"; Other "fib"; Other "a"; EqualToken; Keyword "if";
     // Other "equals"; Other "a"; IntegerLit 0L; Keyword "then"; IntegerLit 0L;
     // Keyword "else"; Keyword "if"; Other "equals"; Other "a"; IntegerLit 1L;

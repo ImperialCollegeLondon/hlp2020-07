@@ -65,7 +65,8 @@ type AST =
     | Lambda of LambdaType
     | Var of char list //only valid in lambdas 
     | FuncApp of AST*AST
-    | Pair of AST*AST 
+    | Pair of AST*AST
+    | ExactPairMatch of AST*AST
     | Null 
     | Literal of LitType 
     | BFunc of BuiltInType
@@ -250,6 +251,19 @@ let keywordFi =
         ['i'],false
         [' '],true
     ]
+let openCurlyBracket = 
+    [
+        ['{'],false
+    ]
+let closeCurlyBracket =
+    [
+        ['}'],false
+    ]
+    
+let keywordTwoDots =
+    [
+        [':'],false
+    ]
     
 //------------------------------------------------------------
 //Dict
@@ -263,6 +277,8 @@ let mdict: Rule list = [
              decimalLit
              negDecimalLit
              spaceLit
+             openCurlyBracket
+             closeCurlyBracket
              openRoundBracketLit
              closeRoundBracketLit
              openSquareBracketLit
@@ -282,5 +298,6 @@ let mdict: Rule list = [
              keywordThen
              keywordElse
              keywordFi
+             keywordTwoDots
              keywordColon
              ]
