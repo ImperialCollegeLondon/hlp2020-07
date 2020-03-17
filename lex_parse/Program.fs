@@ -4,15 +4,17 @@ open Definitions
 open Lambdas
 open System
 open System.IO
+open Expecto
 
 let print x =
     printfn "%A" x
+
 
 let tokenize_parse (x:string) =
     x
     |> tokenize
     |> Ok
-    |> parsedOutput
+    |> parse
 
 let lambdaEval inp = 
     inp 
@@ -48,11 +50,133 @@ let rec even = fun n -> if n = 0 then true else odd (n-1)
 and odd = fun n -> if n = 0 then false else even (n-1) 
 
 
+
+let testMatchDescriptions =
+    [
+        (
+         "Values Defined outside 1",
+         lambdaEval "let f = [1;2;3;4;5] in let g = 2 in match f case [x;y;z;a;b;c;d] -> 1 + x + g case [x;y] -> 2 + g + x case [x] -> 3 case endmatch",
+         Ok (Literal (Int 5L)),
+         "Pair defined as value outside\nCase uses value defined outside\n"
+        )
+        (
+         "Values Defined outside 2",
+         lambdaEval "let f = [] in let g = 2 in match f case [x;y;z;a;b;c;d] -> 1 + x + g case [x;y] -> 2 + g + x case [x] -> 3 case [] -> 101 case endmatch",
+         Ok (Literal (Int 101L)),
+         "Empty list should be empty"
+        )
+        (
+         "Values Defined outside 3",
+         lambdaEval "let f = [1;2;3] in let g = 2 in let j = 21 in match f case [x;y;z;a;b;c;d] -> 1 + x + g case [x;y] -> j * g case [x] -> 3 case [] -> 101 case endmatch",
+         Ok (Literal (Int 42L)),
+         "Shadowing cases by having more generic ones before should work"
+        )
+        (
+         "Values Defined outside 4",
+         lambdaEval "let f = [1;2;3] in let g = 2 in let j = 21 in match f case [x;y;z] -> x + y case [x;y] -> j * g case [x] -> 3 case [] -> 101 case endmatch",
+         Ok (Literal (Int 3L)),
+         "Just enough variables for all but the last element"
+        )
+        (
+         "Values Defined outside 5",
+         lambdaEval "let f = 10 in let g = 2 in let j = 21 in match f * g * j case 419 -> j * j case 421 -> g * g * g * g case 420 -> f * f * f case endmatch",
+         Ok (Literal (Int 1000L)),
+         "Condition of match is itself a FuncApp"
+        )
+        (
+         "Simple Match 1",
+         lambdaEval "match 1 case 1 -> 1 case endmatch",
+         Ok (Literal (Int 1L)),
+         "Single case"
+        )
+        (
+         "Simple Match 2",
+         lambdaEval "match 1 case 2 -> 2 case 1 -> 1 case endmatch",
+         Ok (Literal (Int 1L)),
+         "Double case"
+        )
+        (
+         "Nested Match return value 1",
+         lambdaEval "match 1 case 1 -> match 2 case 2 -> match 3 case 3 -> 71 case endmatch case 3 -> 3 case endmatch case endmatch",
+         Ok (Literal (Int 71L)),
+         "Only values nested match"
+        )
+        (
+         "Nested Match return value 2",
+         lambdaEval "match 1 case 3 -> 49 case 1 ->  match [1;2;3;4] case [] -> 1 case [x;y] -> x + 5 case endmatch case endmatch",
+         Ok (Literal (Int 6L)),
+         "Values and \"lists\" nested match"
+        )
+        (
+         "Nested Match return value 3",
+         lambdaEval "match 1 case 3 -> 49 case 1 ->  match [1;2;3;4] case [] -> 1 case [x;y;z] -> x + y * 20 case endmatch case endmatch",
+         Ok (Literal (Int 41L)),
+         "Values and \"lists\" nested match"
+        )
+        (
+         "Nested Match return pair 1",
+         lambdaEval "match 1 case 3 -> 49 case 1 ->  match [1;2;3;4] case [] -> 1 case [x;y;z] -> z case endmatch case endmatch",
+         lambdaEval "[3;4]",
+         "Values and \"lists\" nested match"
+        )
+        (
+         "Nested Match return pair 2",
+         lambdaEval "match 1 case 3 -> 49 case 1 ->  match [1;2;3;4] case [] -> 1 case [x;y;z] -> [] case endmatch case endmatch",
+         lambdaEval "[]",
+         "Values and \"lists\" nested match"
+        )
+        (
+         "Nested Match return pair 3",
+         lambdaEval "match 1 case 3 -> 49 case 1 ->  match [] case [] -> 1 case [x;y;z] -> [] case endmatch case endmatch",
+         lambdaEval "1",
+         "Values and \"lists\" nested match"
+        )
+        (
+         "Values outside nested match pairs 1",
+         lambdaEval "let f = [] in let g = [1;2;3;4] in let x = 20 in match f case [x] -> x case [1;2;x] -> 3 case [] -> g case endmatch",
+         lambdaEval "[1;2;3;4]",
+         "Values and \"lists\" nested match"
+        )
+        (
+         "Values outside nested match pairs 2",
+         lambdaEval "let f = [] in let g = [1;2;3;4] in let x = 20 in match f case [x] -> x case [1;2;x] -> 3 case [] -> match g case [1;2;3;x] -> 1 case [] -> 3 case endmatch case endmatch",
+         lambdaEval "1",
+         "Values and \"lists\" nested match"
+        )
+        (
+         "Values outside nested match pairs 3",
+         lambdaEval "let f = [] in let g = [1;2;3;4] in let x = 20 in match f case [x] -> x case [1;2;x] -> 3 case [] -> match g case [1;2;3;x] -> x case [] -> 3 case endmatch case endmatch",
+         lambdaEval "[4]",
+         "Values and \"lists\" nested match"
+        )
+        (
+         "Values outside nested match pairs 4",
+         lambdaEval "let f = [] in let g = [1;2;3;4] in let x = 20 in match f case [x] -> x case [1;2;x] -> 3 case [] -> match g case [3;2;1;x] -> x case [] -> 3 case [1;2;x] -> x case endmatch case endmatch",
+         lambdaEval "[3;4]",
+         "Values and \"lists\" nested match"
+        )
+        
+        
+    ]
+let makeMyTests (x,y,z,name) = 
+      test x {Expect.equal y z name}
+[<Tests>]
+let matchTestGroup = testList "Match Test Group" (List.map makeMyTests testMatchDescriptions)
+
+
+
+
+
+
 [<EntryPoint>]  
 let main argv =
-    execFile("C:\\Users\\danig\\Desktop\\myF#\\hlp2020-07\\lex_parse\\demo.THARP")
-    FSILike()
-    testsWithExpectoParser() |> ignore
+    //execFile("C:\\Users\\danig\\Desktop\\myF#\\hlp2020-07\\lex_parse\\demo.THARP")
+    //FSILike()
+    //testsWithExpectoParser() |> ignore
+    
+    
+    
+    
     //print <| parse (Ok [OpenRoundBracket; Keyword "fun"; Other "x"; EqualToken; Other "x"; AddToken; IntegerLit 1L; CloseRoundBracket])
     //print <| run(fst(parse (Ok [Let; Other "rec"; Other "f"; Other "n"; EqualToken; Keyword "if"; Other "equals"; Other "n";
     //IntegerLit 0L; Keyword "then"; IntegerLit 1L; Keyword "else"; Other "n"; MultToken;
@@ -62,8 +186,12 @@ let main argv =
 
     //print <| lambdaEval "mrec even n = if equals n 0 then true else odd (n - 1) fi mrec odd n = if equals n 0 then false else even (n - 1) fi"
     //print <| lambdaEval "even 100"
-    print <| parsedOutput (Ok [OpenCurlyBracket; Other "hd"; Keyword ":"; Other "tl"; Keyword ":"; Other "rest"; CloseCurlyBracket])
+    
+    
+    //print <| parsedOutput (Ok [OpenCurlyBracket; Other "hd"; Keyword ":"; Other "tl"; Keyword ":"; Other "rest"; CloseCurlyBracket])
 
+
+    runTestsInAssembly defaultConfig [||] |> ignore
 
     //print <| run(fst(parse (Ok [Let; Other "rec"; Other "fib"; Other "a"; EqualToken; Keyword "if";
     // Other "equals"; Other "a"; IntegerLit 0L; Keyword "then"; IntegerLit 0L;
@@ -91,41 +219,11 @@ let main argv =
     //print <| tokenize_parse "f x y"
     
     
-    (*
-     [Other "f"; AddToken; Other "x"; Keyword "case"; Keyword "match"; Other "x";
-       AddToken; IntegerLit 1; Keyword "case"; IntegerLit 1; Keyword "case";
-       IntegerLit 2; Keyword "case"; Keyword "endmatch"; Keyword "case";
-       Keyword "endmatch"; Other "j"; Other "k"]
-    *)
+    //print <| tokenize_parse "pair x (pair a b) "
+    //[1;2;3;4] -> Pair (Int 1, Pair (Int 2, Pair (Int 3, Pair(Int 4, Null)) ) )
     
-    (*print <| split (Keyword "endmatch") [Other "f"; AddToken; Other "x"; Keyword "case"; Keyword "match"; Other "x";
-       AddToken; IntegerLit 1; Keyword "case"; IntegerLit 1; Keyword "case";
-       IntegerLit 2; Keyword "case"; Keyword "endmatch"; Keyword "case";
-       Keyword "endmatch"; Other "j"; Other "k"]
-    *)
     
-    //let rec takeInsideTokens openingToken closingToken acc inp count = 
-    //print <| tokenize "f x 1 case f h 2 case match j case 1 case 2 case endmatch"
-    //print <|  takeInsideTokens (Keyword "match") (Keyword "endmatch") [] (Ok <| tokenize "match endmatch if else endmatch match if else endmatch") 1
-    //print <| split (Keyword "case") (tokenize "f x case match 3 case 1 case 2 case endmatch case 2 case endmatch f g h ")
-    //print <| split (Keyword "case") (tokenize "f x 1 case f 5 + 1 case match x case 1 2 case endmatch case endmatch")    
     
+    //print <| lambdaEval "3 + 1"
+    //print <| lambdaEval "match x case 1 case 2 case endmatch + 5"
     0
-//match AST with \n AST / variable -> AST \n x ->
-
-
-
-(*
- match split (Keyword "endmatch") cases with
-                        | (x::_,y) when List.isEmpty y ->
-                                //not nested should work
-                                let (apply,rest) = x @ [Keyword "endmatch"] |> split (Keyword "case")
-                                apply
-                                |> List.map ( fst << (function |Some x -> x | _ -> failwithf "One case couldn't parse"   )  << ((|PBUILDADDEXP|_|) << Ok)),Ok rest
-                        | (x::z,y) ->
-                                z
-                                x @ [Keyword "endmatch"]
-                                //nested how do we deal with it
-                                failwithf "We have a nested match"
-                        | _ -> failwithf "what? case parsing failed miserably"
-*)

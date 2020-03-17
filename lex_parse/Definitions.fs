@@ -86,7 +86,7 @@ and LambdaType = {
 
 and MatchDefType = {
     Condition: AST
-    Cases: AST list
+    Cases: (AST*AST) list
 }
 
 and LitType = 

@@ -106,7 +106,7 @@ let tokenize (mstring:string) : Token list =
         mstring
         |> combinedLexers
         |> List.map flattener
-        |> List.filter (fun x -> x <> SpaceLit)
+        |> List.filter (fun x -> x <> SpaceLit && x <> Newline)
     
     if List.isEmpty res then [NoInput] else res
    

@@ -3,6 +3,8 @@ open Expecto
 open Definitions
     //fst res,snd res
     
+ 
+    
 let rec extractRightAppList (lst:AST list) (inp:AST) : AST list = 
     match inp with 
     | FuncApp (hd, tl) -> 
@@ -38,6 +40,20 @@ let rec takeInsideTokens openingToken closingToken acc inp count =
 let (|PTAKEINSIDETOKENS|_|) openingToken closingToken inp = Some(takeInsideTokens openingToken closingToken [] inp 1)
 
 
+let firstOccurrence (x:Token List) (findThis: Token) : int =   
+        
+    let rec firstOccurenceHelper (x:Token List) (acc:int) : int =
+      match x with
+       | [] -> -1 // token could not be found
+       | hd::tl when hd = findThis -> acc
+       | hd::tl -> firstOccurenceHelper tl acc + 1
+      
+            
+    
+    firstOccurenceHelper x 0
+
+
+
 let split (at:Token) (x:Token list)  : (Token list list * Token list) =
     let rec splitHelper (at:Token) (x:Token list) (acc:Token list) (finalAcc:Token list list) : (Token list list * Token list) =
         match x with
@@ -45,7 +61,7 @@ let split (at:Token) (x:Token list)  : (Token list list * Token list) =
         | hd::tl when hd = Keyword "match"  ->
             match takeInsideTokens (Keyword "match") (Keyword "endmatch") [] (Ok tl) 1 with
             | Ok (mstruct,Ok (_::rest) ) ->
-                splitHelper at rest ([hd] @ acc @ mstruct @ [Keyword "endmatch"] ) finalAcc
+                splitHelper at rest (acc @ [hd] @ mstruct @ [Keyword "endmatch"] ) finalAcc
             | _ -> failwithf "Error while building nested stucture"
         | hd::tl when hd <> at -> splitHelper at tl (acc @ [hd]) finalAcc
         | hd::tl when hd = at ->
@@ -53,7 +69,13 @@ let split (at:Token) (x:Token list)  : (Token list list * Token list) =
             splitHelper at tl [] (finalAcc @ [acc])
             | _ -> failwithf "Does this actually happen"
         
-    splitHelper at x [] [] 
+    splitHelper at x [] []
+    
+let sepConditionExpression (x:Token list) : (Token list * Token list) =
+    //print x
+    let res = split (RightArrow) x
+    (fst res).[0], snd res
+    //failwithf "Not implemented yet"
 
 let rec takeInsideMatch acc inp count : Result<(Result<Token list,'b> * Token list),string> =
     match inp with
@@ -124,13 +146,8 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,
         | _ -> failwithf "What? Shouldn't happen"
 
 
-    | PMATCH (Keyword "match") (PBUILDMATCHCASES(astList, PMATCH (Keyword "endmatch") (inp')))  ->
-        //print ast
-        
-        let res = List.map (function |Ok x -> x |y -> failwithf "One of the cases failed") astList
-        //Assumes at least one
-        //Not dealt with errors yet
-        Ok(Ok (MatchDef{Condition = res.Head; Cases = res.Tail}),inp')
+    | PMATCH (Keyword "match") (PBUILDMATCHCASES(astList, Ok A, PMATCH (Keyword "endmatch") (inp')))  ->
+        Ok(Ok (MatchDef{Condition = A; Cases = astList}),inp')
     | Ok (hd::tl) -> Error (sprintf "Couldn't parse item %A" hd)
     | Error lst -> Error "Input list was invalid"
     |> Some
@@ -308,19 +325,44 @@ and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(Result<
 and (|PBUILDADDEXP|_|) (inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token list, Token list>)option = 
     Some (buildAddExp [] inp)
 
-and (|PBUILDMATCHCASES|_|) (inp: Result<Token list, Token list>) : ( (Result<AST,string> list) * Result<Token list, Token list>) option =
+and (|PBUILDMATCHCASES|_|) (inp: Result<Token list, Token list>) : ( (AST * AST) list *Result<AST,string> *Result<Token list, Token list>) option =
     Some <| buildMatchCases inp
 
-and buildMatchCases (inp: Result<Token list, Token list>):(Result<AST,string> list *Result<Token list, Token list>) =
+
+and buildMatchCases (inp: Result<Token list, Token list>):( (AST * AST) list * Result<AST , string> * Result<Token list, Token list> ) =
     match inp with
         | Ok x  ->
-                       let (cases,res) = split (Keyword "case") x
-                       cases
-                       |> List.map ( fst << (function |Some x -> x | _ -> failwithf "One case couldn't parse"   )  << ((|PBUILDADDEXP|_|) << Ok)),Ok res
-                       //split (Keyword "case") x
-                       //|> List.map ( fst << (function |Some x -> x | _ -> failwithf "One case couldn't parse"   )  << ((|PBUILDADDEXP|_|) << Ok)),res
-                       //failwithf "A"
-        | _ -> failwithf "Cases failed"
+           
+           //Ok Cases
+           (*
+           let (apply,rest) = cases |> split (Keyword "case")
+                        apply
+                        |> List.map ( fst << (function |Some x -> x | _ -> failwithf "One case couldn't parse"   )
+                        <<
+                        ((|PBUILDADDEXP|_|) << Ok)),Ok rest
+           *)
+           
+           let (cases,res) = split (Keyword "case") x
+           //print cases.Head
+           let toMatch = match (|PBUILDADDEXP|_|) <|  Ok cases.Head with
+                            | Some (Ok x, Ok y) when List.isEmpty y -> x
+                            | _ -> failwithf "thing to be matched didn't parse"
+           cases.Tail
+           |> List.map
+              (
+              sepConditionExpression
+              >> fun (cond,exp) -> ( (|PBUILDADDEXP|_|) <| Ok cond, (|PBUILDADDEXP|_|) <| Ok exp )
+              >> fun (parsedCondition, parsedExpression) ->
+                  match parsedCondition, parsedExpression with
+                    | Some (Ok finalCond,Ok resEmpty1), Some (Ok finalExp,Ok resEmpty2) when ((List.isEmpty resEmpty1) && (List.isEmpty resEmpty2) ) -> finalCond, finalExp
+                    | _ ->
+                        printf "Parsed Condition %A \n Parsed Expression %A" parsedCondition parsedExpression 
+                        failwithf "Parsing before/after arrow in match case failed"
+              ) , Ok toMatch,  Ok res
+        | _ ->
+           failwithf "Cases failed"
+
+
 
 and buildLambda (inp:Result<Token list, Token list>):(Result<AST,string>*Result<Token list, Token list>) = 
     //printf "Entered buildLambda with %A \n" inp
