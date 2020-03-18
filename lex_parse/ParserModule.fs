@@ -166,8 +166,7 @@ and (|PNOTEXPITEM|_|) tokLst =
         Some( Ok (Ok(Literal (Str (removeEnds))), Ok rest))
     | _ -> None
 
-and endKeyWordsList = [CloseRoundBracket; CloseSquareBracket; Keyword "then"; Keyword "else"; Keyword "fi"; Keyword ";"; Other "
-"; Keyword ":"; CloseCurlyBracket]
+and endKeyWordsList = [CloseRoundBracket; CloseSquareBracket; Keyword "then"; Keyword "else"; Keyword "fi"; Keyword ";"; Other "mrec"; Keyword ":"; CloseCurlyBracket]
 
 and buildAppExp(inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token list, Token list>) =
    match inp with
