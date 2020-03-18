@@ -100,7 +100,7 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,
         | Error msg -> Error msg
 
 
-    | PMATCH (OpenRoundBracket) (PBUILDADDEXP(result, PMATCH (CloseRoundBracket) (inp'))) -> 
+    | PMATCH (OpenRoundBracket) (PPARSE(result, PMATCH (CloseRoundBracket) (inp'))) -> 
         match result with 
         | Ok ast -> Ok (Ok (Bracket ast), inp')
         | Error msg -> Error msg
