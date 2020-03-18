@@ -12,7 +12,7 @@ print ( let rec fac n = if equals n 0 then 1 else n * fac ( n - 1 ) fi in fac 5 
 let rec fib n = if equals n 1 then 1 else if equals n 2 then 1 else fib ( n - 1 ) + fib ( n - 2 ) fi fi
 print( fib 10 )
 
-let rec lstmap func lst = if equals lst [ ] then [ ] else ( pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) )  fi
+let rec lstmap func lst = if equals lst [ ] then [ ] else ( pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) )  fi in lstmap (1+2)
 print ( lstmap fib [1;2;3;4;5;6;7;8;9;10] )
 
 let rec concatlist lsta lstb = if equals lsta [] then lstb else pair ( fst lsta ) ( concatlist ( snd lsta ) lstb )  fi

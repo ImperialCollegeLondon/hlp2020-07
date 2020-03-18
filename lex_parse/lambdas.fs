@@ -7,6 +7,7 @@ type  EnvironmentType = list<(char list)*AST>
 let trueAST = Lambda {InputVar = ['x']; Body = Lambda {InputVar = ['y'];Body = Var ['x']}}
 let falseAST = Lambda {InputVar = ['x']; Body = Lambda {InputVar = ['y']; Body = Var ['y']}}
 
+let unitAST = UNIT |> Literal |> Ok
 
 let bindEmptyVariables (pairs:AST) : EnvironmentType =
     let rec bindEmptyVariablesHelper(pairs: AST) (acc:EnvironmentType) : EnvironmentType =
@@ -147,9 +148,11 @@ let rec pairToList (p:AST) : Result<string list,string> =
 
 let execPrint x = 
     match x with
-    | Literal(Int n) ->  print n ; UNIT |> Literal |> Ok
-    | Literal(Str cLst) -> String.Concat(Array.ofList(cLst)) |> print ; UNIT |> Literal |> Ok
-    | Null -> print "[]" ; UNIT |> Literal |> Ok
+    | _ when x = trueAST -> print "true" ; unitAST
+    | _ when x = falseAST -> print "false" ; unitAST
+    | Literal(Int n) ->  print n ; unitAST
+    | Literal(Str cLst) -> String.Concat(Array.ofList(cLst)) |> print ; unitAST
+    | Null -> print "[]" ; unitAST
     | Pair(a, b) -> 
         match pairToList (Pair(a,b)) with
         | Ok(listP) -> listP |> print ; UNIT |> Literal |> Ok
