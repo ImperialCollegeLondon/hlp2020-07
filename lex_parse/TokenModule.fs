@@ -80,33 +80,36 @@ let tokenize (mstring:string) : Token list =
             | 4 -> StringLit xString
             | 5 | 6 -> DecimalLit (float xString)
             | 7 -> SpaceLit
-            | 8 -> OpenRoundBracket
-            | 9 -> CloseRoundBracket
-            | 10 -> OpenSquareBracket
-            | 11 -> CloseSquareBracket
-            | 12 -> Let
-            | 13 -> RightArrow
-            | 14 -> EqualToken
-            | 15 -> HexLit xString
-            | 16 -> AddToken
-            | 17 -> MultToken
-            | 18 -> DivToken
-            | 19 -> Newline
-            | 20 -> Keyword "match"
-            | 21 -> Keyword "endmatch"
-            | 22 -> Keyword "case"
-            | 23 -> Keyword "if"
-            | 24 -> Keyword "then"
-            | 25 -> Keyword "else"
-            | 26 -> Keyword "fi"
-            | 27 -> if xString = "" then NoInput else Keyword  ";"
+            | 8 -> OpenCurlyBracket
+            | 9 -> CloseCurlyBracket
+            | 10 -> OpenRoundBracket
+            | 11 -> CloseRoundBracket
+            | 12 -> OpenSquareBracket
+            | 13 -> CloseSquareBracket
+            | 14 -> Let
+            | 15 -> RightArrow
+            | 16 -> EqualToken
+            | 17 -> HexLit xString
+            | 18 -> AddToken
+            | 19 -> MultToken
+            | 20 -> DivToken
+            | 21 -> Newline
+            | 22 -> Keyword "match"
+            | 23 -> Keyword "endmatch"
+            | 24 -> Keyword "case"
+            | 25 -> Keyword "if"
+            | 26 -> Keyword "then"
+            | 27 -> Keyword "else"
+            | 28 -> Keyword "fi"
+            | 29 -> Keyword ":"
+            | 30 -> if xString = "" then NoInput else Keyword  ";"
             | _ -> Unexpected xString
                 
     let res =
         mstring
         |> combinedLexers
         |> List.map flattener
-        |> List.filter (fun x -> x <> SpaceLit)
+        |> List.filter (fun x -> x <> SpaceLit && x <> Newline)
     
     if List.isEmpty res then [NoInput] else res
    

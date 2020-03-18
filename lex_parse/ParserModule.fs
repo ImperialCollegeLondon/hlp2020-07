@@ -3,6 +3,8 @@ open Expecto
 open Definitions
     //fst res,snd res
     
+ 
+    
 let rec extractRightAppList (lst:AST list) (inp:AST) : AST list = 
     match inp with 
     | FuncApp (hd, tl) -> 
@@ -38,6 +40,20 @@ let rec takeInsideTokens openingToken closingToken acc inp count =
 let (|PTAKEINSIDETOKENS|_|) openingToken closingToken inp = Some(takeInsideTokens openingToken closingToken [] inp 1)
 
 
+let firstOccurrence (x:Token List) (findThis: Token) : int =   
+        
+    let rec firstOccurenceHelper (x:Token List) (acc:int) : int =
+      match x with
+       | [] -> -1 // token could not be found
+       | hd::tl when hd = findThis -> acc
+       | hd::tl -> firstOccurenceHelper tl acc + 1
+      
+            
+    
+    firstOccurenceHelper x 0
+
+
+
 let split (at:Token) (x:Token list)  : (Token list list * Token list) =
     let rec splitHelper (at:Token) (x:Token list) (acc:Token list) (finalAcc:Token list list) : (Token list list * Token list) =
         match x with
@@ -45,7 +61,7 @@ let split (at:Token) (x:Token list)  : (Token list list * Token list) =
         | hd::tl when hd = Keyword "match"  ->
             match takeInsideTokens (Keyword "match") (Keyword "endmatch") [] (Ok tl) 1 with
             | Ok (mstruct,Ok (_::rest) ) ->
-                splitHelper at rest ([hd] @ acc @ mstruct @ [Keyword "endmatch"] ) finalAcc
+                splitHelper at rest (acc @ [hd] @ mstruct @ [Keyword "endmatch"] ) finalAcc
             | _ -> failwithf "Error while building nested stucture"
         | hd::tl when hd <> at -> splitHelper at tl (acc @ [hd]) finalAcc
         | hd::tl when hd = at ->
@@ -53,7 +69,13 @@ let split (at:Token) (x:Token list)  : (Token list list * Token list) =
             splitHelper at tl [] (finalAcc @ [acc])
             | _ -> failwithf "Does this actually happen"
         
-    splitHelper at x [] [] 
+    splitHelper at x [] []
+    
+let sepConditionExpression (x:Token list) : (Token list * Token list) =
+    //print x
+    let res = split (RightArrow) x
+    (fst res).[0], snd res
+    //failwithf "Not implemented yet"
 
 let rec takeInsideMatch acc inp count : Result<(Result<Token list,'b> * Token list),string> =
     match inp with
@@ -90,11 +112,11 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,
     | Ok [] -> Error "Input expression was empty"
     | PMATCH (Other "lazy") (PMATCH (OpenRoundBracket) (PBUILDADDEXP(result, PMATCH (CloseRoundBracket) (inp')))) -> 
         match result with 
-        | Ok ast -> Ok (Ok (Bracket (Lazy ast)), inp')
+        | Ok ast -> Ok (Ok (Bracket (Lzy ast)), inp')
         | Error msg -> Error msg
     
     | PNOTEXPITEM (Ok(ast, Ok lst)) ->  Ok (ast, Ok lst)
-    | PMATCH (OpenRoundBracket) (PMATCH (Keyword "fun") (BUILDLAMBDA (lamb, PMATCH (CloseRoundBracket) (inp') ) )) ->
+    | PMATCH (OpenRoundBracket) (PMATCH (Other "fun") (BUILDLAMBDA (lamb, PMATCH (CloseRoundBracket) (inp') ) )) ->
         match lamb with 
         | Ok ast -> Ok (lamb, inp')      
         | Error msg -> Error msg
@@ -110,7 +132,7 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,
          let secondItemParsed = parse (Ok lst')
          let thirditemParsed = parse (Ok lst'')
          match firstItemParsed,secondItemParsed,thirditemParsed with 
-         | (Ok ast, Ok []),(Ok ast', Ok []),(Ok ast'', Ok []) -> Ok (Ok(Bracket(FuncApp(FuncApp(ast, Lazy (ast')), Lazy (ast'')))), inp')
+         | (Ok ast, Ok []),(Ok ast', Ok []),(Ok ast'', Ok []) -> Ok (Ok(Bracket(FuncApp(FuncApp(ast, Lzy (ast')), Lzy (ast'')))), inp')
          | _ -> Error "Couldn't parse one of the expressions in this if statement"
 
     | PMATCH (OpenSquareBracket) (PBUILDLIST (Ok (ast, PMATCH (CloseSquareBracket) (inp')))) -> Ok (Ok ast, inp')
@@ -124,13 +146,8 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,
         | _ -> failwithf "What? Shouldn't happen"
 
 
-    | PMATCH (Keyword "match") (PBUILDMATCHCASES(astList, PMATCH (Keyword "endmatch") (inp')))  ->
-        //print ast
-        
-        let res = List.map (function |Ok x -> x |y -> failwithf "One of the cases failed") astList
-        //Assumes at least one
-        //Not dealt with errors yet
-        Ok(Ok (MatchDef{Condition = res.Head; Cases = res.Tail}),inp')
+    | PMATCH (Keyword "match") (PBUILDMATCHCASES(astList, Ok A, PMATCH (Keyword "endmatch") (inp')))  ->
+        Ok(Ok (MatchDef{Condition = A; Cases = astList}),inp')
     | Ok (hd::tl) -> Error (sprintf "Couldn't parse item %A" hd)
     | Error lst -> Error "Input list was invalid"
     |> Some
@@ -144,7 +161,9 @@ and (|PNOTEXPITEM|_|) tokLst =
     | Ok (Other s :: rest) -> Some( Ok (Ok(Var(Seq.toList s)), Ok rest))
     | Ok (Other "Null" :: rest) -> Some( Ok (Ok Null, Ok rest))
     | Ok (IntegerLit s:: rest) ->Some( Ok (Ok(Literal (Int s)) ,Ok rest))
-    | Ok (StringLit s::rest) ->Some( Ok (Ok(Literal (Str (Seq.toList s))), Ok rest))
+    | Ok (StringLit s::rest) ->
+        let removeEnds = Seq.toList s |> List.rev |> List.tail |> List.rev |> List.tail
+        Some( Ok (Ok(Literal (Str (removeEnds))), Ok rest))
     | _ -> None
 
 and endKeyWordsList = [CloseRoundBracket; CloseSquareBracket; Keyword "then"; Keyword "else"; Keyword "fi"; Keyword ";"; Other "mrec"; Keyword ":"; CloseCurlyBracket]
@@ -308,19 +327,56 @@ and buildAddExp  (acc:Token list) (inp: Result<Token list, Token list>):(Result<
 and (|PBUILDADDEXP|_|) (inp: Result<Token list, Token list>):(Result<AST,string>*Result<Token list, Token list>)option = 
     Some (buildAddExp [] inp)
 
-and (|PBUILDMATCHCASES|_|) (inp: Result<Token list, Token list>) : ( (Result<AST,string> list) * Result<Token list, Token list>) option =
+and (|PBUILDMATCHCASES|_|) (inp: Result<Token list, Token list>) : ( (AST * AST) list *Result<AST,string> *Result<Token list, Token list>) option =
     Some <| buildMatchCases inp
 
-and buildMatchCases (inp: Result<Token list, Token list>):(Result<AST,string> list *Result<Token list, Token list>) =
+
+and buildMatchCases (inp: Result<Token list, Token list>):( (AST * AST) list * Result<AST , string> * Result<Token list, Token list> ) =
     match inp with
         | Ok x  ->
-                       let (cases,res) = split (Keyword "case") x
-                       cases
-                       |> List.map ( fst << (function |Some x -> x | _ -> failwithf "One case couldn't parse"   )  << ((|PBUILDADDEXP|_|) << Ok)),Ok res
-                       //split (Keyword "case") x
-                       //|> List.map ( fst << (function |Some x -> x | _ -> failwithf "One case couldn't parse"   )  << ((|PBUILDADDEXP|_|) << Ok)),res
-                       //failwithf "A"
-        | _ -> failwithf "Cases failed"
+           
+           //Ok Cases
+           (*
+           let (apply,rest) = cases |> split (Keyword "case")
+                        apply
+                        |> List.map ( fst << (function |Some x -> x | _ -> failwithf "One case couldn't parse"   )
+                        <<
+                        ((|PBUILDADDEXP|_|) << Ok)),Ok rest
+           *)
+           
+           let (cases,res) = split (Keyword "case") x
+           //print cases.Head
+           let toMatch = match (|PBUILDADDEXP|_|) <|  Ok cases.Head with
+                            | Some (Ok x, Ok y) when List.isEmpty y -> x
+                            | _ -> failwithf "thing to be matched didn't parse"
+           
+           cases.Tail
+           |> List.map
+              (
+              sepConditionExpression
+              >> fun (cond,exp) ->
+                 // let minires1 = parse (Ok cond)
+                  
+                  
+                  //match (parse <| Ok cond),(parse <| Ok exp ) with
+                  //  | (Ok pCondition,Ok []),(Ok pExpression, Ok []) -> print pCondition; print pExpression ;failwithf "a"
+                  //  | _ -> failwithf "A"
+                  
+                  
+                  
+                  
+                  ( Some <| (parse <| Ok cond)), ( Some <| (parse <| Ok exp))
+              >> fun (parsedCondition, parsedExpression) ->
+                  match parsedCondition, parsedExpression with
+                    | Some (Ok finalCond,Ok resEmpty1), Some (Ok finalExp,Ok resEmpty2) when ((List.isEmpty resEmpty1) && (List.isEmpty resEmpty2) ) -> finalCond, finalExp
+                    | _ ->
+                        printf "Parsed Condition %A \n Parsed Expression %A" parsedCondition parsedExpression 
+                        failwithf "Parsing before/after arrow in match case failed"
+              ) , Ok toMatch,  Ok res
+        | _ ->
+           failwithf "Cases failed"
+
+
 
 and buildLambda (inp:Result<Token list, Token list>):(Result<AST,string>*Result<Token list, Token list>) = 
     //printf "Entered buildLambda with %A \n" inp
@@ -357,13 +413,12 @@ and extractParts inp acc: Result<Token list* Token list, string> =
     | Ok (hd::tl) -> extractParts (Ok tl) (acc @ [hd])
     | Ok [] -> Ok (acc, []) //Error "This function definition is never used"
     | _ -> failwithf "What? Can't happen"
-
 and adaptRecursiveExpression lambda  = 
      [Keyword "Y"] @ lambda
 
 
 and bodyToAnonymousFun inp = 
-    [OpenRoundBracket]@[Keyword "fun"]@inp@[CloseRoundBracket]
+    [OpenRoundBracket]@[Other "fun"]@inp@[CloseRoundBracket]
     
 and  buildFunctionDef inp:(Result<AST,string>*Result<Token list, Token list>)  = 
     match inp with 
@@ -403,7 +458,10 @@ and  buildFunctionDef inp:(Result<AST,string>*Result<Token list, Token list>)  =
                 | Ok (body, expression) ->
                     printf "Body is %A \n" body
                     let parsedExpression = parse (Ok expression)
+
+                    //printf "\n EXPRESSION IS %A Parsed expression is %A \n" expression parsedExpression
                     printf "Parsed Expression is %A \n" parsedExpression
+
                     let parsedBody = buildLambda (Ok body)
                     printf "Parsed Body is %A \n" parsedBody
                     match  parsedBody, parsedExpression with 
@@ -459,8 +517,8 @@ and (|PBUILDMATCHLIST|_|) inp =
     | PPARSE (Ok ast, Ok (hd::tl)) -> 
         match hd,(Ok tl) with
         //| Keyword ";", (PPARSE (Ok (ast', lst') ) ) ->
-        | Keyword ":", (PBUILDMATCHLIST (Ok (ast', lst')))-> Ok (Pair (ast, ast'), lst')
-        | CloseCurlyBracket, _ -> Ok (Pair (ast, Null), Ok (hd::tl))
+        | Keyword ":", (PBUILDMATCHLIST (Ok (ast', lst')))-> Ok (ExactPairMatch (ast, ast'), lst')
+        | CloseCurlyBracket, _ -> Ok (ExactPairMatch (ast, Null), Ok (hd::tl))
         | _ -> Error "Match is not valid"
     | _ -> Error "Match is not valid"
     |> Some
@@ -494,12 +552,12 @@ let makeTests (name, instr, outI) =
 let testListWithExpectoParser = 
     [
         "first test",(Ok [Other "x"; Other "y"]),(Ok(FuncApp(Var ['x'], Var ['y'])))
-        "second test",(Ok [Keyword "if"; Other "x";  IntegerLit 1L; Keyword "then"; Other "y"; IntegerLit 1L; Keyword "else"; Other "z"; IntegerLit 1L; Keyword "fi"]) ,(Ok(FuncApp(FuncApp(FuncApp (Var ['x'],Literal (Int 1L)),Lazy (FuncApp (Var ['y'],Literal (Int 1L)))),Lazy (FuncApp (Var ['z'],Literal (Int 1L))))))
+        "second test",(Ok [Keyword "if"; Other "x";  IntegerLit 1L; Keyword "then"; Other "y"; IntegerLit 1L; Keyword "else"; Other "z"; IntegerLit 1L; Keyword "fi"]) ,(Ok(FuncApp(FuncApp(FuncApp (Var ['x'],Literal (Int 1L)),Lzy (FuncApp (Var ['y'],Literal (Int 1L)))),Lzy (FuncApp (Var ['z'],Literal (Int 1L))))))
         "third test", (Ok [Let; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2L; Other "in"; Other "x"; IntegerLit 5L]), (Ok(FuncDefExp{ Name = ['x'];Body = FuncApp (FuncApp (BFunc (Mat Mult),Var ['x']),Literal (Int 2L));Expression = FuncApp (Var ['x'],Literal (Int 5L)) }))   
         "fourth test", (Ok [OpenSquareBracket; CloseSquareBracket; Other "x"; Other"y"]), Ok (FuncApp (FuncApp (Null,Var ['x']),Var ['y']))
         //"fifth test", (Ok [Let; Other "f"; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2L]), (Error "This function definition is never used")
         "sixth test", (Ok [Let; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2L; Other "in"; Other "x"; IntegerLit 5L]), (Ok(FuncDefExp{ Name = ['x'];Body = FuncApp (FuncApp (BFunc (Mat Mult),Var ['x']),Literal (Int 2L));Expression = FuncApp (Var ['x'],Literal (Int 5L)) }))
-        "seventh test", (Ok [OpenRoundBracket; Keyword "fun"; Other "x"; EqualToken; Other "x"; AddToken; IntegerLit 1L; CloseRoundBracket]), (Ok(Lambda{ InputVar = ['x'];Body = FuncApp (FuncApp (BFunc (Mat Add),Var ['x']),Literal (Int 1L)) }))
+        "seventh test", (Ok [OpenRoundBracket; Other "fun"; Other "x"; EqualToken; Other "x"; AddToken; IntegerLit 1L; CloseRoundBracket]), (Ok(Lambda{ InputVar = ['x'];Body = FuncApp (FuncApp (BFunc (Mat Add),Var ['x']),Literal (Int 1L)) }))
         "eigth test", (Ok [Other "f"; OpenRoundBracket; Other "x"; Other "y";Other "z"; CloseRoundBracket]), Ok (FuncApp (Var ['f'],FuncApp (FuncApp (Var ['x'],Var ['y']),Var ['z'])))
         "ninth test", Ok [Other "f"; OpenRoundBracket; Other "a"; OpenRoundBracket; Other "f"; Other "d"; CloseRoundBracket; CloseRoundBracket], Ok (FuncApp (Var ['f'],FuncApp (Var ['a'],FuncApp (Var ['f'],Var ['d']))))
         "tenth test", Ok [OpenSquareBracket; OpenSquareBracket; Other "x"; CloseSquareBracket], Error "Input list is not valid"
@@ -507,7 +565,7 @@ let testListWithExpectoParser =
         "test 12", Ok [OpenSquareBracket; Other "x";  IntegerLit 1L; Keyword ";"; Other "y"; IntegerLit 2L; Keyword ";"; Other "z"; IntegerLit 3L; CloseSquareBracket ], Ok(Pair(FuncApp (Var ['x'],Literal (Int 1L)),Pair(FuncApp (Var ['y'],Literal (Int 2L)),Pair (FuncApp (Var ['z'],Literal (Int 3L)),Null))))
         "test 13", Ok [OpenSquareBracket; Other "x"; AddToken; IntegerLit 1L; Keyword ";"; Other "y"; MultToken; IntegerLit 2L; CloseSquareBracket ], Ok(Pair(FuncApp (FuncApp (BFunc (Mat Add),Var ['x']),Literal (Int 1L)),Pair (FuncApp (FuncApp (BFunc (Mat Mult),Var ['y']),Literal (Int 2L)),Null)))
         "test 14", Ok [Other "f";MultToken; Other "g";MultToken; Other "h";AddToken; IntegerLit 1L], Ok(FuncApp(FuncApp(BFunc (Mat Add),FuncApp(FuncApp (BFunc (Mat Mult),Var ['f']),FuncApp (FuncApp (BFunc (Mat Mult),Var ['g']),Var ['h']))),Literal (Int 1L)))
-        "test 15", Ok [Other"h";Keyword "if"; Other "x"; Keyword "then"; Other "y";  Keyword "else"; Other "z";  Keyword "fi"; Other"f"], Ok(FuncApp(FuncApp(Var ['h'],FuncApp (FuncApp (Var ['x'],Lazy (Var ['y'])),Lazy (Var ['z']))),Var ['f']))
+        "test 15", Ok [Other"h";Keyword "if"; Other "x"; Keyword "then"; Other "y";  Keyword "else"; Other "z";  Keyword "fi"; Other"f"], Ok(FuncApp(FuncApp(Var ['h'],FuncApp (FuncApp (Var ['x'],Lzy (Var ['y'])),Lzy (Var ['z']))),Var ['f']))
         "test 16", Ok [Let; Other "f"; Other "x"; Other "y"; EqualToken; OpenSquareBracket; Other "x";Keyword ";"; Other "x"; MultToken; Other "x"; Keyword ";"; Other "x"; MultToken;Other "x"; MultToken; Other "x"; Keyword ";"; OpenSquareBracket; Other "x";AddToken; Other "y"; CloseSquareBracket; CloseSquareBracket; Other "in";Other "f"; IntegerLit 3L; IntegerLit 7L], (Ok
         (FuncDefExp
            { Name = ['f']

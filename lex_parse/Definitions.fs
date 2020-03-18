@@ -1,6 +1,9 @@
 module Definitions
 open System
 
+let print x =
+    printfn "%A" x
+
 type Lexer = char list -> (char list * char list) option
 type MappedRule = (char list * int)
 
@@ -8,9 +11,6 @@ type MappedRule = (char list * int)
 //option due to implementation
 type AccumulatedMappedRule = (MappedRule * char list) option
 type Rule = (char list * bool) list
-
-let print x =
-    printfn "%A" x
 
 type Token = OpenRoundBracket
             |CloseRoundBracket
@@ -65,13 +65,14 @@ type AST =
     | Lambda of LambdaType
     | Var of char list //only valid in lambdas 
     | FuncApp of AST*AST
-    | Pair of AST*AST 
+    | Pair of AST*AST
+    | ExactPairMatch of AST*AST
     | Null 
     | Literal of LitType 
     | BFunc of BuiltInType
     | Bracket of AST
     | Y
-    | Lazy of AST
+    | Lzy of AST
 
 and FuncDefExpType = {
     Name: char list;
@@ -86,12 +87,13 @@ and LambdaType = {
 
 and MatchDefType = {
     Condition: AST
-    Cases: AST list
+    Cases: (AST*AST) list
 }
 
 and LitType = 
     | Int of int64 
     | Str of char list
+    | UNIT
 
 
 //Rules
@@ -105,9 +107,9 @@ let negIntegerLit =
 
     ]
 let stringLit =
-    [['\"'],false
+    [['"'],false
      ['0'..'9']@['a'..'z']@['A'..'Z']@[' '],true
-     ['\"'],false]
+     ['"'],false]
 let decimalLit =
     [
         ['0'..'9'],true
@@ -250,6 +252,19 @@ let keywordFi =
         ['i'],false
         [' '],true
     ]
+let openCurlyBracket = 
+    [
+        ['{'],false
+    ]
+let closeCurlyBracket =
+    [
+        ['}'],false
+    ]
+    
+let keywordTwoDots =
+    [
+        [':'],false
+    ]
     
 //------------------------------------------------------------
 //Dict
@@ -263,6 +278,8 @@ let mdict: Rule list = [
              decimalLit
              negDecimalLit
              spaceLit
+             openCurlyBracket
+             closeCurlyBracket
              openRoundBracketLit
              closeRoundBracketLit
              openSquareBracketLit
@@ -282,5 +299,6 @@ let mdict: Rule list = [
              keywordThen
              keywordElse
              keywordFi
+             keywordTwoDots
              keywordColon
              ]
