@@ -53,10 +53,6 @@ let execFile(filePath) =
         | [] -> ()
     File.ReadAllLines filePath |> Array.toList |> execLines
 
-
-let rec even = fun n -> if n = 0 then true else odd (n-1) 
-and odd = fun n -> if n = 0 then false else even (n-1) 
-
 //Need to write more tests here
 let testLambdaEvalDescriptions =
     [
@@ -68,10 +64,11 @@ let testLambdaEvalDescriptions =
         )   
         (
          "Lambda 2",
-         lambdaEval "let rec fac n = if equals n 0 then 1 else n * fac ( n - 1 ) fi in fac 5",
-         Ok (Literal (Int 55)),
+         lambdaEval "let rec fib n = if equals n 1 then 1 else if equals n 2 then 1 else fib ( n - 1 ) + fib ( n - 2 ) fi fi",
+         Ok (Literal (Int 55L)),
          "Fibonacci function"
-        )      
+        )
+
     ]
 
 let testMatchDescriptions =
@@ -193,9 +190,9 @@ let lambdaEvalTestGroup = testList "Lambda Test Group" (List.map makeMyTests tes
 
 [<EntryPoint>]  
 let main argv =
-    //print <| tokenize_parse """implode  [ "ab" ; "b" ; "c" ; "d" ]"""
+    print <| tokenize_parse "mrec even n = if equals n 0 then true else odd (n - 1) fi mrec odd n = if equals n 0 then false else even (n - 1) fi"
     //execFile("C:\\Users\\danig\\Desktop\\myF#\\hlp2020-07\\lex_parse\\demo.TSHARP")
-    //Console.ReadKey() |> ignore
+    Console.ReadKey() |> ignore
     //FSILike()
     //testsWithExpectoParser() |> ignore
     
