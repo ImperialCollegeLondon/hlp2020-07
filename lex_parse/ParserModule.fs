@@ -418,7 +418,7 @@ and  buildFunctionDef inp:(Result<AST,string>*Result<Token list, Token list>)  =
                 | hd'::tl' ->
                     match hd' with 
                     | Other x -> 
-                        let splitFunc = extractParts tl []
+                        let splitFunc = extractParts (Ok tl) []
                         match splitFunc with 
                         | Ok (body, []) -> 
                             let modifiedBody = adaptRecursiveExpression (bodyToAnonymousFun body)
@@ -438,7 +438,7 @@ and  buildFunctionDef inp:(Result<AST,string>*Result<Token list, Token list>)  =
                 | _ -> (Error "Insufficient elements in function definition" , Error inp )
 
             | Other x -> 
-                let splitFunc = extractParts tl []
+                let splitFunc = extractParts (Ok tl) []
                 match splitFunc with 
                 | Ok (body, []) -> 
                     match buildLambda (Ok body) with
