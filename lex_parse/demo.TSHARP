@@ -1,0 +1,35 @@
+print ( let f n = n + 1 in f 6 )
+
+mrec even n = if equals n 0 then true else odd ( n - 1 ) fi mrec odd n = if equals n 0 then false else even ( n - 1 ) fi
+print ( even 10 )
+print ( odd 110 )
+
+let ab = ( let f x = x + 1 in f 6 )
+print ab
+print ( let rec fac n = if equals n 0 then 1 else n * fac ( n - 1 ) fi in fac 5 )
+
+let rec fib n = if equals n 1 then 1 else if equals n 2 then 1 else fib ( n - 1 ) + fib ( n - 2 ) fi fi
+print( fib 10 )
+
+let rec lstmap func lst = if equals lst [ ] then [ ] else ( pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) )  fi
+print ( lstmap fib [1;2;3;4;5;6;7;8;9;10] )
+
+let rec concatlist lsta lstb = if equals lsta [] then lstb else pair ( fst lsta ) ( concatlist ( snd lsta ) lstb )  fi
+print ( concatlist [1;2;3] [3;2;1] )
+
+let rec reverselist lst = if equals lst [] then [] else concatlist ( reverselist ( snd lst ) ) ( [ fst lst ] ) fi 
+
+
+print( explode "abcd")
+print( implode ( explode ( "abcd" ) ) )
+print( implode  [ "a" ; "b" ; "c" ; "d" ] )
+print( reverselist [1;2;3;4] )
+
+let rec reverseword str = implode ( reverselist ( explode str ) )
+print (reverseword "abcdef")
+
+
+
+
+
+

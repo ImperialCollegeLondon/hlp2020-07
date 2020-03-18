@@ -1,5 +1,6 @@
 module Lambdas
 open Definitions
+open System
 
 type  EnvironmentType = list<(char list)*AST>
 
@@ -47,8 +48,6 @@ let rec bindPair (toMatch: AST) (intoThis:AST list) : ((AST * AST) list) * int =
         |[] -> failwithf "no case matched - provide default case that matches all"
     
     bindPairIndex intoThis 0
-    
-    
     
 
 let (|TWOARGFUN|_|) exp = 
@@ -118,14 +117,44 @@ let rec execImplode lst =
         match execImplode snd with
         | Ok stringTail -> (Literal(Str [c]), stringTail) ||> concat |> Ok
         | Error err -> Error err
-    | _ -> sprintf "Run-time error: %A is not a valid list to implode" lst |> Error
+    | _ -> sprintf "Run-time error: Wrong argument given to implode" |> Error
 
-let rec execExplode (str) =
+let rec execExplode str =
     match str with
     | (Literal (Str [])) -> Ok Null
-    | (Literal (Str (hd::tl))) -> (Pair(Literal(Str([hd])), Literal(Str tl))) |> execExplode 
-    | _ -> sprintf "Run-time error: %A is not a valid string to explode" str |> Error 
+    | (Literal (Str (hd::tl))) -> 
+        match execExplode (Literal(Str tl)) with 
+        | Ok(explodedTail) -> Pair(Literal(Str [hd]), explodedTail) |> Ok
+        | Error(err)-> Error(err)  
+    | _ -> sprintf "Run-time error: Wrong argument given to explode" |> Error 
 
+execExplode (Literal (Str ['a';'b';'c';'d']))
+
+let rec pairToList (p:AST) : Result<string list,string> = 
+    match p with 
+    | Null -> Ok []
+    | Pair(a,b) -> 
+        match (a, (pairToList b)) with
+        | _, Error(err) -> Error(err)
+        | Literal(Int n), Ok(bLst) -> string(n)::bLst |> Ok
+        | Literal(Str cLst), Ok(bLst) -> String.Concat(Array.ofList(cLst)) :: bLst |> Ok
+        | Pair(_), Ok(bLst) -> 
+            match pairToList a with
+            | Ok(aLst) -> string aLst :: bLst |> Ok
+            | Error(err)->Error(err)
+        | _ -> sprintf "Run-time error: Non valid item was attempted to be printed"|> Error
+    | _ -> sprintf "Run-time error: Non valid item was attempted to be printed" |> Error
+
+let execPrint x = 
+    match x with
+    | Literal(Int n) ->  print n ; UNIT |> Literal |> Ok
+    | Literal(Str cLst) -> String.Concat(Array.ofList(cLst)) |> print ; UNIT |> Literal |> Ok
+    | Null -> print "[]" ; UNIT |> Literal |> Ok
+    | Pair(a, b) -> 
+        match pairToList (Pair(a,b)) with
+        | Ok(listP) -> listP |> print ; UNIT |> Literal |> Ok
+        | Error(err)-> Error(err)
+    | _ -> sprintf "Run-time error: Non valid item was attempted to be printed" |> Error
 
 let mutable cache = Map []
 
@@ -193,7 +222,7 @@ let rec exec (exp : AST) : Result<AST,string> =
         match exec body with
         | Ok(result) -> globalEnv <- (name, result)::globalEnv ; Ok(result)
         | Error err -> Error err
-    | Lazy(lazyExp) -> exec lazyExp
+    | Lzy(lazyExp) -> exec lazyExp
     | FuncApp(func, arg) -> memoise execFunc (func,arg)
     | Pair(a,b)-> evalPair (Pair(a,b))
     | Var(name) -> 
@@ -204,9 +233,9 @@ let rec exec (exp : AST) : Result<AST,string> =
 
 and execFunc (func,arg) = 
     match arg with 
-    | Lazy(lazyArg) -> 
+    | Lzy(lazyArg) -> 
         match exec func with 
-        | Ok executedFunc -> FuncApp(executedFunc,Lazy(lazyArg))  |> applyBasicFunc
+        | Ok executedFunc -> FuncApp(executedFunc,Lzy(lazyArg))  |> applyBasicFunc
         | Error err -> Error err
     | _ -> 
         match exec func with 
@@ -218,19 +247,20 @@ and execFunc (func,arg) =
 
 and applyBasicFunc (exp:AST):Result<AST,string> = 
     match exp with
-    | ONEARGFUN(Y,f) -> exec (FuncApp(f,Lazy(FuncApp(Y,f))))
+    | ONEARGFUN(Y,f) -> exec (FuncApp(f,Lzy(FuncApp(Y,f))))
     | ONEARGFUN(Lambda l,arg) ->
         match lookUp ((l.InputVar, arg)::globalEnv) l.Body with 
         | Ok(ast) -> exec ast
         | Error(e)-> Error(e)
     | TWOARGFUN (BFunc(P),arg1,arg2) -> evalPair (Pair(arg1,arg2))
-    | TWOARGFUN (BFunc(Equal),arg1,arg2) -> evalIfLazy2ARG execEqual arg1 arg2 
-    | TWOARGFUN (BFunc(Mat op), arg1, arg2) -> evalIfLazy2ARG (execMath op) arg1 arg2 
-    | ONEARGFUN (BFunc(PFst),arg) -> evalIfLazy execPFst arg
-    | ONEARGFUN (BFunc(PSnd),arg) ->  evalIfLazy execPSnd arg
-    | ONEARGFUN (BFunc(IsPair),arg) -> evalIfLazy execIsPair arg 
-    | ONEARGFUN (BFunc(Implode),arg) -> evalIfLazy execImplode arg
-    | ONEARGFUN (BFunc(Explode),arg) -> evalIfLazy execExplode arg    
+    | TWOARGFUN (BFunc(Equal),arg1,arg2) -> evalIfLzy2ARG execEqual arg1 arg2 
+    | TWOARGFUN (BFunc(Mat op), arg1, arg2) -> evalIfLzy2ARG (execMath op) arg1 arg2 
+    | ONEARGFUN (BFunc(PFst),arg) -> evalIfLzy execPFst arg
+    | ONEARGFUN (BFunc(PSnd),arg) ->  evalIfLzy execPSnd arg
+    | ONEARGFUN (BFunc(IsPair),arg) -> evalIfLzy execIsPair arg 
+    | ONEARGFUN (BFunc(Implode),arg) -> evalIfLzy execImplode arg
+    | ONEARGFUN (BFunc(Explode),arg) -> evalIfLzy execExplode arg  
+    | ONEARGFUN (BFunc(Print),arg) -> evalIfLzy execPrint arg  
     | ONEARGFUN ((Literal(_)|Pair(_)|Null), _) -> sprintf "Run time error: %A is not a valid function application" (exp) |> Error
     | ONEARGFUN (BFunc _, _) -> exp |> Ok //this is to deal with double argument builtIn functions
     | _ -> Error(sprintf "SHOULD NEVER HAPPEN: %A" exp) 
@@ -260,9 +290,9 @@ and lookUp (env:EnvironmentType) exp =
         match (lookUp env func,lookUp env arg) with
         | (Ok lookedFunc, Ok lookedArg) -> FuncApp(lookedFunc, lookedArg) |> Ok
         | (Error err, _) | (_,Error err) -> Error err
-    | Lazy(e) -> 
+    | Lzy(e) -> 
         match (lookUp env e) with 
-        | Ok exp -> Ok (Lazy(exp))
+        | Ok exp -> Ok (Lzy(exp))
         | Error err -> Error err
     | Pair(fst,snd) -> 
         match (lookUp env fst, lookUp env snd) with 
@@ -286,12 +316,12 @@ and evalPair exp =
         | Error err -> Error err
     | _ -> sprintf "Run-time error: %A was expexted to be a pair" exp |> Error 
 
-and evalIfLazy func arg : Result<AST,string> = 
+and evalIfLzy func arg : Result<AST,string> = 
     match exec arg with
     | Ok res -> func res
     | Error err -> Error err
 
-and evalIfLazy2ARG func arg1 arg2 : Result<AST,string> = 
+and evalIfLzy2ARG func arg1 arg2 : Result<AST,string> = 
     match (exec arg1, exec arg2) with 
     | Ok res1, Ok res2 -> func res1 res2
     | Error err, _ | _, Error err -> Error err
@@ -302,15 +332,15 @@ let run input =
     | Ok(exp)-> exec exp   
 
 let elseBody12 = FuncApp(FuncApp(BFunc(Mat Mult),Var ['n']),FuncApp(Var ['f'], FuncApp(FuncApp(BFunc(Mat Sub),Var ['n']),Literal(Int 1L))))
-let ifStatement12 = FuncApp(FuncApp(FuncApp(FuncApp(BFunc Equal,Var ['n']),Literal(Int 0L)),Lazy(Literal(Int 1L))),Lazy(elseBody12))
+let ifStatement12 = FuncApp(FuncApp(FuncApp(FuncApp(BFunc Equal,Var ['n']),Literal(Int 0L)),Lzy(Literal(Int 1L))),Lzy(elseBody12))
 let fBody12 = FuncApp(Y, Lambda{InputVar = ['f']; Body = Lambda{InputVar = ['n']; Body = ifStatement12}})
 let test12 = FuncDefExp{Name = ['f'];Body = fBody12;Expression = FuncApp(Var ['f'],Literal(Int 5L))}
 
 let result12 = exec  test12
 
 let namesList = [['a'];['b']]
-let bodyA = (FuncApp (FuncApp(FuncApp (FuncApp (BFunc Equal,Var ['n']),Literal (Int 0L)),Lazy (Literal (Int 1L))),Lazy(FuncApp(Var ['b'],FuncApp (FuncApp (BFunc (Mat Sub),Var ['n']),Literal (Int 1L))))))
-let bodyB = (FuncApp (FuncApp(FuncApp (FuncApp (BFunc Equal,Var ['n']),Literal (Int 0L)),Lazy (Literal (Int 0L))),Lazy(FuncApp(Var ['a'],FuncApp (FuncApp (BFunc (Mat Sub),Var ['n']),Literal (Int 1L))))))
+let bodyA = (FuncApp (FuncApp(FuncApp (FuncApp (BFunc Equal,Var ['n']),Literal (Int 0L)),Lzy (Literal (Int 1L))),Lzy(FuncApp(Var ['b'],FuncApp (FuncApp (BFunc (Mat Sub),Var ['n']),Literal (Int 1L))))))
+let bodyB = (FuncApp (FuncApp(FuncApp (FuncApp (BFunc Equal,Var ['n']),Literal (Int 0L)),Lzy (Literal (Int 0L))),Lzy(FuncApp(Var ['a'],FuncApp (FuncApp (BFunc (Mat Sub),Var ['n']),Literal (Int 1L))))))
 let bodiesList = [Lambda{InputVar = ['n']; Body = bodyA};Lambda{InputVar = ['n']; Body = bodyB}]
 
 let test15 = MutFuncDef(namesList, bodiesList)

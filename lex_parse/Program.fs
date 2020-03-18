@@ -6,20 +6,27 @@ open System
 open System.IO
 open Expecto
 
-let print x =
-    printfn "%A" x
-
 
 let tokenize_parse (x:string) =
     x
+    |> fun x -> print x ; x
     |> tokenize
+    |> fun x -> print x ; x
     |> Ok
     |> parse
+
+let rec concatList l1 l2 = if l1 = [] then l2 else l1.Head::concatList l1.Tail l2 
+concatList [1;2;3;4] [5;6;7;8]
+
+let rec reverseList l = if l = [] then [] else reverseList l.Tail @ [l.Head]
+reverseList [1;2;3;4]
+
 
 let lambdaEval inp = 
     inp 
     |> tokenize_parse
     |> fst
+    //|> fun x -> print x ; x
     |> run
 
 let rec FSILike() =
@@ -39,9 +46,10 @@ let execFile(filePath) =
     let rec execLines =
         function
         | hd::tl -> 
-            match lambdaEval hd with
-            | Error(err) -> print err 
-            | Ok(ast) -> printASTResult ast; execLines tl
+            if hd = "" then execLines tl else 
+                match lambdaEval hd with
+                | Error(err) -> print err 
+                | Ok(_) -> execLines tl
         | [] -> ()
     File.ReadAllLines filePath |> Array.toList |> execLines
 
@@ -50,15 +58,19 @@ let rec even = fun n -> if n = 0 then true else odd (n-1)
 and odd = fun n -> if n = 0 then false else even (n-1) 
 
 //Need to write more tests here
-let testTokenizerDescriptions =
+(*let testTokenizerDescriptions =
     [
         (
-            ""
-        )
-    ]
+         "Values Defined outside 1",
+         lambdaEval "let f = [1;2;3;4;5] in let g = 2 in match f case [x;y;z;a;b;c;d] -> 1 + x + g case [x;y] -> 2 + g + x case [x] -> 3 case endmatch",
+         Ok (Literal (Int 5L)),
+         "Pair defined as value outside\nCase uses value defined outside\n"
+        )      
+    ]*)
 
 let testMatchDescriptions =
     [
+  
         (
          "Values Defined outside 1",
          lambdaEval "let f = [1;2;3;4;5] in let g = 2 in match f case [x;y;z;a;b;c;d] -> 1 + x + g case [x;y] -> 2 + g + x case [x] -> 3 case endmatch",
@@ -167,7 +179,7 @@ let testMatchDescriptions =
 let makeMyTests (x,y,z,name) = 
       test x {Expect.equal y z name}
 [<Tests>]
-let matchTestGroup = testList "Match Test Group" (List.map makeMyTests testMatchDescriptions)
+//let matchTestGroup = testList "Match Test Group" (List.map makeMyTests testMatchDescriptions)
 
 
 
@@ -176,7 +188,9 @@ let matchTestGroup = testList "Match Test Group" (List.map makeMyTests testMatch
 
 [<EntryPoint>]  
 let main argv =
-    //execFile("C:\\Users\\danig\\Desktop\\myF#\\hlp2020-07\\lex_parse\\demo.THARP")
+    //print <| tokenize_parse """implode  [ "ab" ; "b" ; "c" ; "d" ]"""
+    execFile("C:\\Users\\danig\\Desktop\\myF#\\hlp2020-07\\lex_parse\\demo.TSHARP")
+    Console.ReadKey() |> ignore
     //FSILike()
     //testsWithExpectoParser() |> ignore
     
