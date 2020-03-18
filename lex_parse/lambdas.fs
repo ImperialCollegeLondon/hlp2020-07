@@ -10,10 +10,10 @@ let falseAST = Lambda {InputVar = ['x']; Body = Lambda {InputVar = ['y']; Body =
 let bindEmptyVariables (pairs:AST) : EnvironmentType =
     let rec bindEmptyVariablesHelper(pairs: AST) (acc:EnvironmentType) : EnvironmentType =
         match pairs with
-            |Pair (Var x, Null) -> acc @ [x, Var x]
-            |Pair (Literal _, Null) -> acc
-            |Pair (Var x,y) -> bindEmptyVariablesHelper y (acc @ [x, Var x])
-            |Pair (Literal _, y) -> bindEmptyVariablesHelper y acc
+            |Pair (Var x, Null) | ExactPairMatch (Var x, Null) -> acc @ [x, Var x]
+            |Pair (Literal _, Null) | ExactPairMatch (Literal _, Null) -> acc
+            |Pair (Var x,y) | ExactPairMatch (Var x,y) -> bindEmptyVariablesHelper y (acc @ [x, Var x])
+            |Pair (Literal _, y) | ExactPairMatch (Literal _, y) -> bindEmptyVariablesHelper y acc
             |_  -> []
         
     
@@ -27,17 +27,30 @@ let firstASTOccurrence (x:AST) (lst:(AST*AST) list ) : int =
             |[] -> -1
     firstASTOccurrenceHelper lst 0 
   
-let rec bindPair (toMatch: AST) (intoThis:AST list) : ((AST * AST) list) * int =
-    let rec bindPairHelper (matchPattern:AST) (casePattern:AST) (acc : (AST * AST) list )  : ((AST * AST) list) option=
+let rec bindPairHelper (matchPattern:AST) (casePattern:AST) (acc : (AST * AST) list )  : ((AST * AST) list) option=
         match matchPattern,casePattern with
             |Null,Null -> Some acc
+            |Null, Pair (Var x, Null) -> Some <| acc @ [Null, Var x]
+            |Null, Pair (Var x, y) -> None
+            |Null, ExactPairMatch _ -> None
+            |_,Null -> None
+            
+            | Pair (Literal x1, Null), ExactPairMatch (Literal x2, Null) when x1 = x2 -> Some acc 
+            | Pair (Literal x1, Null), ExactPairMatch (Var x2, Null) -> Some <| acc @ [Literal x1, Var x2]
+            | Pair (Literal x1, A), ExactPairMatch (Literal x2, B) -> bindPairHelper A B acc
+            | Pair (Literal x1, A), ExactPairMatch (Var x2, B) -> bindPairHelper A B (acc @ [Literal x1, Var x2])
+             
+             
             |Pair(Literal x1, y), Pair(Literal x2, z) when x1 = x2 -> bindPairHelper y z acc
             |Pair(Literal x1, y), Pair(Var x2,z) when z <> Null -> bindPairHelper y z (acc @ [Literal x1, Var x2])
             |Pair(Literal x1,y), Pair(Var x2,Null) -> Some <| acc @ [Pair(Literal x1,y), Var x2]
-            |Null, _ |_,Null -> None
+            
+            
             |Pair(Literal x1,_),Pair(Literal x2,_) when x1 <> x2 -> None
-            | _ -> failwithf "Why is this happening in bindPairHelper"          
-    
+            | x,y -> print x; print y; failwithf "Why is this happening in bindPairHelper"       
+ 
+let rec bindPair (toMatch: AST) (intoThis:AST list) : ((AST * AST) list) * int =
+        
     let rec bindPairIndex (y:AST list) (index:int)  : ((AST * AST) list) * int =
         match y with
         |hd::tl ->
@@ -247,7 +260,10 @@ and lookUp (env:EnvironmentType) exp =
                                    <<
                                    (fun (caseHeadUnbindedVars,bindedVars,caseBody) -> caseHeadUnbindedVars, lookUp (bindedVars @ env) caseBody )
                                    <<
-                                   (fun (caseHeadUnbindedVars,caseBody) -> caseHeadUnbindedVars,bindEmptyVariables caseHeadUnbindedVars,caseBody )
+                                   //this one comes first
+                                   (fun (caseHeadUnbindedVars,caseBody) ->
+                                      // printf "caseHeadUnbindedVars: %A\n caseBody: %A\n bindedVars: %A \n" caseHeadUnbindedVars caseBody (bindEmptyVariables caseHeadUnbindedVars)
+                                       caseHeadUnbindedVars,bindEmptyVariables caseHeadUnbindedVars,caseBody )
                                ) f.Cases
             //lookUp (newEnv @ env) body
             Ok <| MatchDef {Condition = lookedUpCondition; Cases =  res }           

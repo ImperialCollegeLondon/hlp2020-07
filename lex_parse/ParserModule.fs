@@ -347,11 +347,23 @@ and buildMatchCases (inp: Result<Token list, Token list>):( (AST * AST) list * R
            let toMatch = match (|PBUILDADDEXP|_|) <|  Ok cases.Head with
                             | Some (Ok x, Ok y) when List.isEmpty y -> x
                             | _ -> failwithf "thing to be matched didn't parse"
+           
            cases.Tail
            |> List.map
               (
               sepConditionExpression
-              >> fun (cond,exp) -> ( (|PBUILDADDEXP|_|) <| Ok cond, (|PBUILDADDEXP|_|) <| Ok exp )
+              >> fun (cond,exp) ->
+                 // let minires1 = parse (Ok cond)
+                  
+                  
+                  //match (parse <| Ok cond),(parse <| Ok exp ) with
+                  //  | (Ok pCondition,Ok []),(Ok pExpression, Ok []) -> print pCondition; print pExpression ;failwithf "a"
+                  //  | _ -> failwithf "A"
+                  
+                  
+                  
+                  
+                  ( Some <| (parse <| Ok cond)), ( Some <| (parse <| Ok exp))
               >> fun (parsedCondition, parsedExpression) ->
                   match parsedCondition, parsedExpression with
                     | Some (Ok finalCond,Ok resEmpty1), Some (Ok finalExp,Ok resEmpty2) when ((List.isEmpty resEmpty1) && (List.isEmpty resEmpty2) ) -> finalCond, finalExp
