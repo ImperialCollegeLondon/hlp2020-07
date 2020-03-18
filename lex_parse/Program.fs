@@ -112,6 +112,7 @@ let bindPairHelperDescriptions =
             Some [(Literal (Int 20L), Var ['y'; 'z'])],
             "Including literals in the cases part"
         )
+       ]
         
         
 let testLambdaEvalDescriptions =
@@ -418,7 +419,7 @@ let main argv =
     //execFile("C:\\Users\\danig\\Desktop\\myF#\\hlp2020-07\\lex_parse\\demo.TSHARP")
     //Console.ReadKey() |> ignore
     //FSILike()
-    testsWithExpectoParser() |> ignore
+    //testsWithExpectoParser() |> ignore
     
     
     
@@ -438,74 +439,4 @@ let main argv =
     //print <| lambdaEval "match [1;2;3;4] case { 1 : 2 : x : y } -> x + y case [] -> 4 case endmatch"
     //print <| lambdaEval "let g = [50;60] in let f = [1;2;10] in match f case { 1 : 2 : x : y } -> x + y case [] -> 4 case [x;y] -> match g case {A : B} -> A + B case endmatch case endmatch"
     runTestsInAssembly defaultConfig [||] |> ignore
-    //print <| tokenize_parse "let f = [1;2;3;4;5] in let g = [10;11;12;13;14] in match g case {x:y:z:a:b} -> let o = 0 in let q = [1;1;1;1;1] in match q case [x;y] -> x * o case endmatch case endmatch"
-    
-    
-    (*
-    print "-------------------------------"
-    print <| tokenize_parse "let o = 0 in let q = [1;1;1;1;1] in match q case [x;y] -> x * o case endmatch"
-    print "-------------------------------"
-    print <| parse (Ok  [Let; Other "o"; EqualToken; IntegerLit 0L; Other "in"; Let; Other "q";
-                                     EqualToken; OpenSquareBracket; IntegerLit 1L; Keyword ";"; IntegerLit 1L;
-                                     Keyword ";"; IntegerLit 1L; Keyword ";"; IntegerLit 1L; Keyword ";";
-                                     IntegerLit 1L; CloseSquareBracket; Other "in"; Keyword "match"; Other "q";
-                                     Keyword "case"; OpenSquareBracket; Other "x"; Keyword ";"; Other "y";
-                                     CloseSquareBracket; RightArrow; Other "x"; MultToken; Other "o"; Keyword "case";
-                                     Keyword "endmatch"] )
-    print "-------------------------------"
-    print <| ( (|PBUILDADDEXP|_|) <| Ok  [Let; Other "o"; EqualToken; IntegerLit 0L; Other "in"; Let; Other "q";
-                                     EqualToken; OpenSquareBracket; IntegerLit 1L; Keyword ";"; IntegerLit 1L;
-                                     Keyword ";"; IntegerLit 1L; Keyword ";"; IntegerLit 1L; Keyword ";";
-                                     IntegerLit 1L; CloseSquareBracket; Other "in"; Keyword "match"; Other "q";
-                                     Keyword "case"; OpenSquareBracket; Other "x"; Keyword ";"; Other "y";
-                                     CloseSquareBracket; RightArrow; Other "x"; MultToken; Other "o"; Keyword "case";
-                                     Keyword "endmatch"] )
-    
-    *)
-   
-    
-    //print <| tokenize_parse "let f = 2 in f * 3 " // let rest = 5 in rest * 20"
-    
-    
-     
-    //print <| bindPairHelper ( Pair (Literal (Int 21L), Pair ( Literal (Int 20L), Null  ) )  ) (ExactPairMatch ( Literal (Int 21L), ExactPairMatch (Var ['y';'z'],Null)  )) []
-    //print <| lambdaEval "let f = [] in let g = [1] in match g case [] -> 101 case [x;y;z] -> 102 case {x:y} -> x + y case [x] -> 1 case endmatch"  
-    //print <| lambdaEval "match [] case [] -> 3 case [x] -> x case [1;2;x] -> 3 case [] -> match [1;2;3;4] case [1;2;3;x] -> x  case endmatch case endmatch"
-    //print <| tokenize_parse "{a : b}"
-    //print <| tokenize_parse "[]"
-    
-    
-    //print <| run(fst(parse (Ok [Let; Other "rec"; Other "fib"; Other "a"; EqualToken; Keyword "if";
-    // Other "equals"; Other "a"; IntegerLit 0L; Keyword "then"; IntegerLit 0L;
-    // Keyword "else"; Keyword "if"; Other "equals"; Other "a"; IntegerLit 1L;
-    // Keyword "then"; IntegerLit 1L; Keyword "else"; Other "fib"; OpenRoundBracket;
-    // Other "a"; SubToken; IntegerLit 1L; CloseRoundBracket; AddToken; Other "fib";
-    // OpenRoundBracket; Other "a"; SubToken; IntegerLit 2L; CloseRoundBracket; Keyword "fi";
-    // Keyword "fi"; Other "in"; Other "fib"; IntegerLit 9L])))
-    //print <| fib 9
-
-    //print <| run (fst (parse (Ok [Let; Other "rec"; Other "f"; Other "p"; EqualToken; Keyword "if"; Other "equals"; Other "p";
-    //OpenSquareBracket; CloseSquareBracket; Keyword "then";
-    //OpenSquareBracket; CloseSquareBracket; Keyword "else";
-    //Other "pair"; OpenRoundBracket; OpenRoundBracket; Other"fst"; Other "p"; CloseRoundBracket; MultToken; IntegerLit 2L;
-    //CloseRoundBracket; OpenRoundBracket; Other "f"; OpenRoundBracket; Other "snd"; Other "p"; CloseRoundBracket; CloseRoundBracket;
-    //Keyword "fi"; Other "in"; Other "f"; OpenSquareBracket; IntegerLit 1L; Keyword ";"; IntegerLit 2L; MultToken; IntegerLit 3L; Keyword ";"; IntegerLit 3L; CloseSquareBracket])))
-
-    //print <| lambdaEval "let rec f n = if equals n 0 then 1 else n * f (n - 1) fi in let g x = 2*x in g (f 3)"
-    //print   <| parse  (Ok [Let; Other "f"; Other "x"; Other "y"; EqualToken; OpenSquareBracket; Other "x";Keyword ";"; Other "x"; MultToken; Other "x"; Keyword ";"; Other "x"; MultToken;Other "x"; MultToken; Other "x"; Keyword ";"; OpenSquareBracket; Other "x";AddToken; Other "y"; CloseSquareBracket; CloseSquareBracket; Other "in";Other "f"; IntegerLit 3L; IntegerLit 7L])
-    //print <| split (Keyword "case") (tokenize "if case j h l case u case a b c case endmatch")
-    //print <| split (Keyword "case") (tokenize "x case 1 case 2 case endmatch f x y")
-    //print <| tokenize_parse "match x case match y case f x case f y case endmatch case match f x case 1 case 2 case endmatch case endmatch"
-    //print <| tokenize_parse "match x + 1 case 1 case 2 case endmatch 21 + match x case f case j case endmatch"
-    //print <| tokenize_parse "match f + x case match x + 1 case 1 case 2 case endmatch case 1 case endmatch j k"
-    //print <| tokenize_parse "f x y"
-    
-    
-    //print <| tokenize_parse "pair x (pair a b) "
-    //[1;2;3;4] -> Pair (Int 1, Pair (Int 2, Pair (Int 3, Pair(Int 4, Null)) ) )
-    
-    
-    
-    //print <| lambdaEval "3 + 1"
-    //print <| lambdaEval "match x case 1 case 2 case endmatch + 5"
     0
