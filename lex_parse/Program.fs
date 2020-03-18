@@ -190,7 +190,7 @@ let lambdaEvalTestGroup = testList "Lambda Test Group" (List.map makeMyTests tes
 
 [<EntryPoint>]  
 let main argv =
-    print <| tokenize_parse "mrec even n = if equals n 0 then true else odd (n - 1) fi mrec odd n = if equals n 0 then false else even (n - 1) fi"
+    print <| tokenize_parse "print (let g f x = f x x in g (fun x y = x * y ) 3)"
     //execFile("C:\\Users\\danig\\Desktop\\myF#\\hlp2020-07\\lex_parse\\demo.TSHARP")
     Console.ReadKey() |> ignore
     //FSILike()
