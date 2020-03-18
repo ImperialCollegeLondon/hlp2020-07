@@ -345,11 +345,18 @@ and buildLambda (inp:Result<Token list, Token list>):(Result<AST,string>*Result<
 
 and (|BUILDLAMBDA|_|) inp:((Result<AST,string>*Result<Token list, Token list>) option) = Some (buildLambda inp)
 
-and extractParts inp acc = 
-    match inp with 
-    | hd::tl when hd = Other "in" -> Ok( acc,tl)
-    | hd::tl -> extractParts tl (acc @ [hd])
-    | [] -> Ok (acc, []) //Error "This function definition is never used"
+and extractParts inp acc: Result<Token list* Token list, string> = 
+    match inp with
+    | PMATCH (OpenRoundBracket) (PTAKEINSIDETOKENS (OpenRoundBracket) (CloseRoundBracket) (result))  ->
+        match result with 
+        | Ok (acc', inp') -> 
+            let acc'' = (acc@[OpenRoundBracket] @acc')
+            extractParts  inp' (acc'')
+        | Error msg -> Error msg
+    | Ok (hd::tl) when hd = Other "in" -> Ok( acc, tl)
+    | Ok (hd::tl) -> extractParts (Ok tl) (acc @ [hd])
+    | Ok [] -> Ok (acc, []) //Error "This function definition is never used"
+    | _ -> failwithf "What? Can't happen"
 
 and adaptRecursiveExpression lambda  = 
      [Keyword "Y"] @ lambda
@@ -367,7 +374,7 @@ and  buildFunctionDef inp:(Result<AST,string>*Result<Token list, Token list>)  =
                 | hd'::tl' ->
                     match hd' with 
                     | Other x -> 
-                        let splitFunc = extractParts tl []
+                        let splitFunc = extractParts (Ok tl) []
                         match splitFunc with 
                         | Ok (body, []) -> 
                             let modifiedBody = adaptRecursiveExpression (bodyToAnonymousFun body)
@@ -387,17 +394,20 @@ and  buildFunctionDef inp:(Result<AST,string>*Result<Token list, Token list>)  =
                 | _ -> (Error "Insufficient elements in function definition" , Error inp )
 
             | Other x -> 
-                let splitFunc = extractParts tl []
+                let splitFunc = extractParts (Ok tl) []
                 match splitFunc with 
                 | Ok (body, []) -> 
                     match buildLambda (Ok body) with
                     | (Ok body, _) -> (Ok(FuncDef(Seq.toList x, body)), Ok [])
                     | (Error msg, rest) -> (Error msg, rest)
                 | Ok (body, expression) ->
+                    printf "Body is %A \n" body
                     let parsedExpression = parse (Ok expression)
+                    printf "Parsed Expression is %A \n" parsedExpression
                     let parsedBody = buildLambda (Ok body)
+                    printf "Parsed Body is %A \n" parsedBody
                     match  parsedBody, parsedExpression with 
-                    |((Ok body, _),(Ok expression, rest))  -> (Ok (FuncDefExp {Name=Seq.toList x;Body=body; Expression=expression}),rest)
+                    |((Ok body, _),(Ok expression, rest))  -> printf "Rest is %A \n" rest;(Ok (FuncDefExp {Name=Seq.toList x;Body=body; Expression=expression}),rest)
                     | ((Error msg, rest), _) -> (Error msg, rest)
                     | (_, (Error msg, rest)) -> (Error msg, rest)
 

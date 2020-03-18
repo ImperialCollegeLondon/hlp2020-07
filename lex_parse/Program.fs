@@ -50,19 +50,19 @@ and odd = fun n -> if n = 0 then false else even (n-1)
 
 [<EntryPoint>]  
 let main argv =
-    execFile("C:\\Users\\danig\\Desktop\\myF#\\hlp2020-07\\lex_parse\\demo.THARP")
-    FSILike()
-    testsWithExpectoParser() |> ignore
+    //execFile("C:\\Users\\danig\\Desktop\\myF#\\hlp2020-07\\lex_parse\\demo.THARP")
+    //FSILike()
+    //testsWithExpectoParser() |> ignore
     //print <| parse (Ok [OpenRoundBracket; Keyword "fun"; Other "x"; EqualToken; Other "x"; AddToken; IntegerLit 1L; CloseRoundBracket])
     //print <| run(fst(parse (Ok [Let; Other "rec"; Other "f"; Other "n"; EqualToken; Keyword "if"; Other "equals"; Other "n";
     //IntegerLit 0L; Keyword "then"; IntegerLit 1L; Keyword "else"; Other "n"; MultToken;
     //OpenRoundBracket; Other "f"; OpenRoundBracket; Other "n"; SubToken;
     //IntegerLit 1L; CloseRoundBracket; CloseRoundBracket; Keyword "fi"; Other "in";
     //Other "f"; IntegerLit 3L])))
-
+    print <| lambdaEval "let ab = (let f x = x + 1 in f 6)"
     //print <| lambdaEval "mrec even n = if equals n 0 then true else odd (n - 1) fi mrec odd n = if equals n 0 then false else even (n - 1) fi"
     //print <| lambdaEval "even 100"
-    print <| parsedOutput (Ok [OpenCurlyBracket; Other "hd"; Keyword ":"; Other "tl"; Keyword ":"; Other "rest"; CloseCurlyBracket])
+   // print <| parsedOutput (Ok [OpenCurlyBracket; Other "hd"; Keyword ":"; Other "tl"; Keyword ":"; Other "rest"; CloseCurlyBracket])
 
 
     //print <| run(fst(parse (Ok [Let; Other "rec"; Other "fib"; Other "a"; EqualToken; Keyword "if";
