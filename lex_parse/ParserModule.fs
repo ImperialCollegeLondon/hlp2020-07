@@ -116,7 +116,7 @@ let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,
         | Error msg -> Error msg
     
     | PNOTEXPITEM (Ok(ast, Ok lst)) ->  Ok (ast, Ok lst)
-    | PMATCH (OpenRoundBracket) (PMATCH (Keyword "fun") (BUILDLAMBDA (lamb, PMATCH (CloseRoundBracket) (inp') ) )) ->
+    | PMATCH (OpenRoundBracket) (PMATCH (Other "fun") (BUILDLAMBDA (lamb, PMATCH (CloseRoundBracket) (inp') ) )) ->
         match lamb with 
         | Ok ast -> Ok (lamb, inp')      
         | Error msg -> Error msg
@@ -406,7 +406,7 @@ and adaptRecursiveExpression lambda  =
 
 
 and bodyToAnonymousFun inp = 
-    [OpenRoundBracket]@[Keyword "fun"]@inp@[CloseRoundBracket]
+    [OpenRoundBracket]@[Other "fun"]@inp@[CloseRoundBracket]
     
 and  buildFunctionDef inp:(Result<AST,string>*Result<Token list, Token list>)  = 
     match inp with 
@@ -445,6 +445,7 @@ and  buildFunctionDef inp:(Result<AST,string>*Result<Token list, Token list>)  =
                     | (Error msg, rest) -> (Error msg, rest)
                 | Ok (body, expression) ->
                     let parsedExpression = parse (Ok expression)
+                    printf "\n EXPRESSION IS %A Parsed expression is %A \n" expression parsedExpression
                     let parsedBody = buildLambda (Ok body)
                     match  parsedBody, parsedExpression with 
                     |((Ok body, _),(Ok expression, rest))  -> (Ok (FuncDefExp {Name=Seq.toList x;Body=body; Expression=expression}),rest)
@@ -538,7 +539,7 @@ let testListWithExpectoParser =
         "fourth test", (Ok [OpenSquareBracket; CloseSquareBracket; Other "x"; Other"y"]), Ok (FuncApp (FuncApp (Null,Var ['x']),Var ['y']))
         //"fifth test", (Ok [Let; Other "f"; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2L]), (Error "This function definition is never used")
         "sixth test", (Ok [Let; Other "x"; EqualToken; Other "x"; MultToken; IntegerLit 2L; Other "in"; Other "x"; IntegerLit 5L]), (Ok(FuncDefExp{ Name = ['x'];Body = FuncApp (FuncApp (BFunc (Mat Mult),Var ['x']),Literal (Int 2L));Expression = FuncApp (Var ['x'],Literal (Int 5L)) }))
-        "seventh test", (Ok [OpenRoundBracket; Keyword "fun"; Other "x"; EqualToken; Other "x"; AddToken; IntegerLit 1L; CloseRoundBracket]), (Ok(Lambda{ InputVar = ['x'];Body = FuncApp (FuncApp (BFunc (Mat Add),Var ['x']),Literal (Int 1L)) }))
+        "seventh test", (Ok [OpenRoundBracket; Other "fun"; Other "x"; EqualToken; Other "x"; AddToken; IntegerLit 1L; CloseRoundBracket]), (Ok(Lambda{ InputVar = ['x'];Body = FuncApp (FuncApp (BFunc (Mat Add),Var ['x']),Literal (Int 1L)) }))
         "eigth test", (Ok [Other "f"; OpenRoundBracket; Other "x"; Other "y";Other "z"; CloseRoundBracket]), Ok (FuncApp (Var ['f'],FuncApp (FuncApp (Var ['x'],Var ['y']),Var ['z'])))
         "ninth test", Ok [Other "f"; OpenRoundBracket; Other "a"; OpenRoundBracket; Other "f"; Other "d"; CloseRoundBracket; CloseRoundBracket], Ok (FuncApp (Var ['f'],FuncApp (Var ['a'],FuncApp (Var ['f'],Var ['d']))))
         "tenth test", Ok [OpenSquareBracket; OpenSquareBracket; Other "x"; CloseSquareBracket], Error "Input list is not valid"
