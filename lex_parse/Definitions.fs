@@ -1,6 +1,9 @@
 module Definitions
 open System
 
+let print x =
+    printfn "%A" x
+
 type Lexer = char list -> (char list * char list) option
 type MappedRule = (char list * int)
 
@@ -8,9 +11,6 @@ type MappedRule = (char list * int)
 //option due to implementation
 type AccumulatedMappedRule = (MappedRule * char list) option
 type Rule = (char list * bool) list
-
-let print x =
-    printfn "%A" x
 
 type Token = OpenRoundBracket
             |CloseRoundBracket
@@ -72,7 +72,7 @@ type AST =
     | BFunc of BuiltInType
     | Bracket of AST
     | Y
-    | Lazy of AST
+    | Lzy of AST
 
 and FuncDefExpType = {
     Name: char list;
@@ -93,6 +93,7 @@ and MatchDefType = {
 and LitType = 
     | Int of int64 
     | Str of char list
+    | UNIT
 
 
 //Rules
@@ -106,9 +107,9 @@ let negIntegerLit =
 
     ]
 let stringLit =
-    [['\"'],false
+    [['"'],false
      ['0'..'9']@['a'..'z']@['A'..'Z']@[' '],true
-     ['\"'],false]
+     ['"'],false]
 let decimalLit =
     [
         ['0'..'9'],true

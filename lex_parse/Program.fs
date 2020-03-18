@@ -6,20 +6,21 @@ open System
 open System.IO
 open Expecto
 
-let print x =
-    printfn "%A" x
-
 
 let tokenize_parse (x:string) =
     x
+    //|> fun x -> print x ; x
     |> tokenize
+    //|> fun x -> print x ; x
     |> Ok
     |> parse
+
 
 let lambdaEval inp = 
     inp 
     |> tokenize_parse
     |> fst
+    //|> fun x -> print x ; x
     |> run
 
 let rec FSILike() =
@@ -39,15 +40,12 @@ let execFile(filePath) =
     let rec execLines =
         function
         | hd::tl -> 
-            match lambdaEval hd with
-            | Error(err) -> print err 
-            | Ok(ast) -> printASTResult ast; execLines tl
+            if hd = "" then execLines tl else 
+                match lambdaEval hd with
+                | Error(err) -> print err 
+                | Ok(_) -> execLines tl
         | [] -> ()
     File.ReadAllLines filePath |> Array.toList |> execLines
-
-
-let rec even = fun n -> if n = 0 then true else odd (n-1) 
-and odd = fun n -> if n = 0 then false else even (n-1) 
 
 //Need to write more tests here
 
@@ -116,6 +114,44 @@ let bindPairHelperDescriptions =
         )
         
         
+let testLambdaEvalDescriptions =
+    [
+        (
+         "Lambda 1",
+         lambdaEval "let rec fac n = if equals n 0 then 1 else n * fac ( n - 1 ) fi in fac 5",
+         Ok (Literal (Int 120L)),
+         "Factorial function"
+        )
+        (
+         "Lambda 2",
+         lambdaEval "let g f x = f x x in g ( fun x y = x * y ) 3",
+         Ok (Literal (Int 9L)),
+         "Anonymus function as argument"
+        )   
+        (
+         "Lambda 3",
+         lambdaEval "let rec fib n = if equals n 1 then 1 else if equals n 2 then 1 else fib ( n - 1 ) + fib ( n - 2 ) fi fi in fib 10",
+         Ok (Literal (Int 55L)),
+         "Fibonacci function"
+        )
+        (
+         "Lambda 4",
+         lambdaEval "let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) fi in lstmap ( fun x = x * 2 ) [ 1 ; 2 ; 3 ] ",
+         Ok (Pair(Literal(Int 2L),Pair(Literal(Int 4L),Pair(Literal(Int 6L),Null)))),
+         "list.Map function"
+        )
+        (
+         """Lambda 5: reverseword "abcdf" """,
+         lambdaEval """let rec concatlist lsta lstb = if equals lsta [] then lstb else pair ( fst lsta ) ( concatlist ( snd lsta ) lstb )  fi in let rec reverselist lst = if equals lst [] then [] else concatlist ( reverselist ( snd lst ) ) ( [ fst lst ] ) fi in let reverseword str = implode ( reverselist ( explode str ) ) in reverseword "abcdef" """,
+         Ok (Literal (Str ['f'; 'e'; 'd'; 'c'; 'b'; 'a'])),
+         "Concatenate, reverselist, reverseword"
+        )
+        (
+         "Lambda 6: mutual recursion",
+         [lambdaEval "mrec even n = if equals n 0 then true else odd ( n - 1 ) fi mrec odd n = if equals n 0 then false else even ( n - 1 ) fi" ; lambdaEval "[ even 101 ; odd 100 ; even 30 ; odd 31 ]"].[1],
+         Ok (Pair(falseAST,Pair(falseAST,Pair(trueAST,Pair(trueAST,Null))))),
+         "Even and odd functions"
+        )        
     ]
 
 let bindEmptyVariablesDescriptions =
@@ -361,8 +397,6 @@ let testMatchDescriptions =
     ]
 
 
-
-
 let makeMyTests (x,y,z,name) = 
       test x {Expect.equal y z name}
 
@@ -373,14 +407,18 @@ let matchTestGroup = testList "Match Test Group" (List.map makeMyTests testMatch
 [<Tests>]
 let bindPairHelperTestGroup = testList "bindPairHelper Test Group" (List.map makeMyTests bindPairHelperDescriptions)
 //
+[<Tests>]
+let lambdaEvalTestGroup = testList "Lambda Test Group" (List.map makeMyTests testLambdaEvalDescriptions)
+
 
 
 [<EntryPoint>]  
 let main argv =
-    //execFile("C:\\Users\\danig\\Desktop\\myF#\\hlp2020-07\\lex_parse\\demo.THARP")
+    //print <| tokenize_parse "mrec even n = if equals n 0 then true else odd ( n - 1 ) fi mrec odd n = if equals n 0 then false else even ( n - 1 ) fi"
+    //execFile("C:\\Users\\danig\\Desktop\\myF#\\hlp2020-07\\lex_parse\\demo.TSHARP")
+    //Console.ReadKey() |> ignore
     //FSILike()
-    //testsWithExpectoParser() |> ignore
-    
+    testsWithExpectoParser() |> ignore
     
     
     
