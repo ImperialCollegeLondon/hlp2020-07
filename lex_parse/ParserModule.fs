@@ -390,12 +390,18 @@ and buildLambda (inp:Result<Token list, Token list>):(Result<AST,string>*Result<
 
 and (|BUILDLAMBDA|_|) inp:((Result<AST,string>*Result<Token list, Token list>) option) = Some (buildLambda inp)
 
-and extractParts inp acc = 
-    match inp with 
-    | hd::tl when hd = Other "in" -> Ok( acc,tl)
-    | hd::tl -> extractParts tl (acc @ [hd])
-    | [] -> Ok (acc, []) //Error "This function definition is never used"
-
+and extractParts inp acc: Result<Token list* Token list, string> = 
+    match inp with
+    | PMATCH (OpenRoundBracket) (PTAKEINSIDETOKENS (OpenRoundBracket) (CloseRoundBracket) (result))  ->
+        match result with 
+        | Ok (acc', inp') -> 
+            let acc'' = (acc@[OpenRoundBracket] @acc')
+            extractParts  inp' (acc'')
+        | Error msg -> Error msg
+    | Ok (hd::tl) when hd = Other "in" -> Ok( acc, tl)
+    | Ok (hd::tl) -> extractParts (Ok tl) (acc @ [hd])
+    | Ok [] -> Ok (acc, []) //Error "This function definition is never used"
+    | _ -> failwithf "What? Can't happen"
 and adaptRecursiveExpression lambda  = 
      [Keyword "Y"] @ lambda
 
