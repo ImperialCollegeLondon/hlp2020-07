@@ -445,7 +445,7 @@ and  buildFunctionDef inp:(Result<AST,string>*Result<Token list, Token list>)  =
                     | (Error msg, rest) -> (Error msg, rest)
                 | Ok (body, expression) ->
                     let parsedExpression = parse (Ok expression)
-                    printf "\n EXPRESSION IS %A Parsed expression is %A \n" expression parsedExpression
+                    //printf "\n EXPRESSION IS %A Parsed expression is %A \n" expression parsedExpression
                     let parsedBody = buildLambda (Ok body)
                     match  parsedBody, parsedExpression with 
                     |((Ok body, _),(Ok expression, rest))  -> (Ok (FuncDefExp {Name=Seq.toList x;Body=body; Expression=expression}),rest)
