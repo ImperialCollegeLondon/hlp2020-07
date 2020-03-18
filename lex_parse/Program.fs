@@ -15,12 +15,6 @@ let tokenize_parse (x:string) =
     |> Ok
     |> parse
 
-let rec concatList l1 l2 = if l1 = [] then l2 else l1.Head::concatList l1.Tail l2 
-concatList [1;2;3;4] [5;6;7;8]
-
-let rec reverseList l = if l = [] then [] else reverseList l.Tail @ [l.Head]
-reverseList [1;2;3;4]
-
 
 let lambdaEval inp = 
     inp 
@@ -54,7 +48,7 @@ let execFile(filePath) =
     File.ReadAllLines filePath |> Array.toList |> execLines
 
 //Need to write more tests here
-let testLambdaEvalDescriptions =
+(*let testLambdaEvalDescriptions =
     [
         (
          "Lambda 1",
@@ -185,13 +179,13 @@ let matchTestGroup = testList "Match Test Group" (List.map makeMyTests testMatch
 let lambdaEvalTestGroup = testList "Lambda Test Group" (List.map makeMyTests testLambdaEvalDescriptions)
 
 
-
+*)
 
 
 [<EntryPoint>]  
 let main argv =
-    print <| tokenize_parse "mrec even n = if equals n 0 then true else odd (n - 1) fi mrec odd n = if equals n 0 then false else even (n - 1) fi"
-    //execFile("C:\\Users\\danig\\Desktop\\myF#\\hlp2020-07\\lex_parse\\demo.TSHARP")
+    //print <| tokenize_parse "mrec even n = if equals n 0 then true else odd ( n - 1 ) fi mrec odd n = if equals n 0 then false else even ( n - 1 ) fi"
+    execFile("C:\\Users\\danig\\Desktop\\myF#\\hlp2020-07\\lex_parse\\demo.TSHARP")
     Console.ReadKey() |> ignore
     //FSILike()
     //testsWithExpectoParser() |> ignore
