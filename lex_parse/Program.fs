@@ -58,19 +58,24 @@ let rec even = fun n -> if n = 0 then true else odd (n-1)
 and odd = fun n -> if n = 0 then false else even (n-1) 
 
 //Need to write more tests here
-(*let testTokenizerDescriptions =
+let testLambdaEvalDescriptions =
     [
         (
-         "Values Defined outside 1",
-         lambdaEval "let f = [1;2;3;4;5] in let g = 2 in match f case [x;y;z;a;b;c;d] -> 1 + x + g case [x;y] -> 2 + g + x case [x] -> 3 case endmatch",
-         Ok (Literal (Int 5L)),
-         "Pair defined as value outside\nCase uses value defined outside\n"
+         "Lambda 1",
+         lambdaEval "let rec fac n = if equals n 0 then 1 else n * fac ( n - 1 ) fi in fac 5",
+         Ok (Literal (Int 120L)),
+         "Factorial function"
+        )   
+        (
+         "Lambda 2",
+         lambdaEval "let rec fac n = if equals n 0 then 1 else n * fac ( n - 1 ) fi in fac 5",
+         Ok (Literal (Int 55)),
+         "Fibonacci function"
         )      
-    ]*)
+    ]
 
 let testMatchDescriptions =
     [
-  
         (
          "Values Defined outside 1",
          lambdaEval "let f = [1;2;3;4;5] in let g = 2 in match f case [x;y;z;a;b;c;d] -> 1 + x + g case [x;y] -> 2 + g + x case [x] -> 3 case endmatch",
@@ -179,8 +184,8 @@ let testMatchDescriptions =
 let makeMyTests (x,y,z,name) = 
       test x {Expect.equal y z name}
 [<Tests>]
-//let matchTestGroup = testList "Match Test Group" (List.map makeMyTests testMatchDescriptions)
-
+let matchTestGroup = testList "Match Test Group" (List.map makeMyTests testMatchDescriptions)
+let lambdaEvalTestGroup = testList "Lambda Test Group" (List.map makeMyTests testLambdaEvalDescriptions)
 
 
 
@@ -189,8 +194,8 @@ let makeMyTests (x,y,z,name) =
 [<EntryPoint>]  
 let main argv =
     //print <| tokenize_parse """implode  [ "ab" ; "b" ; "c" ; "d" ]"""
-    execFile("C:\\Users\\danig\\Desktop\\myF#\\hlp2020-07\\lex_parse\\demo.TSHARP")
-    Console.ReadKey() |> ignore
+    //execFile("C:\\Users\\danig\\Desktop\\myF#\\hlp2020-07\\lex_parse\\demo.TSHARP")
+    //Console.ReadKey() |> ignore
     //FSILike()
     //testsWithExpectoParser() |> ignore
     
