@@ -59,8 +59,8 @@ let main argv =
     //OpenRoundBracket; Other "f"; OpenRoundBracket; Other "n"; SubToken;
     //IntegerLit 1L; CloseRoundBracket; CloseRoundBracket; Keyword "fi"; Other "in";
     //Other "f"; IntegerLit 3L])))
-    print <| lambdaEval "let ab = (let f x = x + 1 in f 6)"
-    //print <| lambdaEval "mrec even n = if equals n 0 then true else odd (n - 1) fi mrec odd n = if equals n 0 then false else even (n - 1) fi"
+    //print <| lambdaEval "let ab = (let f x = x + 1 in f 6)"
+    print <| tokenize_parse "mrec even n = if equals n 0 then true else odd (n - 1) fi mrec odd n = if equals n 0 then false else even (n - 1) fi"
     //print <| lambdaEval "even 100"
    // print <| parsedOutput (Ok [OpenCurlyBracket; Other "hd"; Keyword ":"; Other "tl"; Keyword ":"; Other "rest"; CloseCurlyBracket])
 

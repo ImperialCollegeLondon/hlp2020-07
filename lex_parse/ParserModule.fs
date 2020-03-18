@@ -407,7 +407,7 @@ and  buildFunctionDef inp:(Result<AST,string>*Result<Token list, Token list>)  =
                     let parsedBody = buildLambda (Ok body)
                     printf "Parsed Body is %A \n" parsedBody
                     match  parsedBody, parsedExpression with 
-                    |((Ok body, _),(Ok expression, rest))  -> printf "Rest is %A \n" rest;(Ok (FuncDefExp {Name=Seq.toList x;Body=body; Expression=expression}),rest)
+                    |((Ok body, _),(Ok expression, rest))  -> (Ok (FuncDefExp {Name=Seq.toList x;Body=body; Expression=expression}),rest)
                     | ((Error msg, rest), _) -> (Error msg, rest)
                     | (_, (Error msg, rest)) -> (Error msg, rest)
 
@@ -466,7 +466,6 @@ and (|PBUILDMATCHLIST|_|) inp =
     |> Some
 
 and buildMRecExp inp = 
-    //printf "Entered buildMRecExp with %A \n" inp
     match inp with 
     | Other hd::tl ->
         let parsed = buildLambda (Ok tl)
@@ -474,9 +473,11 @@ and buildMRecExp inp =
         | (Ok ast, Ok ((Other "mrec")::rest)) ->
             let res = buildMRecExp rest
             match res with 
-            | Ok (x, y) -> Ok ([Seq.toList hd] @ x, [ast]@y)
+            | Ok (x, y) -> 
+                let result = Ok ([Seq.toList hd] @ x, [ast]@y)
+                result
             | Error msg -> Error msg
-        | (Ok ast, Ok []) -> Ok ([Seq.toList hd], [ast])
+        | (Ok ast, Ok []) ->Ok ([Seq.toList hd], [ast])
         | (Error msg, rest) -> Error msg
         | (Ok ast, Ok ((Other "in")::rest)) -> Error "Write the expression in a separate line"
         | _ -> Error "Invalid mutual recursive functions definition"
