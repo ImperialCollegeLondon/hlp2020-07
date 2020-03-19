@@ -415,6 +415,8 @@ let lambdaEvalTestGroup = testList "Lambda Test Group" (List.map makeMyTests tes
 
 [<EntryPoint>]  
 let main argv =
+    execFile("/Users/elliott/F#/hlp2020-07/lex_parse/demo.TSHARP")
+    Console.ReadKey() |> ignore
     //print <| tokenize_parse "mrec even n = if equals n 0 then true else odd ( n - 1 ) fi mrec odd n = if equals n 0 then false else even ( n - 1 ) fi"
     //execFile("C:\\Users\\danig\\Desktop\\myF#\\hlp2020-07\\lex_parse\\demo.TSHARP")
     //Console.ReadKey() |> ignore
@@ -427,9 +429,9 @@ let main argv =
     //IntegerLit 1L; CloseRoundBracket; CloseRoundBracket; Keyword "fi"; Other "in";
     //Other "f"; IntegerLit 3L])))
     //print <| lambdaEval "let ab = (let f x = x + 1 in f 6)"
-    print <| tokenize_parse "mrec even n = if equals n 0 then true else odd (n - 1) fi mrec odd n = if equals n 0 then false else even (n - 1) fi"
+    // print <| tokenize_parse "mrec even n = if equals n 0 then true else odd (n - 1) fi mrec odd n = if equals n 0 then false else even (n - 1) fi"
     //print <| lambdaEval "even 100"
-   // print <| parsedOutput (Ok [OpenCurlyBracket; Other "hd"; Keyword ":"; Other "tl"; Keyword ":"; Other "rest"; CloseCurlyBracket])
+    // print <| parsedOutput (Ok [OpenCurlyBracket; Other "hd"; Keyword ":"; Other "tl"; Keyword ":"; Other "rest"; CloseCurlyBracket])
 
 
     //print <| run(fst(parse (Ok [Let; Other "rec"; Other "fib"; Other "a"; EqualToken; Keyword "if";

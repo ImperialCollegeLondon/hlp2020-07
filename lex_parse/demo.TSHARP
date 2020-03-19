@@ -1,18 +1,30 @@
-mrec even n = if equals n 0 then true else odd ( n - 1 ) fi mrec odd n = if equals n 0 then false else even ( n - 1 ) fi
-print ( even 10 )
-print ( odd 110 )
+
+let square x = x * x
+print( square  3)
+
+print ( let g f x = f x + f x in g ( fun x = x *2 ) 3 )
+
+print( let f x = x * x in let g y = f y in g 2 )
+
+print( let f x = x * x in let g y = y * y in let h x y = f x + g y in h 2 3 )
+
+print( let rec f x i = if equals x 10 then i else f (x+1) (i+1) fi in f -2 0 )
+
+print ( let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) fi in lstmap ( fun x = x * x ) [ 1 ; 2 ; 5 ] )
+
+print ( let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) fi in lstmap ( fun x = x * x ) [ 1 ; 2 ; 5 ] )
+
+print ( let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) fi in let f x = Pair ( lstmap ( fun x = x * x ) ( fst x ) ) ( lstmap ( fun x = x -2 ) ( snd x ) ) in f [ [ 1 ; 2 ; 5 ] ; [ 1 ; 2 ; 5 ] ] )
 
 
 
-print ( let rec fac n = if equals n 0 then 1 else n * fac ( n - 1 ) fi in fac 5 )
 
-print ( let rec fib n = if equals n 1 then 1 else if equals n 2 then 1 else fib ( n - 1 ) + fib ( n - 2 ) fi fi in fib 10 )
 
-print ( let g f x = f x x in g ( fun x y = x * y ) 3 )  
 
-print ( let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) fi in lstmap ( fun x = x * 2 ) [ 1 ; 2 ; 3 ] )
 
-print( let rec concatlist lsta lstb = if equals lsta [] then lstb else pair ( fst lsta ) ( concatlist ( snd lsta ) lstb )  fi in let rec reverselist lst = if equals lst [] then [] else concatlist ( reverselist ( snd lst ) ) ( [ fst lst ] ) fi in let reverseword str = implode ( reverselist ( explode str ) ) in reverseword "abcdef" ) 
+
+
+
 
 
 
