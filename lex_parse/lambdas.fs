@@ -95,6 +95,8 @@ let execMath op x y =
     match (x,y) with 
     |Literal (Int A),Literal(Int B) ->
         match op with
+        | Greater -> if A>B then trueAST |> Ok else falseAST |> Ok
+        | Lower -> if A<B then trueAST |> Ok else falseAST |> Ok
         | Add -> A+B |> Int |> Literal |> Ok //Literal(Int(valueA+valueB))
         | Sub -> A-B |> Int |> Literal |> Ok
         | Mult -> A*B |> Int |> Literal |> Ok

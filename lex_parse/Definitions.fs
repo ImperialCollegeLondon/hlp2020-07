@@ -42,6 +42,8 @@ type MathType =
    | Div
    | Mult
    | Mod
+   | Greater
+   | Lower
 
 type BuiltInType = 
     | Mat of MathType
