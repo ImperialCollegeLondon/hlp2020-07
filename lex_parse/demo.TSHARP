@@ -55,19 +55,34 @@ print ( let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( 
 
 //////////////////// 7 //////////////////////
 
-print ( let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) fi in let f x = lstmap ( fun x = x * x ) x in f [ 1 ; 2 ; 5 ] )
+// let demo7 = 
+//     List.map (fun str -> explode x) ["aloha";"mahalo";"wakiki"]
+
+print ( let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) fi in lstmap ( fun str = explode str ) ["aloha";"mahalo";"wakiki"] )
 
 //////////////////// 8 //////////////////////
 
-print ( let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) fi in let f x = lstmap ( fun x = x * x ) ( fst x ) in let g y = 2*y in let h x y = [ ( f x ) ; g y ] in h [ [ 1 ; 2 ; 3 ] ; [ 2 ; 4 ; 5 ] ] 3 )
+// let demo7 = 
+//     List.map (fun str -> implode x) [ ["a";"l";"o";"h";"a"];["m";"a";"h";"a";"l";"o"];["w";"a";"k";"i";"k";"i"] ]
+
+print ( let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) fi in lstmap ( fun lst = implode lst ) [ ["a"; "l"; "o" ; "h" ; "a"] ; ["m"; "a"; "h" ; "a" ; "l" ; "o"] ; ["w"; "a"; "k" ; "i" ; "k"; "i"] ] )
+
+//////////////////// 9 //////////////////////
+
+// let demo9 =
+//     let fPair x = 
+//         (List.map (fun x -> x*x) (fst x), List.map (fun x -> x-2) (fst x))
+//    fPair ([ 1 ; 2 ; 3 ] , [ 2 ; 4 ; 5 ] )
 
 print ( let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) fi in let f x = lstmap ( fun x = x * x ) ( fst x ) in let g x = lstmap ( fun x = x - 2 ) ( fst x ) in let h x = [ f x  ; g x ] in h [ [ 1 ; 2 ; 3 ] ; [ 2 ; 4 ; 5 ] ] )
 
+//////////////////// 10 //////////////////////
 
 
 
 
-//////////////////// 9 //////////////////////
+
+
 
 
 
