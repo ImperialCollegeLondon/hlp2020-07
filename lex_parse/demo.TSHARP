@@ -1,30 +1,49 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////// DEMO CODE //////////////////////////////////////////////////////////////////////////////////////////////
 
-//////////////////// 1 //////////////////////
+//////////////////// 0 //////////////////////
+print( "Result of function 0")
 
 // This is a comment 
 let square x = x * x
 print( square  3)
 
+//////////////////// 1 //////////////////////
+print( "Result of function 1")
+
+// let demo1 =
+// 	let addxy = x y
+// 	let addy = addxy 2
+//	addy 3
+
+let addxy x y = x + y
+let addy = addxy 2
+print( addy 3 )
+
 //////////////////// 2 //////////////////////
+print( "Result of function 2")
 
 // let demo2 =
-//     let g f x = f x + f x
-//     g (fun x -> x * 2) 3
+//     let addp f x = f x + f x
+//     addp (fun x -> x * 2) 3
 
-print ( let g f x = f x + f x in g ( fun x = x * 2 ) 3 )
+let addp f x = f x + f x
+print ( addp ( fun x = x * 2 ) 3 )
 
 //////////////////// 3 //////////////////////
+print( "Result of function 3")
 
 // let demo3 =
-//     let g y =  
-//         let f x = x * x
-//         f y
-//     g 2
+//     let gf y =  
+//         let fmul x = x * x
+//         fmul y
+//     gf 2
 
-print( let f x = x * x in let g y = f y in g 2 )
+let fmul x = x * x
+let gf y = fmul y
+print( gf 2 )
 
 //////////////////// 4 //////////////////////
+print( "Result of function 4")
 
 // let demo4 = 
 //     let h x y =
@@ -33,9 +52,13 @@ print( let f x = x * x in let g y = f y in g 2 )
 //         f x + g y 
 //     h 2 3
 
-print( let f x = x * x in let g y = y * y in let h x y = f x + g y in h 2 3 )
+let f x = x * x
+let g y = y * y
+let h x y = f x + g y
+print( h 2 3 )
 
 //////////////////// 5 //////////////////////
+print( "Result of function 5")
 
 // let demo5 =
 //     let rec increment x i =
@@ -44,47 +67,137 @@ print( let f x = x * x in let g y = y * y in let h x y = f x + g y in h 2 3 )
 //         else i
 //     increment -2 0
 
-print( let rec f x i = if equals x 10 then i else f (x+1) (i+1) fi in f -2 0 )
+let rec increment x i = if equals x 10 then i else increment (x+1) (i+1) fi
+print( increment -2 0 )
 
 //////////////////// 6 //////////////////////
+print( "Result of function 6")
 
 // let demo6 = 
 //     List.map (fun x -> x * x) [1;2;5]
 
-print ( let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) fi in lstmap ( fun x = x * x ) [ 1 ; 2 ; 5 ] )
+let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) fi
+print ( lstmap ( fun x = x * x ) [ 1 ; 2 ; 5 ] )
 
 //////////////////// 7 //////////////////////
+print( "Result of function 7")
 
 // let demo7 = 
 //     List.map (fun str -> explode x) ["aloha";"mahalo";"wakiki"]
 
-print ( let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) fi in lstmap ( fun str = explode str ) ["aloha";"mahalo";"wakiki"] )
+let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) fi
+print ( lstmap ( fun str = explode str ) ["aloha";"mahalo";"wakiki"] )
 
 //////////////////// 8 //////////////////////
+print( "Result of function 8")
 
 // let demo7 = 
 //     List.map (fun str -> implode x) [ ["a";"l";"o";"h";"a"];["m";"a";"h";"a";"l";"o"];["w";"a";"k";"i";"k";"i"] ]
 
-print ( let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) fi in lstmap ( fun lst = implode lst ) [ ["a"; "l"; "o" ; "h" ; "a"] ; ["m"; "a"; "h" ; "a" ; "l" ; "o"] ; ["w"; "a"; "k" ; "i" ; "k"; "i"] ] )
+let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) fi
+print ( lstmap ( fun lst = implode lst ) [ ["a"; "l"; "o" ; "h" ; "a"] ; ["m"; "a"; "h" ; "a" ; "l" ; "o"] ; ["w"; "a"; "k" ; "i" ; "k"; "i"] ] )
 
 //////////////////// 9 //////////////////////
+print( "Result of function 9")
 
 // let demo9 =
 //     let fPair x = 
 //         (List.map (fun x -> x*x) (fst x), List.map (fun x -> x-2) (fst x))
 //    fPair ([ 1 ; 2 ; 3 ] , [ 2 ; 4 ; 5 ] )
 
-print ( let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) fi in let f x = lstmap ( fun x = x * x ) ( fst x ) in let g x = lstmap ( fun x = x - 2 ) ( fst x ) in let h x = [ f x  ; g x ] in h [ [ 1 ; 2 ; 3 ] ; [ 2 ; 4 ; 5 ] ] )
+let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) fi
+let f x = lstmap ( fun x = x * x ) ( fst x )
+let g x = lstmap ( fun x = x - 2 ) ( fst x )
+let h x = [ f x  ; g x ]
+print ( h [ [ 1 ; 2 ; 3 ] ; [ 2 ; 4 ; 5 ] ] )
 
 //////////////////// 10 //////////////////////
+print( "Result of function 10")
+
+// let demo10 = 
+//     let lst1 = [1..5]
+//     let makePair a b = (a, b)
+//     let pairWithOne = makePair 1
+//     let combinationsWithOne = 
+//         List.map pairWithOne lst1
+//     combinationsWithOne 
+
+let lsti = [1 ; 2 ; 3 ; 4 ; 5 ]
+let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) fi
+let makepair a b = [ a ; b ]
+let pairwithone = makepair 1
+print ( lstmap pairwithone lsti )
+
+//////////////////// 11 //////////////////////
+print( "Result of function 11")
+
+// let demo11 = 
+//     let lst1 = [1..5]
+//     let lst2 = [6..10]
+//     let makePair a b = (a,b)
+//     let makeColumn lst x =
+//         let pairWithX = makePair x
+//         List.map pairWithX lst
+//     List.map (makeColumn lst2) lst1
 
 
+let lsta = [1 ; 2 ; 3 ; 4 ; 5 ]
+let lstb = [1 ; 2 ; 3 ; 4 ; 5 ]
+let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) fi
+let makepair a b = [ a ; b ]
+let pairwithx x = makepair x
+let makecolumn lst x = lstmap (pairwithx x) lst
+print ( lstmap (makecolumn lsta) lstb )
 
 
+//////////////////// 12 //////////////////////
+print( "Result of function 12")
+
+// let demo12 = 
+//     let lst1 = [1..5]
+//     List.reduce (+) lst1
+
+let rec lstreduce func lst i = if equals lst [ ] then i else lstreduce func ( snd lst ) ( func i (fst lst) ) fi
+let lreduce func lst = lstreduce func (snd lst) ( fst lst )
+let addxy x y = x + y
+let lsta = [1 ; 2 ; 3 ; 4 ; 5 ]
+print( lreduce addxy lsta)
+
+//////////////////// 13 //////////////////////
+print( "Result of function 13")
+
+// let demo13 = 
+// 	let listn b e = [b..e]
+// 	listn 0 10
+
+let rec listn b e lst = if equals e b then pair b lst else listn b ( e - 1 ) (pair e lst) fi
+let listbe b e = listn b e [ ]
+print( listbe 0 10 )
 
 
+//////////////////// 14 //////////////////////
+print( "Result of function 14")
 
+// let demo14 =  
+//     let fact n =
+//         if n = 0
+//         then 1
+//         else List.reduce (*) [1..n]
+//     let expo x n =
+//         let term i =
+//             (x ** (float i)) / (float (fact i))
+//         [0..n] |> List.map term |> List.reduce (+)
+//     expo 2. 10
 
+let rec lstreduce func lst i = if equals lst [ ] then i else lstreduce func ( snd lst ) ( func i (fst lst) ) fi
+let lreduce func lst = lstreduce func (snd lst) ( fst lst )
+let mulxy x y = x * y
+
+let rec listna b e lst = if equals e b then pair b lst else listn b ( e - 1 ) (pair e lst) fi
+let listbea b e = listn b e [ ]
+
+let frac n = lreduce mulxy ( listbea 1 n )
+print ( frac 4 )
 
 
 
