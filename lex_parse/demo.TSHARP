@@ -254,11 +254,11 @@ print( "Result of function 17" )
 //     List.reduce (+) lst1
 
 let lsta = [ 1 ; 2 ; 3 ; 4 ; 5 ]
-let rec lstreduce lst i =  match lst case [ ] -> i case [ x ; y ] -> lstreduce y ( ( fun x y = x + y ) i x ) case endmatch
-print( lstreduce lsta 0 )
+let addxy x y = x + y
+let rec lstreduce func lst i =  match lst case [ ] -> i case [ x ; y ] -> lstreduce func y ( func i x ) case endmatch
+print( lstreduce addxy lsta 0 )
 
 // print( ( fun x y = x + y ) 4 5 )
-
 
 //////////////////// 18 //////////////////////
 
