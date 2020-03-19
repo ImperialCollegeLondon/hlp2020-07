@@ -35,22 +35,32 @@ let printASTResult =
     | Literal(Str cLst) -> String.Concat(Array.ofList(cLst)) |> print
     | _ -> print "\n"
 
+let (|COMMENT|_|) = 
+    function
+    | hd::tl ->
+        hd 
+        |> Seq.toList 
+        |> function 
+        | '/'::'/'::_ -> Some tl 
+        | _ -> None
+    | _ -> None
 
 let execFile(filePath) =
     let rec execLines =
         function
+        | ""::tl -> execLines tl
+        | COMMENT tl -> execLines tl
         | hd::tl -> 
-            if hd = "" then execLines tl else 
-                match lambdaEval hd with
-                | Error(err) -> print err 
-                | Ok(_) -> execLines tl
+            match lambdaEval hd with
+            | Error(err) -> print err 
+            | Ok(_) -> execLines tl
         | [] -> ()
     File.ReadAllLines filePath |> Array.toList |> execLines
 
 //Need to write more tests here
 
 
-let bindPairHelperDescriptions =
+(*let bindPairHelperDescriptions =
     [
         (
             "bindPairHelper 1",
@@ -411,15 +421,15 @@ let bindPairHelperTestGroup = testList "bindPairHelper Test Group" (List.map mak
 [<Tests>]
 let lambdaEvalTestGroup = testList "Lambda Test Group" (List.map makeMyTests testLambdaEvalDescriptions)
 
-
+*)
 
 [<EntryPoint>]  
 let main argv =
     execFile("/Users/elliott/F#/hlp2020-07/lex_parse/demo.TSHARP")
     Console.ReadKey() |> ignore
     //print <| tokenize_parse "mrec even n = if equals n 0 then true else odd ( n - 1 ) fi mrec odd n = if equals n 0 then false else even ( n - 1 ) fi"
-    //execFile("C:\\Users\\danig\\Desktop\\myF#\\hlp2020-07\\lex_parse\\demo.TSHARP")
-    //Console.ReadKey() |> ignore
+    execFile("C:\\Users\\danig\\Desktop\\myF#\\hlp2020-07\\lex_parse\\demo.TSHARP")
+    Console.ReadKey() |> ignore
     //FSILike()
     //testsWithExpectoParser() |> ignore
     //print <| parse (Ok [OpenRoundBracket; Keyword "fun"; Other "x"; EqualToken; Other "x"; AddToken; IntegerLit 1L; CloseRoundBracket])

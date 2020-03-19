@@ -19,7 +19,7 @@ print ( let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( 
 
 
 
-
+//this is a comment
 
 
 
