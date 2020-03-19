@@ -102,12 +102,12 @@ print( "Result of function 9")
 
 // let demo9 =
 //     let fPair x = 
-//         (List.map (fun x -> x*x) (fst x), List.map (fun x -> x-2) (fst x))
+//         (List.map (fun x -> x*x) (fst x), List.map (fun x -> x-2) (snd x))
 //    fPair ([ 1 ; 2 ; 3 ] , [ 2 ; 4 ; 5 ] )
 
 let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) fi
 let f x = lstmap ( fun x = x * x ) ( fst x )
-let g x = lstmap ( fun x = x - 2 ) ( fst x )
+let g x = lstmap ( fun x = x - 2 ) ( fst (snd x) )
 let h x = [ f x  ; g x ]
 print ( h [ [ 1 ; 2 ; 3 ] ; [ 2 ; 4 ; 5 ] ] )
 
@@ -183,26 +183,84 @@ print( "Result of function 14")
 //         if n = 0
 //         then 1
 //         else List.reduce (*) [1..n]
-//     let expo x n =
+//     let sum x n =
 //         let term i =
-//             (x ** (float i)) / (float (fact i))
+//             (x * x / fact i)
 //         [0..n] |> List.map term |> List.reduce (+)
-//     expo 2. 10
+//     sum 2 4
 
 let rec lstreduce func lst i = if equals lst [ ] then i else lstreduce func ( snd lst ) ( func i (fst lst) ) fi
 let lreduce func lst = lstreduce func (snd lst) ( fst lst )
 let mulxy x y = x * y
+let addxy x y = x + y
 
 let rec listna b e lst = if equals e b then pair b lst else listn b ( e - 1 ) (pair e lst) fi
 let listbea b e = listn b e [ ]
 
-let frac n = lreduce mulxy ( listbea 1 n )
-print ( frac 4 )
+let fact n = if equals n 0 then 1 else lreduce mulxy ( listbea 1 n ) fi
 
-// print( 3 / 2 )
+let term x i = ( x * x ) / fact i
 
-// print( let f = [1;2;3;4;5] in let g = 2 in match f case [x;y;z;a;b;c;d] -> 1 + x + g case [x;y] -> 2 + g + x case [x] -> 3 case endmatch )
+let pipea n = listbea 0 n
+let pipeb x n = lstmap ( term x ) ( pipea n )
+let sum x n = lreduce addxy ( pipeb x n )
 
+print( sum 2 4 )
+
+// let funca i x = x * i 
+// let test i = lstmap ( funca i ) ( pipea 4 ) )
+// print( test 2 )
+
+
+//////////////////// 15 //////////////////////
+print( "Result of function 15")
+
+let fa = [ ]
+let fb = [ 1 ; 2 ; 3 ; 4 ; 5 ]
+let fc = [ 1 ; 2 ; 3 ; 4 ; 5 ; 6 ; 7 ]
+let fd = [ 1 ]
+
+let g = 2
+let matchfirst lst =  match lst case [ ] -> 2 case [ x ; y ; z ; a ; b ; c ; d ] -> 1 + x + g case [ x ; y ] -> 2 + g + x case [ x ] -> 3 case endmatch
+print( "1st case")
+print( matchfirst fa )
+print( "2nd case")
+print( matchfirst fb )
+print( "3rd case")
+print( matchfirst fc )
+print( "4th case")
+print( matchfirst fd )
+
+//////////////////// 16 //////////////////////
+print( "Result of function 16" )
+
+// let demo16 =  
+//     let rec length lst i = 
+//        match lst with 
+//         | [] -> i
+//         | _ :: y -> length y (i+1)
+//     length [1;2;3;4;5] 0
+
+let lsta = [ 1 ; 2 ; 3 ; 4 ; 5 ]
+let rec lengthini lst i =  match lst case [ ] -> i case [ x ; y ] -> lengthini y ( i + 1 ) case endmatch
+let length lst = lengthini lst 0
+print( length lsta )
+
+//////////////////// 17 //////////////////////
+print( "Result of function 17" )
+
+// let demo16 = 
+//     let lst1 = [1..5]
+//     List.reduce (+) lst1
+
+let lsta = [ 1 ; 2 ; 3 ; 4 ; 5 ]
+let rec lstreduce lst i =  match lst case [ ] -> i case [ x ; y ] -> lstreduce y ( ( fun x y = x + y ) i x ) case endmatch
+print( lstreduce lsta 0 )
+
+// print( ( fun x y = x + y ) 4 5 )
+
+
+//////////////////// 18 //////////////////////
 
 
 
