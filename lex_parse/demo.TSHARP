@@ -199,6 +199,10 @@ let listbea b e = listn b e [ ]
 let frac n = lreduce mulxy ( listbea 1 n )
 print ( frac 4 )
 
+// print( 3 / 2 )
+
+// print( let f = [1;2;3;4;5] in let g = 2 in match f case [x;y;z;a;b;c;d] -> 1 + x + g case [x;y] -> 2 + g + x case [x] -> 3 case endmatch )
+
 
 
 
