@@ -2,7 +2,6 @@ module reWrite
 
 open Lambdas
 
-
 let rec pairToString p =
     match p with
     | Pair(a,b) -> string a + pairToString b
