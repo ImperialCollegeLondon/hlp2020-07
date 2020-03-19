@@ -473,5 +473,7 @@ let main argv =
 
     //print <| lambdaEval "match [1;2;3;4] case { 1 : 2 : x : y } -> x + y case [] -> 4 case endmatch"
     //print <| lambdaEval "let g = [50;60] in let f = [1;2;10] in match f case { 1 : 2 : x : y } -> x + y case [] -> 4 case [x;y] -> match g case {A : B} -> A + B case endmatch case endmatch"
+    
     runTestsInAssembly defaultConfig [||] |> ignore
+    
     0
