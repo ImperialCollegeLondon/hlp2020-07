@@ -261,7 +261,37 @@ print( lstreduce addxy lsta 0 )
 // print( ( fun x y = x + y ) 4 5 )
 
 //////////////////// 18 //////////////////////
+print( "Result of function 18" )
 
+// let rec append a b =
+//     match a, b with
+//     | [], ys -> ys
+//     | x::xs, ys -> x::append xs ys
+
+let rec append a b =  match a case [ ] -> b case [ x ; y ] -> pair x ( append y b ) case endmatch
+print ( append [ 1 ; 2 ; 3 ; 6 ] [ 5 ; 4 ] )
+
+//////////////////// 19 ////////////////////// MERGE SORT //////////////////////
+print( "Result of function 19" )
+
+let rec lengthini lst i =  match lst case [ ] -> i case [ x ; y ] -> lengthini y ( i + 1 ) case endmatch
+let length lst = lengthini lst 0
+
+let rec append a b =  match a case [ ] -> b case [ x ; y ] -> pair x ( append y b ) case endmatch
+
+let rec reverseini a b = match a case [ ] -> b case [ x ; y ] -> reverseini y ( pair x b ) case endmatch
+let reverse a = reverseini a [ ]
+
+let rec listsplitini a b i j = if equals i j then [ reverse b ; a ] else match a case [ x ; y ] -> listsplitini y ( pair x b ) ( i + 1 ) j case endmatch fi
+let listsplit i lst = listsplitini lst [ ] 0 i
+
+print ( listsplit 2 [ 1 ; 2 ; 3 ; 4 ; 5 ; 6 ; 7 ] )
+
+// let rec listsplitini lsta lstb i j = if equals i j then [ lsta ; lstb ] else listsplitini ( snd lsta ) ( [ fst lsta ; fst lstb ] ) ( i + 1 ) j fi
+// print( listsplitini [ 0 ] [ 1 ; 2 ; 3 ; 4 ; 5 ; 6 ; 7 ]  2 2 )
+
+// let matchlength lst =  match ( [ length lst ] ) case [ 0 ] -> lst case [ 1 ] -> lst case [ n ] -> fst n case endmatch
+// print( matchlength [ 2 ; 3 ; 4 ; 5 ] )
 
 
 
