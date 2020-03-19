@@ -144,14 +144,14 @@ let rec execExplode str =
         | Error(err)-> Error(err)  
     | _ -> sprintf "Run-time error: Wrong argument given to explode" |> Error 
 
-execExplode (Literal (Str ['a';'b';'c';'d']))
 
-let rec pairToList (p:AST) : Result<string list,string> = 
+let rec pairToList p = 
     match p with 
     | Null -> Ok []
     | Pair(a,b) -> 
         match (a, (pairToList b)) with
         | _, Error(err) -> Error(err)
+        | Null, Ok(bLst) -> string []::bLst |> Ok
         | Literal(Int n), Ok(bLst) -> string(n)::bLst |> Ok
         | Literal(Str cLst), Ok(bLst) -> String.Concat(Array.ofList(cLst)) :: bLst |> Ok
         | Pair(_), Ok(bLst) -> 
@@ -209,8 +209,6 @@ let rec exec (exp : AST) : Result<AST,string> =
         match x with
             | y, Var name -> name,y
             | _ -> failwithf "should be a variable. Anything else not supported yet in match"
-    
-    
     
     match exp with
     | MatchDef f ->
