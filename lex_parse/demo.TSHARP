@@ -274,6 +274,25 @@ print ( append [ 1 ; 2 ; 3 ; 6 ] [ 5 ; 4 ] )
 //////////////////// 19 ////////////////////// MERGE SORT //////////////////////
 print( "Result of function 19" )
 
+// let rec merge l1 l2 =
+//     match l1 with
+//     | [] -> l2
+//     | h1 :: t1 -> 
+//        match l2 with 
+//         | [] -> l1
+//         | h2 :: _ ->
+//             if h1 <= h2
+//             then h1 :: merge t1 l2
+//             else merge l2 l1
+//
+//
+// let rec sort lst =
+//     match List.length lst with
+//     | 0 | 1 -> lst
+//     | n ->
+//         let l1,l2 = List.splitAt (n / 2) lst
+//         merge (sort l1) (sort l2)
+
 let rec lengthini lst i =  match lst case [ ] -> i case [ x ; y ] -> lengthini y ( i + 1 ) case endmatch
 let length lst = lengthini lst 0
 
@@ -285,13 +304,13 @@ let listsplit i lst = listsplitini lst [] i
 
 let rec merge lsta lstb =  match lsta case [ ] -> lstb case [ x ; y ] -> match lstb case [ ] -> lsta case [ z ; w ] -> if lower x ( z + 1 ) then pair x ( merge y lstb ) else merge lstb lsta fi case endmatch case endmatch
 
-let matchlength lst =  match ( [ length lst ] ) case [ 0 ] -> lst case [ 1 ] -> lst case [ n ] -> fst n case endmatch
+let rec sort lst =  match ( [ length lst ] ) case [ 0 ] -> lst case [ 1 ] -> lst case [ n ] -> merge ( sort ( fst ( listsplit ( fst n / 2 ) lst ) ) ) ( sort ( fst ( snd ( listsplit ( fst n / 2 ) lst ) ) ) ) case endmatch
 
-let lstc = [ 3 ; 4 ; 5 ; 6 ; 7 ]
-let n = length lstc
-print ( listsplit ( n / 2 ) lstc )
-print ( fst ( listsplit ( n / 2 ) lstc ) )
-print ( fst ( snd ( listsplit ( n / 2 ) lstc ) ) )
+print( "Original list" )
+print ( [ 3 ; 2 ; -1 ; -6 ; 1 ; 4 ; 20 ] ) 
+print( "Sorted list" )
+print ( sort [ 3 ; 2 ; -1 ; -6 ; 1 ; 4 ; 20 ] ) 
+
 
 
 
