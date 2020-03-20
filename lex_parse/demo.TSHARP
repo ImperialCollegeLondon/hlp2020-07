@@ -283,11 +283,15 @@ let reverse a = reverseini a [ ]
 let rec listsplitini a b i = if equals i 0 then [ reverse b  ; a ] else match a case [ x ; y ] -> listsplitini y ( pair x b ) ( i - 1 ) case endmatch fi
 let listsplit i lst = listsplitini lst [] i
 
-print ( listsplit 2 [ 1 ; 2 ; 3 ; 4 ; 5 ; 6 ; 7 ] )
+let rec merge lsta lstb =  match lsta case [ ] -> lstb case [ x ; y ] -> match lstb case [ ] -> lsta case [ z ; w ] -> if lower x ( z + 1 ) then pair x ( merge y lstb ) else merge lstb lsta fi case endmatch case endmatch
 
-// let matchlength lst =  match ( [ length lst ] ) case [ 0 ] -> lst case [ 1 ] -> lst case [ n ] -> fst n case endmatch
-// print( matchlength [ 2 ; 3 ; 4 ; 5 ] )
+let matchlength lst =  match ( [ length lst ] ) case [ 0 ] -> lst case [ 1 ] -> lst case [ n ] -> fst n case endmatch
 
+let lstc = [ 3 ; 4 ; 5 ; 6 ; 7 ]
+let n = length lstc
+print ( listsplit ( n / 2 ) lstc )
+print ( fst ( listsplit ( n / 2 ) lstc ) )
+print ( fst ( snd ( listsplit ( n / 2 ) lstc ) ) )
 
 
 
