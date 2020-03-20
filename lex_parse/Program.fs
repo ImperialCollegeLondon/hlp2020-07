@@ -1,5 +1,6 @@
 open TokenModule
 open ParserModule
+open CombinatorRuntimeModule
 open Definitions
 open Lambdas
 open System
@@ -9,9 +10,7 @@ open Expecto
 
 let tokenize_parse (x:string) =
     x
-    //|> fun x -> print x ; x
     |> tokenize
-    //|> fun x -> print x ; x
     |> Ok
     |> parse
 
@@ -20,8 +19,13 @@ let lambdaEval inp =
     inp 
     |> tokenize_parse
     |> fst
-    //|> fun x -> print x ; x
     |> run
+
+let combinatorEval inp = 
+    inp 
+    |> tokenize_parse
+    |> fst
+    |> Reduce  
 
 let rec FSILike() =
     let input = Console.ReadLine() |> string
@@ -45,13 +49,13 @@ let (|COMMENT|_|) =
         | _ -> None
     | _ -> None
 
-let execFile(filePath) =
+let execFile runtime (filePath) =
     let rec execLines =
         function
         | ""::tl -> execLines tl
         | COMMENT tl -> execLines tl
         | hd::tl -> 
-            match lambdaEval hd with
+            match runtime hd with
             | Error(err) -> print err 
             | Ok(_) -> execLines tl
         | [] -> ()
@@ -425,7 +429,8 @@ let lambdaEvalTestGroup = testList "Lambda Test Group" (List.map makeMyTests tes
 
 [<EntryPoint>]  
 let main argv =
-    execFile("/Users/elliott/F#/hlp2020-07/lex_parse/demo.TSHARP")
+    execFile lambdaEval ("/Users/elliott/F#/hlp2020-07/lex_parse/demo.TSHARP")
+    execFile combinatorEval ("/Users/elliott/F#/hlp2020-07/lex_parse/demo.TSHARP")
     Console.ReadKey() |> ignore
     
     // print <| tokenize_parse "[ [ ] ; [ ] ]"
