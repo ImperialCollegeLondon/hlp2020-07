@@ -311,6 +311,35 @@ print ( [ 3 ; 2 ; -1 ; -6 ; 1 ; 4 ; 20 ] )
 print( "Sorted list" )
 print ( sort [ 3 ; 2 ; -1 ; -6 ; 1 ; 4 ; 20 ] ) 
 
+//////////////////// 20 //////////////////////
+print( "Result of function 20" )
+
+mrec even n = if equals n 0 then true else odd ( n - 1 ) fi mrec odd n = if equals n 0 then false else even ( n - 1 ) fi
+let eva = 10
+let evb = 110
+let oda = 11
+let odb = 111
+
+print( " Is the number " )
+print( eva )
+print( "even" )
+print ( even eva )
+
+print( " Is the number " )
+print( evb )
+print( "odd" )
+print ( odd evb )
+
+print( " Is the number " )
+print( oda )
+print( "even" )
+print ( even oda )
+
+print( " Is the number " )
+print( odb )
+print( "odd" )
+print ( odd odb )
+
 
 
 
