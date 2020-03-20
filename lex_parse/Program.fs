@@ -21,11 +21,13 @@ let lambdaEval inp =
     |> fst
     |> run
 
-let combinatorEval inp = 
-    inp 
-    |> tokenize_parse
-    |> fst
-    |> Reduce  
+let combinatorEval inp =
+    let exp = inp |> tokenize_parse |> fst |> Reduce
+    print <| "\n\n\n"
+    print <| exp
+    printfn "This is the result of the function : %A" inp
+    print <| "\n\n\n"
+    exp
 
 let rec FSILike() =
     let input = Console.ReadLine() |> string
@@ -429,8 +431,10 @@ let lambdaEvalTestGroup = testList "Lambda Test Group" (List.map makeMyTests tes
 
 [<EntryPoint>]  
 let main argv =
-    execFile lambdaEval ("/Users/elliott/F#/hlp2020-07/lex_parse/demo.TSHARP")
-    execFile combinatorEval ("/Users/elliott/F#/hlp2020-07/lex_parse/demo.TSHARP")
+    // THE FOLLOWING FILE IS TO RUN WITH THE LAMBDA RUNTIME
+    execFile lambdaEval ("/Users/elliott/F#/hlp2020-07/lex_parse/demoLamb.TSHARP")
+    // THE FOLLOWING FILE IS TO RUN WITH THE COMBINATOR RUNTIME
+    // execFile combinatorEval ("/Users/elliott/F#/hlp2020-07/lex_parse/demoComb.TSHARP")
     Console.ReadKey() |> ignore
     
     // print <| tokenize_parse "[ [ ] ; [ ] ]"

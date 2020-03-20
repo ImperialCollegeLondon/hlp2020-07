@@ -1,0 +1,48 @@
+/////////////////////////////////////////////////////////////////////////////////////////////// DEMO LAMBDA CODE ///////////////////////////////////////////////////////////////////////////////////////////
+
+
+//////////// COMMENT TO WRITE ///////////////
+// This file uses a very basic runtime : here are some examples
+// most of the functionality of the language doesn't work as the  
+/////////////////////////////////////////////
+
+let square x = x * x in square  3
+
+// let addxy x y = x + y in let addy = addxy 2 in addy 3
+
+// let addp f x = f x + f x in addp ( fun x = x * 2 ) 3
+
+// let fmul x = x * x in let gf y = fmul y in gf 2
+
+// let f x = x * x in let g y = y * y in let h x y = f x + g y in h 2 3
+
+// let f x = explode x in f "aloha"
+
+// equals ("aloha") ("aloha")
+
+// equals 1 1
+
+// let f x = x - 1 in let g y = y * 3 in g ( f -1 )
+
+// let f x y = x + y in f 3 8
+
+// let f x = [ x*2 ; x*6 ; x*3 ] in f 3
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
