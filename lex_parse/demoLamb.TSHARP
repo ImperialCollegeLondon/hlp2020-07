@@ -378,7 +378,12 @@ print ( even oda )
 
 print ( odd odb )
 
+//////////////////// 21 //////////////////////
 
+print( "Result of function 21 Speed boost to fibonacci function thanks to memoization")
+
+let rec fib n = if lower n 0 then print ( "Input to fib should be positive" )  else if equals n 0 then 0 else if equals n 1 then 1 else fib ( n - 1 ) + fib ( n - 2 ) fi fi fi
+print ( fib 55 )
 
 
 
