@@ -432,7 +432,7 @@ let lambdaEvalTestGroup = testList "Lambda Test Group" (List.map makeMyTests tes
 [<EntryPoint>]  
 let main argv =
     // THE FOLLOWING FILE IS TO RUN WITH THE LAMBDA RUNTIME
-    execFile lambdaEval ("/Users/elliott/F#/hlp2020-07/lex_parse/demoLamb.TSHARP")
+    execFile lambdaEval ("/Users/alber/Documents/GitHub/hlp2020-7/lex_parse/demoLamb.TSHARP")
     // THE FOLLOWING FILE IS TO RUN WITH THE COMBINATOR RUNTIME
     // execFile combinatorEval ("/Users/elliott/F#/hlp2020-07/lex_parse/demoComb.TSHARP")
     Console.ReadKey() |> ignore
