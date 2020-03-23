@@ -34,13 +34,13 @@
 // 
 // BUILT IN FUNCTIONS
 // TSHARP Function | F# Equivalent
-//   +,-,*,/,mod   |      +,-,*,/,% 
-//  lower,greater  |       <,>
-//    equals       |        =
-//    fst,snd      | List.head, List.tail
-//   pair hd tl    |      hd::tl
-//     print       |  printfn "%A" x
-//     ispair      | checks if something is a list
+// +,-,*,/,mod     | +,-,*,/,% 
+// lower,greater   | <,>
+// equals          | =
+// fst,snd         | List.head, List.tail
+// pair hd tl      | hd::tl
+// print           | printfn "%A" x
+// ispair          | checks if something is a list
 // explode,implode | string to list of characters and vice versa
 /////////////////////////////////////////////
 
