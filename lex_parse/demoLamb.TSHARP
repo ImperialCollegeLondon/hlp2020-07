@@ -6,6 +6,10 @@
 // Make sure to space every new word or special character
 // Neither capital letters nor numbers nor special character can be used in function names
 //
+// strings : "abcd"
+// lists : [ 1 ; 2 ; 3 ; 4 ]
+// empty list : []
+//
 // function definition : 
 //	let namefunc arga argh ... = ...
 //
@@ -27,6 +31,17 @@
 // the notation [ x ; y ; z ; w ; u ] is equivalent to x::y::z::w::u
 //	match lst case ... -> ... case ... -> ... case endmatch
 //	match lsta case ... -> ... case ... -> match lstb case ... -> ... case ... -> ... case endmatch case endmatch
+// 
+// BUILT IN FUNCTIONS
+// TSHARP Function | F# Equivalent
+//   +,-,*,/,mod   |      +,-,*,/,% 
+//  lower,greater  |       <,>
+//    equals       |        =
+//    fst,snd      | List.head, List.tail
+//   pair hd tl    |      hd::tl
+//     print       |  printfn "%A" x
+//     ispair      | checks if something is a list
+// explode,implode | string to list of characters and vice versa
 /////////////////////////////////////////////
 
 
@@ -382,7 +397,8 @@ print ( odd odb )
 
 print( "Result of function 21 Speed boost to fibonacci function thanks to memoization")
 
-let rec fib n = if lower n 0 then print ( "Input to fib should be positive" )  else if equals n 0 then 0 else if equals n 1 then 1 else fib ( n - 1 ) + fib ( n - 2 ) fi fi fi
+let rec fib n = if lower n 0 then ( "Input to fib should be positive" )  else if equals n 0 then 0 else if equals n 1 then 1 else fib ( n - 1 ) + fib ( n - 2 ) fi fi fi
+print ( fib -1 )
 print ( fib 55 )
 
 

@@ -17,7 +17,6 @@ let bindEmptyVariables (pairs:AST) : EnvironmentType =
             |Pair (Var x,y) | ExactPairMatch (Var x,y) -> bindEmptyVariablesHelper y (acc @ [x, Var x])
             |Pair (Literal _, y) | ExactPairMatch (Literal _, y) -> bindEmptyVariablesHelper y acc
             |_  -> []
-        
     
     bindEmptyVariablesHelper pairs []
 
