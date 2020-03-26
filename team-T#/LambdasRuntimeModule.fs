@@ -221,8 +221,8 @@ let rec exec (exp : AST) : Result<AST,string> =
             let binded,caseNum =  bindPair x (List.map fst f.Cases)
             // HERE DANI
             let binded = List.map matchReducer binded
-            let dani2 = snd f.Cases.[caseNum]
-            match lookUp (binded @ globalEnv) dani2 with
+            let applications = snd f.Cases.[caseNum]
+            match lookUp (binded @ globalEnv) applications with
                     | Ok(lookedUp) -> exec lookedUp
                     | Error(err)->Error(err)
         |Error x -> failwithf "Condition from match is not a valid expression"

@@ -23,6 +23,7 @@ let lambdaEval inp =
 
 let combinatorEval inp =
     let exp = inp |> tokenize_parse |> fst |> Reduce
+    
     print <| "\n\n\n"
     print <| exp
     printfn "This is the result of the function : %A" inp
@@ -54,7 +55,7 @@ let execFile runtime (filePath) =
 //Need to write more tests here
 
 
-(*let bindPairHelperDescriptions =
+let bindPairHelperDescriptions =
     [
         (
             "bindPairHelper 1",
@@ -415,20 +416,20 @@ let bindPairHelperTestGroup = testList "bindPairHelper Test Group" (List.map mak
 [<Tests>]
 let lambdaEvalTestGroup = testList "Lambda Test Group" (List.map makeMyTests testLambdaEvalDescriptions)
 
-*)
+
 
 [<EntryPoint>]  
 let main argv =
     // THE FOLLOWING FILE IS TO RUN WITH THE LAMBDA RUNTIME
-    testsWithExpectoParser() |> ignore
-    testsWithExpectoLambdaRuntime() |> ignore
-    execFile lambdaEval (Environment.CurrentDirectory + "/demoLamb.TSHARP")
+    //testsWithExpectoParser() |> ignore
+    //testsWithExpectoLambdaRuntime() |> ignore
+    //execFile lambdaEval (Environment.CurrentDirectory + "/demoLamb.TSHARP")
     // THE FOLLOWING FILE IS TO RUN WITH THE COMBINATOR RUNTIME
     // execFile combinatorEval ("/Users/elliott/F#/hlp2020-07/lex_parse/demoComb.TSHARP")
-    Console.ReadKey() |> ignore
+    //Console.ReadKey() |> ignore
     
 
 
-    //runTestsInAssembly defaultConfig [||] |> ignore
+    runTestsInAssembly defaultConfig [||] |> ignore
     
     0
