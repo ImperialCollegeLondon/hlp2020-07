@@ -4,6 +4,8 @@ open System
 let print x =
     printfn "%A" x
 
+
+
 type Lexer = char list -> (char list * char list) option
 type MappedRule = (char list * int)
 

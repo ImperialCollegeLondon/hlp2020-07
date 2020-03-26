@@ -541,7 +541,6 @@ and buildMRecExp inp =
         | _ -> Error "Invalid mutual recursive functions definition"
     | _ -> Error "Invalid mutual recursive functions definition"
 
-
 let makeTests (name, instr, outI) =
     test name {
         let tokLst = instr
@@ -549,6 +548,7 @@ let makeTests (name, instr, outI) =
         | Ok ast -> Expect.equal (Ok ast) outI (sprintf "%A" tokLst)
         | Error msg -> Expect.equal (Error msg) outI (sprintf "%A" tokLst)
     }
+
 let testListWithExpectoParser = 
     [
         "first test",(Ok [Other "x"; Other "y"]),(Ok(FuncApp(Var ['x'], Var ['y'])))

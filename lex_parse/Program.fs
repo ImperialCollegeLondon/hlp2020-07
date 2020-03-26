@@ -2,7 +2,7 @@ open TokenModule
 open ParserModule
 open CombinatorRuntimeModule
 open Definitions
-open Lambdas
+open LambdasRuntimeModule
 open System
 open System.IO
 open Expecto
@@ -28,18 +28,6 @@ let combinatorEval inp =
     printfn "This is the result of the function : %A" inp
     print <| "\n\n\n"
     exp
-
-let rec FSILike() =
-    let input = Console.ReadLine() |> string
-    if input = "exit" then () else
-        print <| lambdaEval input
-        FSILike()
-
-let printASTResult = 
-    function
-    | Literal(Int n) -> n |> print
-    | Literal(Str cLst) -> String.Concat(Array.ofList(cLst)) |> print
-    | _ -> print "\n"
 
 let (|COMMENT|_|) = 
     function
