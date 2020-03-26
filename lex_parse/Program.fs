@@ -1,5 +1,6 @@
 open TokenModule
 open ParserModule
+open CombinatorRuntimeModule
 open Definitions
 open Lambdas
 open System
@@ -9,9 +10,7 @@ open Expecto
 
 let tokenize_parse (x:string) =
     x
-    //|> fun x -> print x ; x
     |> tokenize
-    //|> fun x -> print x ; x
     |> Ok
     |> parse
 
@@ -20,8 +19,15 @@ let lambdaEval inp =
     inp 
     |> tokenize_parse
     |> fst
-    //|> fun x -> print x ; x
     |> run
+
+let combinatorEval inp =
+    let exp = inp |> tokenize_parse |> fst |> Reduce
+    print <| "\n\n\n"
+    print <| exp
+    printfn "This is the result of the function : %A" inp
+    print <| "\n\n\n"
+    exp
 
 let rec FSILike() =
     let input = Console.ReadLine() |> string
@@ -45,13 +51,13 @@ let (|COMMENT|_|) =
         | _ -> None
     | _ -> None
 
-let execFile(filePath) =
+let execFile runtime (filePath) =
     let rec execLines =
         function
         | ""::tl -> execLines tl
         | COMMENT tl -> execLines tl
         | hd::tl -> 
-            match lambdaEval hd with
+            match runtime hd with
             | Error(err) -> print err 
             | Ok(_) -> execLines tl
         | [] -> ()
@@ -425,11 +431,16 @@ let lambdaEvalTestGroup = testList "Lambda Test Group" (List.map makeMyTests tes
 
 [<EntryPoint>]  
 let main argv =
-    execFile("/Users/elliott/F#/hlp2020-07/lex_parse/demo.TSHARP")
+    // THE FOLLOWING FILE IS TO RUN WITH THE LAMBDA RUNTIME
+    execFile lambdaEval ("/Users/alber/Documents/GitHub/hlp2020-7/lex_parse/demoLamb.TSHARP")
+    // THE FOLLOWING FILE IS TO RUN WITH THE COMBINATOR RUNTIME
+    // execFile combinatorEval ("/Users/elliott/F#/hlp2020-07/lex_parse/demoComb.TSHARP")
     Console.ReadKey() |> ignore
+    
+    // print <| tokenize_parse "[ [ ] ; [ ] ]"
     //print <| tokenize_parse "mrec even n = if equals n 0 then true else odd ( n - 1 ) fi mrec odd n = if equals n 0 then false else even ( n - 1 ) fi"
-    execFile("C:\\Users\\danig\\Desktop\\myF#\\hlp2020-07\\lex_parse\\demo.TSHARP")
-    Console.ReadKey() |> ignore
+    // execFile("C:\\Users\\danig\\Desktop\\myF#\\hlp2020-07\\lex_parse\\demo.TSHARP")
+    // Console.ReadKey() |> ignore
     //FSILike()
     //testsWithExpectoParser() |> ignore
     //print <| parse (Ok [OpenRoundBracket; Keyword "fun"; Other "x"; EqualToken; Other "x"; AddToken; IntegerLit 1L; CloseRoundBracket])
@@ -473,5 +484,7 @@ let main argv =
 
     //print <| lambdaEval "match [1;2;3;4] case { 1 : 2 : x : y } -> x + y case [] -> 4 case endmatch"
     //print <| lambdaEval "let g = [50;60] in let f = [1;2;10] in match f case { 1 : 2 : x : y } -> x + y case [] -> 4 case [x;y] -> match g case {A : B} -> A + B case endmatch case endmatch"
+    
     runTestsInAssembly defaultConfig [||] |> ignore
+    
     0
