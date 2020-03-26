@@ -42,6 +42,9 @@
 // print           | printfn "%A" x
 // ispair          | checks if something is a list
 // explode,implode | string to list of characters and vice versa
+//
+// Choosing Evaluation Order
+// let f x y = .... in f lazy(x) y //WILL EXECUTE ARGUMENT X IN NORMAL ORDER aka. it will not evaluate x until it's found inside f's body
 /////////////////////////////////////////////
 
 
@@ -400,6 +403,15 @@ print( "Result of function 21 Speed boost to fibonacci function thanks to memoiz
 let rec fib n = if lower n 0 then ( "Input to fib should be positive" )  else if equals n 0 then 0 else if equals n 1 then 1 else fib ( n - 1 ) + fib ( n - 2 ) fi fi fi
 print ( fib -1 )
 print ( fib 55 )
+
+//////////////////// 22 //////////////////////
+
+print( "Result of function 22 shows the use of the lazy keyword ")
+
+let f x y z k = print( x + y )
+
+f ( lazy ( 2 ) ) 5 (lazy ( print ( "This will not be printed" ) ) ) ( print( "This will be printed before the result of the function is calculated" ) ) )
+
 
 
 

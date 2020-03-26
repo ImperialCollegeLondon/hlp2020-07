@@ -438,13 +438,13 @@ let test_List_Lambda_Runtime =
             Expect.equal (exec test3) (Ok(Literal (Int 12L))) "((fun a -> fun b -> a + b/a)3)27"        
         }
         test "Runtime Test 4" {
-            Expect.equal (exec test4) (Error "Run-time error: ['n'] is not defined") "f a b = a+n/b in f 4 36"        
+            Expect.equal (exec test4) (Error """Run-time error: "n" is not defined""") "f a b = a+n/b in f 4 36"        
         }
         test "Runtime Test 5" {
             Expect.equal (exec test5) (Ok(Literal (Int 125L))) "let f = 5 in f*f*f"        
         }
         test "Runtime Test 6" {
-            Expect.equal (exec test6) (Error "Run-time error: Literal (Int 9L) is not a valid list to implode") "let f a b = a + b/a in f 3 (Implode 9 9)"        
+            Expect.equal (exec test6) (Error "Run-time error: Wrong argument given to implode") "let f a b = a + b/a in f 3 (Implode 9 9)"        
         }
         test "Runtime Test 7" {
             Expect.equal (exec test7) (Ok(Lambda { InputVar = ['b']; Body = FuncApp(FuncApp(BFunc (Mat Add),FuncApp(FuncApp (BFunc (Mat Mult),Literal (Int 3L)),Literal (Int 3L))),Var ['b'])})) "let f a b = a*a + b in let g x = f x in g 3 "      
@@ -453,10 +453,10 @@ let test_List_Lambda_Runtime =
             Expect.equal (exec test8) (Ok(Literal (Int 6L))) "let f x = x+1 in let g y = y+2 in g (f 3)"        
         }
         test "Runtime Test 9" {
-            Expect.equal (exec test9) (Error "Run-time error: Add(Literal (String ['a']),Literal (Int 1L)) , is not a valid expression") """let f x = x+1 in f (f "a")"""        
+            Expect.equal (exec test9) (Error "Run-time error: Add(Literal (Str ['a']),Literal (Int 1L)) , is not a valid expression") """let f x = x+1 in f (f "a")"""        
         }
         test "Runtime Test 10" {
-            Expect.equal (exec test10) (Error "Run-time error: Add(Literal (String ['a']),Literal (Int 1L)) , is not a valid expression") "if 2=1 then test9 else test8"        
+            Expect.equal (exec test10) (Error "Run-time error: Add(Literal (Str ['a']),Literal (Int 1L)) , is not a valid expression") "if 2=1 then test9 else test8"        
         }
         test "Runtime Test 11" {
             Expect.equal (exec test11) (Ok(Literal (Int 6L))) "if 2=2 then test9 else test8"        

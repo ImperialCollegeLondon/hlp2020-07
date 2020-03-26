@@ -103,8 +103,6 @@ let (|PMATCH|_|) (tok: Token) (tokLst: Result<Token list, Token list>) =
 
 
 
-
-
 let builtInFuncMap = ["mod", BFunc(Mat Mod);"equals", BFunc Equal;"greater",BFunc (Mat Greater);"lower",BFunc (Mat Lower);"explode", BFunc Explode;"implode", BFunc Implode;"pair", BFunc P;"fst", BFunc PFst ;"snd", BFunc PSnd;"ispair", BFunc IsPair; "print", BFunc Print] |> Map.ofList
 
 let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,string>*Result<Token list, Token list>,string>) option =
