@@ -13,8 +13,14 @@ This directory is used for:
 * Make sure to space every new word or special character
 * Neither capital letters nor numbers nor special character can be used in function names
 
-### types 
+### Built-In Types 
 
+| Types         | Example          | Comments                              |
+| ------------- |:----------------:| -------------------------------------:|
+| strings       | "abcdefg"        | only lowercase, uppercase and numbers |
+| integer       | 12345            | no floats                             |
+| lists         | [ 1 ; 2 ; 3 ; 5] | make sure to space all the semicolons and the entries.|
+| empty list    | []               | / |
 <!-- // strings : "abcd"
 // lists : [ 1 ; 2 ; 3 ; 4 ]
 // empty list : []
