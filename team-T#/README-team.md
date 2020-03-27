@@ -13,8 +13,10 @@ This directory is used for:
 Docs for Matches
 Value to match is a number 
 
+```F#
 let a = 5
 match a case 21 -> 1 case 20 -> 2 case 5 -> 101 case endmatch ====> 101
+```
 
 Note how every case must start with a case, the value to match and then a right arrow. After the right arrow the result of the match is given if the value matches. 
 Note also how every match must end with CASE ENDMATCH (not capital but capitalised here such that both words are emphasized).
