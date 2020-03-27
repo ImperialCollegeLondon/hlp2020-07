@@ -16,7 +16,7 @@ This directory is used for:
 ### Built-In Types 
 
 | Types         | Example          | Comments                              |
-| ------------- |:----------------:| -------------------------------------:|
+| ------------- |:----------------:| :-------------------------------------:|
 | strings       | "abcdefg"        | only lowercase, uppercase and numbers |
 | integer       | 12345            | no floats                             |
 | lists         | [ 1 ; 2 ; 3 ; 5] | make sure to space all the semicolons and the entries.|
