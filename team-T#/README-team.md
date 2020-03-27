@@ -66,7 +66,7 @@ let rec increment x i = if equals x 10 then i else increment (x+1) (i+1) fi
 print( increment -2 0 ) ====> 12
 ```
 
-### mutual recursion functions must be written on the same line
+### mutually recursive functions must be written on the same line
 mrec namefunca arga argb ... = ... mrec namefuncb argc argd ... = ...
 
 ``` F#
