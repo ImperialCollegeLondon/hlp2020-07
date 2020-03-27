@@ -8,8 +8,10 @@ This directory is used for:
 * Team phase individual team contribution statements (named `team-login.md`)
 * overall team readme
 
+## Global comments 
 
-
+Make sure to space every new word or special character
+Neither capital letters nor numbers nor special character can be used in function names
 
 ## Docs for Matches
 
