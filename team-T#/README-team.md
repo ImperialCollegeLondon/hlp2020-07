@@ -15,29 +15,26 @@ This directory is used for:
 
 ### Built-In Types 
 
-<center>
-  
-| Types         | Example          | Comments                              |
-| ------------- |:----------------:| :-------------------------------------:|
-| strings       | "abcdefg"        | only lowercase, uppercase and numbers |
-| integer       | 12345            | no floats                             |
+| Types         | Example          | Comments                                              |
+| ------------- |:----------------:| :----------------------------------------------------:|
+| strings       | "abcdefg"        | only lowercase, uppercase and numbers                 |
+| integer       | 12345            | no floats                                             |
 | lists         | [ 1 ; 2 ; 3 ; 5] | make sure to space all the semicolons and the entries.|
-| empty list    | []               | / |
-
-</center>
+| empty list    | []               | /                                                     |
 
 ### Built-In Functions
 
-<center>
-  
-| Functions     | F# equivalent    |
-| ------------- |:----------------:|
-| strings       | "abcdefg"        |
-| integer       | 12345            |
-| lists         | [ 1 ; 2 ; 3 ; 5] | 
-| empty list    | []               |
+|TSHARP Function  | F# Equivalent                               |
+| --------------  |:-------------------------------------------:|
+|+,-,*,/,mod      | +,-,*,/,%                                   |
+| lower,greater   | <,>                                         |
+| equals          | =                                           |
+| fst,snd         | List.head, List.tail                        |
+| pair hd tl      | hd::tl                                      |
+| print           | printfn "%A" x                              |
+| ispair          | checks if something is a list               |
+| explode,implode | string to list of characters and vice versa |
 
-</center>
   
 <!-- 
 // function definition : 
