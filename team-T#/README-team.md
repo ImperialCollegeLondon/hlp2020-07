@@ -13,6 +13,46 @@ This directory is used for:
 * Make sure to space every new word or special character
 * Neither capital letters nor numbers nor special character can be used in function names
 
+<!-- // strings : "abcd"
+// lists : [ 1 ; 2 ; 3 ; 4 ]
+// empty list : []
+//
+// function definition : 
+//	let namefunc arga argb ... = ...
+//
+// lambda functions definition : 
+//	fun arga argb ... = ...
+//
+// recursion functions : 
+//	let rec namefunc arga argb ... = ...
+//
+// mutual recursion functions must be written on the same line
+//	mrec namefunca arga argb ... = ... mrec namefuncb argc argd ... = ...
+//
+// if then else :
+//	if ... then ... else ... fi
+//
+// matches :
+// you can write match of match 
+// you can only match lists
+// the notation [ x ; y ; z ; w ; u ] is equivalent to x::y::z::w::u
+//	match lst case ... -> ... case ... -> ... case endmatch
+//	match lsta case ... -> ... case ... -> match lstb case ... -> ... case ... -> ... case endmatch case endmatch
+// 
+// BUILT IN FUNCTIONS
+// TSHARP Function | F# Equivalent
+// +,-,*,/,mod     | +,-,*,/,% 
+// lower,greater   | <,>
+// equals          | =
+// fst,snd         | List.head, List.tail
+// pair hd tl      | hd::tl
+// print           | printfn "%A" x
+// ispair          | checks if something is a list
+// explode,implode | string to list of characters and vice versa
+//
+// Choosing Evaluation Order
+// let f x y = .... in f lazy(x) y //WILL EXECUTE ARGUMENT X IN NORMAL ORDER aka. it will not evaluate x until it's found inside f's body -->
+
 ## Docs for Matches
 
 Value to match is a number 
