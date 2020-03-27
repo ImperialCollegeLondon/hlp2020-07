@@ -15,6 +15,7 @@ This directory is used for:
 
 ### Built-In Types 
 
+<div align="center">
 | Types         | Example          | Comments                              |
 | ------------- |:----------------:| :-------------------------------------:|
 | strings       | "abcdefg"        | only lowercase, uppercase and numbers |
@@ -24,6 +25,7 @@ This directory is used for:
 
 ### Built-In Functions
 
+<div align="center">
 | Functions     | F# equivalent    |
 | ------------- |:----------------:|
 | strings       | "abcdefg"        |
