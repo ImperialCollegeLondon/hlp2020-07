@@ -21,10 +21,17 @@ This directory is used for:
 | integer       | 12345            | no floats                             |
 | lists         | [ 1 ; 2 ; 3 ; 5] | make sure to space all the semicolons and the entries.|
 | empty list    | []               | / |
-<!-- // strings : "abcd"
-// lists : [ 1 ; 2 ; 3 ; 4 ]
-// empty list : []
-//
+
+### Built-In Functions
+
+| Functions     | F# equivalent    |
+| ------------- |:----------------:|
+| strings       | "abcdefg"        |
+| integer       | 12345            |
+| lists         | [ 1 ; 2 ; 3 ; 5] | 
+| empty list    | []               |
+
+<!-- 
 // function definition : 
 //	let namefunc arga argb ... = ...
 //
