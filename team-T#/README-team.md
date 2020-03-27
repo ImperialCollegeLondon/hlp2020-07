@@ -26,23 +26,24 @@ You can use [x;y] notation same as one would use x :: y in F#
 You can use {x:y} notiation same as one would use [x;y] in F# (apologies)
 Note curly brackets as opposed to square brackets and the colon as opposed to semicolon.
 
-
+```F#
 let a = [1;2;3;4;5;6]
 
 match a case [x;y] -> x case [] -> -1 case endmatch ====> 1
 match a case [x] -> x case endmatch ====> [1;2;3;4;5;6]
 match a case {x:y} -> x case [] -> -1 case [x;y] -> x case endmatch ====> 1
+```
 
-
-
+```F#
 let b = [1;2]
 
 match b case {x:y} -> x + y case [] -> -1 case [x] -> 2 case endmatch ====> 3
 match b case {x} -> -1 case [x;y] -> 100 case [x] -> -5 case endmatch ====> 100 (note shadowing effect).
+```
 
-
+```F#
 let c = []
 
 match c case [x;y] -> -1 case [] -> 1 case [x] -> 5 case endmatch ====> 1
 match c case [x;y] -> -1 case [x] -> 1 case [] -> 100 case endmatch ====> 1 ([x] shadows everything as expected)
-
+```
