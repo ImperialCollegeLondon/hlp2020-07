@@ -38,6 +38,8 @@ This directory is used for:
 
 ### Function definition : 
 
+let namefunc arga argb ... = ...
+
 ``` F#
 let square x = x * x
 print( square  3)
@@ -48,51 +50,37 @@ let func x = x - 2 * x in func 4
 ```
 
 ### lambda functions definition : 
+
 fun arga argb ... = ...
 
 ``` F#
-let square x = x * x
-print( square  3)
-```
-
-``` F#
-let func x = x - 2 * x in func 4
+let addp f x = f x + f x
+print ( addp ( fun x = x * 2 ) 3 )
 ```
 
 ### recursion functions : 
 let rec namefunc arga argb ... = ...
 
 ``` F#
-let square x = x * x
-print( square  3)
-```
-
-``` F#
-let func x = x - 2 * x in func 4
+let rec increment x i = if equals x 10 then i else increment (x+1) (i+1) fi
+print( increment -2 0 )
 ```
 
 ### mutual recursion functions must be written on the same line
 mrec namefunca arga argb ... = ... mrec namefuncb argc argd ... = ...
 
 ``` F#
-let square x = x * x
-print( square  3)
-```
-
-``` F#
-let func x = x - 2 * x in func 4
+let rec fib n = if lower n 0 then ( "Input to fib should be positive" )  else if equals n 0 then 0 else if equals n 1 then 1 else fib ( n - 1 ) + fib ( n - 2 ) fi fi fi
+print ( fib -1 )
+print ( fib 55 )
 ```
 
 ### if then else :
 if ... then ... else ... fi
 
 ``` F#
-let square x = x * x
-print( square  3)
-```
-
-``` F#
-let func x = x - 2 * x in func 4
+let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) fi
+print ( lstmap ( fun x = x * x ) [ 1 ; 2 ; 5 ] )
 ```
 
 ### Matches
@@ -132,4 +120,14 @@ let c = []
 
 match c case [x;y] -> -1 case [] -> 1 case [x] -> 5 case endmatch ====> 1
 match c case [x;y] -> -1 case [x] -> 1 case [] -> 100 case endmatch ====> 1 ([x] shadows everything as expected)
+```
+
+### Choosing Evaluation Order
+let f x y = .... in f lazy(x) y 
+* WILL EXECUTE ARGUMENT X IN NORMAL ORDER aka. i
+* It will not evaluate x until it's found inside f's body
+
+```F#
+let f x y z k = print( x + y )
+f ( lazy ( 2 ) ) 5 (lazy ( print ( "This will not be printed" ) ) )
 ```
