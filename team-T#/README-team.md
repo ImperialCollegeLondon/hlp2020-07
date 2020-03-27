@@ -35,7 +35,18 @@ This directory is used for:
 | ispair          | checks if something is a list               |
 | explode,implode | string to list of characters and vice versa |
 
-  
+
+### Function definition : 
+
+``` F#
+let square x = x * x
+print( square  3)
+```
+
+``` F#
+let func x = x - 2 * x in func 4
+```
+
 <!-- 
 // function definition : 
 //	let namefunc arga argb ... = ...
