@@ -47,44 +47,55 @@ print( square  3)
 let func x = x - 2 * x in func 4
 ```
 
-<!-- 
-// function definition : 
-//	let namefunc arga argb ... = ...
-//
-// lambda functions definition : 
-//	fun arga argb ... = ...
-//
-// recursion functions : 
-//	let rec namefunc arga argb ... = ...
-//
-// mutual recursion functions must be written on the same line
-//	mrec namefunca arga argb ... = ... mrec namefuncb argc argd ... = ...
-//
-// if then else :
-//	if ... then ... else ... fi
-//
-// matches :
-// you can write match of match 
-// you can only match lists
-// the notation [ x ; y ; z ; w ; u ] is equivalent to x::y::z::w::u
-//	match lst case ... -> ... case ... -> ... case endmatch
-//	match lsta case ... -> ... case ... -> match lstb case ... -> ... case ... -> ... case endmatch case endmatch
-// 
-// BUILT IN FUNCTIONS
-// TSHARP Function | F# Equivalent
-// +,-,*,/,mod     | +,-,*,/,% 
-// lower,greater   | <,>
-// equals          | =
-// fst,snd         | List.head, List.tail
-// pair hd tl      | hd::tl
-// print           | printfn "%A" x
-// ispair          | checks if something is a list
-// explode,implode | string to list of characters and vice versa
-//
-// Choosing Evaluation Order
-// let f x y = .... in f lazy(x) y //WILL EXECUTE ARGUMENT X IN NORMAL ORDER aka. it will not evaluate x until it's found inside f's body -->
+### lambda functions definition : 
+fun arga argb ... = ...
 
-### Docs for Matches
+``` F#
+let square x = x * x
+print( square  3)
+```
+
+``` F#
+let func x = x - 2 * x in func 4
+```
+
+### recursion functions : 
+let rec namefunc arga argb ... = ...
+
+``` F#
+let square x = x * x
+print( square  3)
+```
+
+``` F#
+let func x = x - 2 * x in func 4
+```
+
+### mutual recursion functions must be written on the same line
+mrec namefunca arga argb ... = ... mrec namefuncb argc argd ... = ...
+
+``` F#
+let square x = x * x
+print( square  3)
+```
+
+``` F#
+let func x = x - 2 * x in func 4
+```
+
+### if then else :
+if ... then ... else ... fi
+
+``` F#
+let square x = x * x
+print( square  3)
+```
+
+``` F#
+let func x = x - 2 * x in func 4
+```
+
+### Matches
 
 Value to match is a number 
 
