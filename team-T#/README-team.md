@@ -42,11 +42,11 @@ let namefunc arga argb ... = ...
 
 ``` F#
 let square x = x * x
-print( square  3)
+print( square  3) ====> 9
 ```
 
 ``` F#
-let func x = x - 2 * x in func 4
+let func x = x - 2 * x in func 4 ====> -4
 ```
 
 ### lambda functions definition : 
@@ -55,7 +55,7 @@ fun arga argb ... = ...
 
 ``` F#
 let addp f x = f x + f x
-print ( addp ( fun x = x * 2 ) 3 )
+print ( addp ( fun x = x * 2 ) 3 ) ====> 12
 ```
 
 ### recursion functions : 
@@ -63,7 +63,7 @@ let rec namefunc arga argb ... = ...
 
 ``` F#
 let rec increment x i = if equals x 10 then i else increment (x+1) (i+1) fi
-print( increment -2 0 )
+print( increment -2 0 ) ====> 12
 ```
 
 ### mutual recursion functions must be written on the same line
@@ -71,8 +71,7 @@ mrec namefunca arga argb ... = ... mrec namefuncb argc argd ... = ...
 
 ``` F#
 let rec fib n = if lower n 0 then ( "Input to fib should be positive" )  else if equals n 0 then 0 else if equals n 1 then 1 else fib ( n - 1 ) + fib ( n - 2 ) fi fi fi
-print ( fib -1 )
-print ( fib 55 )
+print ( fib 55 ) ====> 365435296162
 ```
 
 ### if then else :
@@ -80,7 +79,7 @@ if ... then ... else ... fi
 
 ``` F#
 let rec lstmap func lst = if equals lst [ ] then [ ] else pair ( func ( fst lst ) ) ( lstmap func ( snd lst ) ) fi
-print ( lstmap ( fun x = x * x ) [ 1 ; 2 ; 5 ] )
+print ( lstmap ( fun x = x * x ) [ 1 ; 2 ; 5 ] ) ====> [ 1 ; 4 ; 25 ]
 ```
 
 ### Matches
