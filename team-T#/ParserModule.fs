@@ -108,7 +108,7 @@ let builtInFuncMap = ["mod", BFunc(Mat Mod);"equals", BFunc Equal;"greater",BFun
 let rec (|PITEM|_|) (tokLst: Result<Token list, Token list>):(Result<Result<AST,string>*Result<Token list, Token list>,string>) option =
     match tokLst with
     | Ok [] -> Error "Input expression was empty"
-    | PMATCH (Other "lazy") (PMATCH (OpenRoundBracket) (PBUILDADDEXP(result, PMATCH (CloseRoundBracket) (inp')))) -> 
+    | PMATCH (Other "lazy") (PMATCH (OpenRoundBracket) (PPARSE(result, PMATCH (CloseRoundBracket) (inp')))) -> 
         match result with 
         | Ok ast -> Ok (Ok (Bracket (Lzy ast)), inp')
         | Error msg -> Error msg
