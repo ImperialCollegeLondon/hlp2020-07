@@ -8,10 +8,12 @@ This directory is used for:
 * Team phase individual team contribution statements (named `team-login.md`)
 * overall team readme
 
-## Global comments 
+### Global comments 
 
 * Make sure to space every new word or special character
 * Neither capital letters nor numbers nor special character can be used in function names
+
+### types 
 
 <!-- // strings : "abcd"
 // lists : [ 1 ; 2 ; 3 ; 4 ]
@@ -53,7 +55,7 @@ This directory is used for:
 // Choosing Evaluation Order
 // let f x y = .... in f lazy(x) y //WILL EXECUTE ARGUMENT X IN NORMAL ORDER aka. it will not evaluate x until it's found inside f's body -->
 
-## Docs for Matches
+### Docs for Matches
 
 Value to match is a number 
 
