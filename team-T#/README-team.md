@@ -22,7 +22,7 @@ This directory is used for:
 | integer       | 12345            | no floats                             |
 | lists         | [ 1 ; 2 ; 3 ; 5] | make sure to space all the semicolons and the entries.|
 | empty list    | []               | / |
-<\div>
+</div>
 
 ### Built-In Functions
 
@@ -33,7 +33,7 @@ This directory is used for:
 | integer       | 12345            |
 | lists         | [ 1 ; 2 ; 3 ; 5] | 
 | empty list    | []               |
-<\div>
+</div>
   
 <!-- 
 // function definition : 
