@@ -58,7 +58,7 @@ let addp f x = f x + f x
 print ( addp ( fun x = x * 2 ) 3 ) ====> 12
 ```
 
-### recursion functions : 
+### recursive functions : 
 let rec namefunc arga argb ... = ...
 
 ``` F#
