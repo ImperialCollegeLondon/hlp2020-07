@@ -9,6 +9,8 @@
     <Compile Include="ParserModule.fs" />
     <Compile Include="LambdasRuntimeModule.fs" />
     <Compile Include="CombinatorRuntimeModule.fs" />
+    <Compile Include="topLevelFunctions.fs" />
+    <Compile Include="tests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
