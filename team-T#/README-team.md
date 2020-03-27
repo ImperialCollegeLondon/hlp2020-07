@@ -124,8 +124,8 @@ match c case [x;y] -> -1 case [x] -> 1 case [] -> 100 case endmatch ====> 1 ([x]
 
 ### Choosing Evaluation Order
 let f x y = .... in f lazy(x) y 
-* WILL EXECUTE ARGUMENT X IN NORMAL ORDER aka. i
-* It will not evaluate x until it's found inside f's body
+* WILL EXECUTE ARGUMENT "x" IN NORMAL ORDER aka
+* It will not evaluate "x" until it's found inside f's body
 
 ```F#
 let f x y z k = print( x + y )
