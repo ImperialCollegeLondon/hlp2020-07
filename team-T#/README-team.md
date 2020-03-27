@@ -10,8 +10,8 @@ This directory is used for:
 
 ## Global comments 
 
-Make sure to space every new word or special character
-Neither capital letters nor numbers nor special character can be used in function names
+* Make sure to space every new word or special character
+* Neither capital letters nor numbers nor special character can be used in function names
 
 ## Docs for Matches
 
