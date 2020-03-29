@@ -1,12 +1,20 @@
-# Sample README
-
-NB - replace this file by your overall team README.
+# README
 
 This directory is used for:
 
 * Team phase code submission
 * Team phase individual team contribution statements (named `team-login.md`)
 * overall team readme
+
+## How to build T#
+* Clone our repo.
+* Go to team-T#/Project. Open the Project "Project.fsproj" in your favourite IDE.
+* Build/run
+* When executing the project, the console will ask the user to input the absolute path to a ".TSHARP" file. We have written a demo file in the team-T# folder named "demoLamb.TSHARP" 
+* We have a set of expecto tests that can be run by uncommenting the first line in the main funciton in Program.fs. 
+
+
+## How to use T#
 
 ### Global comments 
 
