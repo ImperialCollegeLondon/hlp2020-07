@@ -3,7 +3,7 @@
 This directory is used for:
 
 * Team phase code submission
-* Team phase individual team contribution statements (named `team-login.md`)
+* Team phase individual team contribution statements (found in team-T#/individual contributions)
 * overall team readme
 
 ## How to build T#
