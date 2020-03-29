@@ -1,6 +1,7 @@
 open TopModule
 open TestsModule
 open System
+open System.IO
 open Expecto
 
 let makeMyTests (x,y,z,name) = 
@@ -21,11 +22,9 @@ let lambdaEvalTestGroup = testList "Top Functions Test Group" (List.map makeMyTe
 
 [<EntryPoint>]  
 let main argv =
-    // THE FOLLOWING FILE IS TO RUN WITH THE LAMBDA RUNTIME
-    //execFile lambdaEval (Environment.CurrentDirectory + "/demoLamb.TSHARP")
-    // THE FOLLOWING FILE IS TO RUN WITH THE COMBINATOR RUNTIME
-    execFile combinatorEval ("/Users/alber/Documents/GitHub/hlp2020-7/team-T#/Project/demoLamb.TSHARP")
-    
+    printf "Enter the path to a .TSHARP file to execute: "
+    let path = Console.ReadLine()
+    execFile lambdaEval path
     runTestsInAssembly defaultConfig [||] |> ignore
     Console.ReadKey() |> ignore
     0

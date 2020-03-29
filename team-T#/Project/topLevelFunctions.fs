@@ -49,4 +49,7 @@ let execFile runtime (filePath) =
             | Error(err) -> print err 
             | Ok(_) -> execLines tl
         | [] -> ()
-    File.ReadAllLines filePath |> Array.toList |> execLines
+    if File.Exists filePath then
+        File.ReadAllLines filePath |> Array.toList |> execLines 
+    else
+        printf "ERROR: File not found"
