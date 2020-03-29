@@ -22,9 +22,9 @@ let lambdaEvalTestGroup = testList "Top Functions Test Group" (List.map makeMyTe
 
 [<EntryPoint>]  
 let main argv =
+    //runTestsInAssembly defaultConfig [||] |> ignore
     printf "Enter the path to a .TSHARP file to execute: "
     let path = Console.ReadLine()
     execFile lambdaEval path
-    runTestsInAssembly defaultConfig [||] |> ignore
     Console.ReadKey() |> ignore
     0
