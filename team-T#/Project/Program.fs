@@ -24,7 +24,7 @@ let main argv =
     // THE FOLLOWING FILE IS TO RUN WITH THE LAMBDA RUNTIME
     //execFile lambdaEval (Environment.CurrentDirectory + "/demoLamb.TSHARP")
     // THE FOLLOWING FILE IS TO RUN WITH THE COMBINATOR RUNTIME
-    // execFile combinatorEval ("/Users/elliott/F#/hlp2020-07/lex_parse/demoComb.TSHARP")
+    execFile combinatorEval ("/Users/alber/Documents/GitHub/hlp2020-7/team-T#/Project/demoLamb.TSHARP")
     
     runTestsInAssembly defaultConfig [||] |> ignore
     Console.ReadKey() |> ignore
